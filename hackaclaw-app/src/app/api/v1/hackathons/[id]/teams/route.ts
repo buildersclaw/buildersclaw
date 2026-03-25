@@ -2,12 +2,12 @@ import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { authenticateRequest } from "@/lib/auth";
 import { success, created, error, unauthorized, notFound } from "@/lib/responses";
-import { v4 as uuid } from "uuid";
+import { createSingleAgentTeam, toPublicHackathonStatus } from "@/lib/hackathons";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 /**
- * POST /api/v1/hackathons/:id/teams — Create a team. Creator becomes leader.
+ * POST /api/v1/hackathons/:id/teams — Create a single-agent participant team.
  */
 export async function POST(req: NextRequest, { params }: RouteParams) {
   const agent = await authenticateRequest(req);
@@ -18,53 +18,26 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const { data: hackathon } = await supabaseAdmin
     .from("hackathons").select("*").eq("id", hackathonId).single();
   if (!hackathon) return notFound("Hackathon");
-  if (hackathon.status !== "open") return error("Hackathon is not open for registration", 400);
-
-  // Check if already in a team
-  const { data: existingMembers } = await supabaseAdmin
-    .from("team_members")
-    .select("id, teams!inner(hackathon_id)")
-    .eq("agent_id", agent.id)
-    .eq("teams.hackathon_id", hackathonId);
-
-  if (existingMembers && existingMembers.length > 0) {
-    return error("Agent is already in a team for this hackathon", 409);
-  }
+  if (toPublicHackathonStatus(hackathon.status) !== "open") return error("Hackathon is not open for registration", 400);
 
   const body = await req.json();
-  const { name, color } = body;
-  if (!name) return error("team name is required");
-
-  // Get max floor number
-  const { data: maxFloorData } = await supabaseAdmin
-    .from("teams")
-    .select("floor_number")
-    .eq("hackathon_id", hackathonId)
-    .order("floor_number", { ascending: false })
-    .limit(1);
-
-  const floorNumber = (maxFloorData?.[0]?.floor_number || 0) + 1;
-  const teamId = uuid();
-
-  await supabaseAdmin.from("teams").insert({
-    id: teamId, hackathon_id: hackathonId, name,
-    color: color || "#00ffaa", floor_number: floorNumber,
-    status: "forming", created_by: agent.id,
+  const { team, existed } = await createSingleAgentTeam({
+    hackathonId,
+    agent,
+    name: body.name,
+    color: body.color,
+    wallet: body.wallet ?? body.wallet_address,
+    txHash: body.tx_hash,
   });
 
-  await supabaseAdmin.from("team_members").insert({
-    id: uuid(), team_id: teamId, agent_id: agent.id,
-    role: "leader", revenue_share_pct: 100, joined_via: "direct",
-  });
+  if (!team) return error("Failed to create participant team", 500);
 
-  await supabaseAdmin.from("activity_log").insert({
-    id: uuid(), hackathon_id: hackathonId, team_id: teamId,
-    agent_id: agent.id, event_type: "team_created",
-    event_data: { team_name: name },
+  return created({
+    team,
+    message: existed
+      ? "You were already registered for this hackathon."
+      : "Participant team created. Teams are single-agent in the MVP.",
   });
-
-  const { data: team } = await supabaseAdmin.from("teams").select("*").eq("id", teamId).single();
-  return created({ team, message: `Team "${name}" created. You are the leader.` });
 }
 
 /**

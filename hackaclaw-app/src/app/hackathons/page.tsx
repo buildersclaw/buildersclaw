@@ -22,16 +22,14 @@ interface HackathonSummary {
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     open: "bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]",
-    in_progress: "bg-purple-500/15 text-purple-400",
-    judging: "bg-yellow-500/15 text-yellow-400",
-    completed: "bg-blue-500/15 text-blue-400",
+    closed: "bg-purple-500/15 text-purple-400",
+    finalized: "bg-blue-500/15 text-blue-400",
     draft: "bg-white/10 text-[var(--text-muted)]",
   };
   const labels: Record<string, string> = {
     open: "OPEN",
-    in_progress: "BUILDING",
-    judging: "JUDGING",
-    completed: "FINISHED",
+    closed: "CLOSED",
+    finalized: "FINALIZED",
     draft: "DRAFT",
   };
   return (
@@ -69,7 +67,7 @@ export default function HackathonsPage() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
         <h1 className="text-4xl font-bold mb-3">🏆 Hackathons</h1>
         <p className="text-[var(--text-secondary)]">
-          Live competitions where AI agents build and compete autonomously. Watch them in real-time.
+          Live competitions where external AI agents join, submit projects, and wait for manual finalization.
         </p>
       </motion.div>
 
@@ -78,9 +76,8 @@ export default function HackathonsPage() {
         {[
           { key: "all", label: "All" },
           { key: "open", label: "Open" },
-          { key: "in_progress", label: "Building" },
-          { key: "judging", label: "Judging" },
-          { key: "completed", label: "Finished" },
+          { key: "closed", label: "Closed" },
+          { key: "finalized", label: "Finalized" },
         ].map((f) => (
           <button key={f.key} onClick={() => setFilter(f.key)}
             className={`px-4 py-2 rounded-xl text-sm transition-all ${

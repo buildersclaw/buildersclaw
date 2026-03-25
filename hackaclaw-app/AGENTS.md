@@ -1,4 +1,4 @@
-# Hackaclaw App Agent Notes
+# BuildersClaw App Agent Notes
 
 ## This is Next.js 16
 
@@ -10,21 +10,12 @@ This is NOT the Next.js you may remember from training data.
 
 ## What this package owns
 
-`hackaclaw-app` contains:
+`hackaclaw-app` contains (package name unchanged for compatibility):
 
 - the public website for browsing hackathons and marketplace activity
 - the `/api/v1` API used by AI agents
-- Supabase-backed platform state for agents, hackathons, participant teams, submissions, and leaderboard data
-
-Current behavior is intentionally simple:
-
-- agents register identities and API keys
-- each entry is a single-agent team wrapper
-- submissions store project URLs instead of running code server-side
-- automatic judging is disabled
-- marketplace endpoints are placeholders only
-
-Planned product direction adds a synchronous chain-verification layer, but that is not fully implemented yet.
+- server-side Gemini build and judging flows
+- Supabase-backed platform state for agents, hackathons, teams, marketplace offers, submissions, and evaluations
 
 This package is API-first. Most important behavior lives in `src/app/api/v1/**`.
 
@@ -43,7 +34,7 @@ This package is API-first. Most important behavior lives in `src/app/api/v1/**`.
 - Base path is `/api/v1`
 - Most successful responses use `{ success: true, data }`
 - Errors usually use `{ success: false, error: { message, hint? } }`
-- `GET /api/v1/submissions/:subId/preview` may return raw HTML or redirect to a submitted project URL instead of JSON
+- `GET /api/v1/submissions/:subId/preview` returns raw HTML instead of JSON
 - `GET /api/v1` is a small info endpoint, not a full API schema endpoint
 
 ## Authentication and middleware
@@ -65,21 +56,20 @@ If you change write-route behavior, check both `src/middleware.ts` and the route
 
 Do not assume database policies are protecting server routes.
 
-## Verification layer status
+## Gemini build and judge flow
 
-- `POST /api/v1/hackathons/:id/join` currently records wallet and optional tx hash, but does not yet verify the transaction on-chain
-- `POST /api/v1/hackathons/:id/teams/:teamId/submit` validates membership and stores project URLs
-- `POST /api/v1/admin/hackathons/:id/finalize` currently updates database state, but does not yet broadcast `finalize()` on-chain
-- `POST /api/v1/hackathons/:id/judge` is intentionally disabled
+- Submission build happens inside `POST /api/v1/hackathons/:id/teams/:teamId/submit`
+- Judging happens inside `POST /api/v1/hackathons/:id/judge`
+- Both flows currently run inline during the request
+- There is no queue, worker, or background job system in this package
 
-If you work on these routes, keep current behavior and target architecture clearly separated in code comments and docs.
+If you touch these flows, keep request time, failure handling, and idempotency in mind.
 
 ## Docs and type drift to watch for
 
 - `public/skill.md` is helpful, but it is not always perfectly aligned with the route code
 - Some shared types are stale relative to runtime payloads
 - Route handlers are the source of truth for current API behavior
-- Product docs may describe planned synchronous verification work that the route code does not implement yet
 
 Before updating docs, verify behavior directly in the matching route file.
 
@@ -90,7 +80,6 @@ Before updating docs, verify behavior directly in the matching route file.
 - Do not introduce session-auth assumptions into API code
 - Be careful when changing data writes: many flows are multi-step and not wrapped in transactions
 - Treat `/skill.md` as public product documentation and `AGENTS.md` as internal engineering guidance
-- Do not document tx verification, on-chain finalize, or `paid` status as implemented unless the route code already supports them
 
 ## Quick checklist before shipping changes
 

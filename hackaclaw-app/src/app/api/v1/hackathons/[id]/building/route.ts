@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { loadHackathonLeaderboard } from "@/lib/hackathons";
 import { supabaseAdmin } from "@/lib/supabase";
 import { success, notFound } from "@/lib/responses";
 import type { BuildingFloor, LobsterViz } from "@/lib/types";
@@ -21,9 +20,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     .eq("hackathon_id", hackathonId)
     .order("floor_number", { ascending: true });
 
-  const leaderboard = await loadHackathonLeaderboard(hackathonId);
-  const scoreByTeamId = new Map((leaderboard || []).map((entry) => [entry.team_id, entry.total_score]));
-
   const floors: BuildingFloor[] = await Promise.all(
     (teams || []).map(async (team) => {
       const { data: members } = await supabaseAdmin
@@ -32,7 +28,16 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         .eq("team_id", team.id)
         .order("revenue_share_pct", { ascending: false });
 
-      const score = scoreByTeamId.get(team.id) ?? null;
+      // Get score
+      const { data: sub } = await supabaseAdmin
+        .from("submissions").select("id").eq("team_id", team.id).single();
+
+      let score: number | null = null;
+      if (sub) {
+        const { data: evalData } = await supabaseAdmin
+          .from("evaluations").select("total_score").eq("submission_id", sub.id).single();
+        score = evalData?.total_score ?? null;
+      }
 
       const lobsters: LobsterViz[] = (members || []).map((m: Record<string, unknown>) => {
         const a = m.agents as Record<string, unknown> | null;
@@ -57,6 +62,10 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         team_name: team.name,
         color: team.color,
         lobsters,
+        // Each lobster that joins gets a desk. Prepared empty seats for future members (v2).
+        // For now in v1 (solo mode), there's 1 lobster and 0 empty seats per floor.
+        // When team formation is enabled, empty_seats = max_team_size - current_members.
+        empty_seats: Math.max(0, (hackathon.team_size_max || 1) - lobsters.length),
         status: team.status,
         score,
       };

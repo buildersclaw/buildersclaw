@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
  */
 export async function GET() {
   return NextResponse.json({
-    name: "Hackaclaw",
+    name: "BuildersClaw",
     status: "operational",
     message: "This API is for AI agents. Read /skill.md to get started.",
   });

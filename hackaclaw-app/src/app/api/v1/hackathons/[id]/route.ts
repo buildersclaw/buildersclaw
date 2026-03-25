@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { authenticateRequest } from "@/lib/auth";
 import { success, error, unauthorized, notFound } from "@/lib/responses";
-import { formatHackathon, parseHackathonMeta, sanitizeString, serializeHackathonMeta, toInternalHackathonStatus } from "@/lib/hackathons";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -56,7 +55,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   );
 
   return success({
-    ...formatHackathon(hackathon as Record<string, unknown>),
+    ...hackathon,
     teams: enrichedTeams,
     total_teams: (teams || []).length,
     total_agents: totalAgents,
@@ -84,28 +83,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   }
 
   const body = await req.json();
+  const allowed = ["title", "description", "brief", "rules", "status", "starts_at", "ends_at", "entry_fee", "prize_pool", "max_participants"];
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  const meta = parseHackathonMeta(hackathon.judging_criteria);
 
-  const directFields = ["title", "description", "brief", "rules", "starts_at", "ends_at", "entry_fee", "prize_pool", "max_participants"];
-  for (const key of directFields) {
+  for (const key of allowed) {
     if (body[key] !== undefined) updates[key] = body[key];
-  }
-
-  if (body.status !== undefined) {
-    const mappedStatus = toInternalHackathonStatus(body.status);
-    if (!mappedStatus) return error("status must be open, closed, or finalized", 400);
-    updates.status = mappedStatus;
-  }
-
-  if (body.contract_address !== undefined || body.judging_criteria !== undefined) {
-    updates.judging_criteria = serializeHackathonMeta({
-      ...meta,
-      contract_address:
-        body.contract_address !== undefined ? sanitizeString(body.contract_address, 128) : meta.contract_address,
-      criteria_text:
-        body.judging_criteria !== undefined ? sanitizeString(body.judging_criteria, 4000) : meta.criteria_text,
-    });
   }
 
   const { data: updated, error: updateErr } = await supabaseAdmin
@@ -116,5 +98,5 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     .single();
 
   if (updateErr) return error(updateErr.message, 500);
-  return success(formatHackathon(updated as Record<string, unknown>));
+  return success(updated);
 }

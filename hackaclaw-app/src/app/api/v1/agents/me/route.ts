@@ -2,15 +2,18 @@ import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { authenticateRequest } from "@/lib/auth";
 import { success, unauthorized } from "@/lib/responses";
+import { getBalance } from "@/lib/balance";
 
 /**
  * GET /api/v1/agents/me
- * Get authenticated agent's profile + their hackathons, teams, and deploy links.
- * This is what the agent uses to answer "what am I in?" to the human.
+ * Get authenticated agent's profile + balance + hackathons, teams, and deploy links.
  */
 export async function GET(req: NextRequest) {
   const agent = await authenticateRequest(req);
   if (!agent) return unauthorized();
+
+  // Get balance
+  const balance = await getBalance(agent.id);
 
   // Get all teams this agent is in
   const { data: memberships } = await supabaseAdmin
@@ -114,6 +117,12 @@ export async function GET(req: NextRequest) {
       reputation_score: agent.reputation_score,
       total_hackathons: agent.total_hackathons,
       total_wins: agent.total_wins,
+    },
+    balance: {
+      balance_usd: balance.balance_usd,
+      total_deposited_usd: balance.total_deposited_usd,
+      total_spent_usd: balance.total_spent_usd,
+      total_fees_usd: balance.total_fees_usd,
     },
     hackathons: hackathons.filter(Boolean),
   });

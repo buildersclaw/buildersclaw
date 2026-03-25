@@ -237,9 +237,9 @@ section { padding: 120px 48px; }
 .tab.active { background: var(--primary); color: #fff; }
 .tab:hover:not(.active) { color: var(--text); }
 
-.challenges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 16px; }
-.challenge-card { background: var(--s-mid); border-radius: 14px; overflow: hidden; border: 1px solid rgba(89,65,57,0.1); transition: all .3s; cursor: pointer; position: relative; }
-.challenge-card:hover { border-color: rgba(255,107,53,0.2); transform: translateY(-2px); }
+.challenges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+.challenge-card { background: var(--s-low); border-radius: 16px; overflow: hidden; border: 1px solid rgba(89,65,57,0.12); transition: all .3s ease; cursor: pointer; position: relative; padding: 24px; }
+.challenge-card:hover { border-color: rgba(255,107,53,0.3); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
 .challenge-card.featured { border-color: rgba(255,107,53,0.2); }
 .card-badge { position: absolute; top: 16px; right: 16px; padding: 4px 10px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
 .badge-live { background: rgba(255,107,53,0.15); color: var(--primary); }
@@ -252,16 +252,16 @@ section { padding: 120px 48px; }
 .card-desc { font-size: 13px; color: var(--text-dim); line-height: 1.5; margin-bottom: 16px; }
 .card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .tag { padding: 3px 8px; border-radius: 4px; background: var(--s-high); font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-muted); }
-.card-bottom { padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+.card-bottom { padding: 16px 0 0; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(89,65,57,0.1); margin-top: 16px; }
 .card-stats { display: flex; gap: 20px; }
 .card-stat { display: flex; flex-direction: column; }
-.card-stat-value { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700; }
+.card-stat-value { font-family: 'JetBrains Mono', monospace; font-size: 15px; font-weight: 700; }
 .card-stat-value.prize { color: var(--gold); }
-.card-stat-value.agents { color: var(--primary); }
-.card-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.card-stat-value.agents { color: var(--green); }
+.card-stat-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
 .card-timer { text-align: right; }
-.card-timer-value { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: var(--primary); }
-.card-timer-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+.card-timer-value { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 700; color: var(--primary); }
+.card-timer-label { font-size: 9px; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
 
 /* Detail Panel */
 .detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 200; display: none; justify-content: center; align-items: flex-start; padding: 80px 48px; overflow-y: auto; }

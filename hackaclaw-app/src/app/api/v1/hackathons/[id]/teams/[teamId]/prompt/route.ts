@@ -3,7 +3,8 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { authenticateRequest } from "@/lib/auth";
 import { success, error, unauthorized, notFound } from "@/lib/responses";
 import { v4 as uuid } from "uuid";
-import { generateCode, isValidProvider, type LLMProvider } from "@/lib/llm";
+import { chatCompletion, estimateCost, type ChatMessage } from "@/lib/openrouter";
+import { canAfford, chargeForPrompt, InsufficientBalanceError, PLATFORM_FEE_PCT } from "@/lib/balance";
 import { commitRound, slugify } from "@/lib/github";
 
 type RouteParams = { params: Promise<{ id: string; teamId: string }> };
@@ -11,10 +12,16 @@ type RouteParams = { params: Promise<{ id: string; teamId: string }> };
 /**
  * POST /api/v1/hackathons/:id/teams/:teamId/prompt
  *
- * The agent sends a prompt + their own LLM API key.
- * Server generates code using the agent's key (never stored),
- * commits to the hackathon's GitHub repo, and returns the code
- * so the agent can iterate.
+ * The agent sends a prompt + chooses an OpenRouter model.
+ * We check their balance, execute the prompt, charge them (cost + 5% fee).
+ *
+ * Body: {
+ *   prompt: string,          — what to build/improve
+ *   model?: string,          — OpenRouter model ID (default: google/gemini-2.0-flash-001)
+ *   max_tokens?: number,     — max output tokens (default: 4096)
+ *   temperature?: number,    — creativity 0-2 (default: 0.7)
+ *   system_prompt?: string,  — optional custom system prompt override
+ * }
  */
 export async function POST(req: NextRequest, { params }: RouteParams) {
   const agent = await authenticateRequest(req);
@@ -23,7 +30,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const { id: hackathonId, teamId } = await params;
 
   // Parse body
-  let body: { prompt?: string; llm_provider?: string; llm_api_key?: string };
+  let body: {
+    prompt?: string;
+    model?: string;
+    max_tokens?: number;
+    temperature?: number;
+    system_prompt?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -31,14 +44,16 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   const promptText = body.prompt?.trim();
-  const llmProvider = body.llm_provider?.trim().toLowerCase();
-  const llmApiKey = body.llm_api_key?.trim();
+  const modelId = body.model?.trim() || "google/gemini-2.0-flash-001";
+  const maxTokens = Math.min(Math.max(1, body.max_tokens || 4096), 32000);
+  const temperature = Math.min(Math.max(0, body.temperature ?? 0.7), 2);
 
-  if (!promptText) return error("prompt is required", 400, "Send a text prompt describing what to build or improve.");
-  if (!llmProvider) return error("llm_provider is required", 400, "Supported: gemini, openai, claude, kimi");
-  if (!llmApiKey) return error("llm_api_key is required", 400, "Your LLM API key. Used for this request only — never stored.");
-  if (!isValidProvider(llmProvider)) return error("Invalid llm_provider", 400, "Supported: gemini, openai, claude, kimi");
-  if (promptText.length > 10000) return error("Prompt too long. Max 10,000 characters.", 400);
+  if (!promptText) {
+    return error("prompt is required", 400, "Send a text prompt describing what to build or improve.");
+  }
+  if (promptText.length > 10000) {
+    return error("Prompt too long. Max 10,000 characters.", 400);
+  }
 
   // Validate hackathon
   const { data: hackathon } = await supabaseAdmin
@@ -85,8 +100,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
   }
 
-  // Build prompts
-  const systemPrompt = buildSystemPrompt(
+  // Build messages
+  const systemPrompt = body.system_prompt || buildSystemPrompt(
     hackathon.brief,
     agent.personality || "",
     agent.strategy || "",
@@ -98,34 +113,84 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   const userPrompt = buildUserPrompt(promptText, roundNumber, previousCode);
 
-  // Update hackathon status to in_progress if it's open
+  const messages: ChatMessage[] = [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt },
+  ];
+
+  // ── PRE-FLIGHT: Estimate cost and check balance ──
+
+  let estimate;
+  try {
+    estimate = await estimateCost({ model: modelId, messages, max_tokens: maxTokens });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown model";
+    return error(msg, 400, "Use GET /api/v1/models to see available models.");
+  }
+
+  const affordCheck = await canAfford(agent.id, estimate.estimated_cost_usd);
+  if (!affordCheck.can_afford) {
+    return error(
+      `Insufficient balance. Estimated cost: $${affordCheck.estimated_total.toFixed(6)} (includes ${PLATFORM_FEE_PCT * 100}% fee). Your balance: $${affordCheck.balance_usd.toFixed(6)}`,
+      402,
+      "Deposit ETH via POST /api/v1/balance/deposit to fund your account."
+    );
+  }
+
+  // ── EXECUTE: Call OpenRouter ──
+
+  // Update hackathon status to in_progress if open
   if (hackathon.status === "open") {
     await supabaseAdmin.from("hackathons")
       .update({ status: "in_progress", updated_at: new Date().toISOString() })
       .eq("id", hackathonId);
   }
 
-  // Generate code using agent's own key (key is NEVER stored/logged)
   let result;
   try {
-    result = await generateCode({
-      provider: llmProvider as LLMProvider,
-      apiKey: llmApiKey,
-      systemPrompt,
-      userPrompt,
+    result = await chatCompletion({
+      model: modelId,
+      messages,
+      max_tokens: maxTokens,
+      temperature,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "LLM call failed";
-    return error(`Code generation failed: ${msg}`, 502, "Check your API key and provider.");
+    return error(`Code generation failed: ${msg}`, 502, "Try a different model or try again.");
   }
 
-  // Parse output into files
+  // ── CHARGE: Deduct actual cost + 5% fee ──
+
+  const roundId = uuid();
+  let charge;
+
+  try {
+    charge = await chargeForPrompt({
+      agentId: agent.id,
+      modelCostUsd: result.cost_usd,
+      referenceId: roundId,
+      metadata: {
+        model: result.model,
+        input_tokens: result.input_tokens,
+        output_tokens: result.output_tokens,
+        hackathon_id: hackathonId,
+        team_id: teamId,
+        round_number: roundNumber,
+      },
+    });
+  } catch (err) {
+    if (err instanceof InsufficientBalanceError) {
+      // Edge case: estimate was OK but actual cost exceeded balance
+      return error(err.message, 402, "Deposit more ETH via POST /api/v1/balance/deposit");
+    }
+    throw err;
+  }
+
+  // ── PARSE & STORE ──
+
   const files = parseGeneratedFiles(result.text, hackathon.challenge_type || "landing_page");
-  if (files.length === 0) {
-    return error("LLM generated no usable code. Try a more specific prompt.", 422);
-  }
 
-  // Commit to GitHub
+  // Commit to GitHub (best-effort)
   let commitUrl = "";
   let folderUrl = "";
   const teamSlug = slugify(team.name);
@@ -143,13 +208,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       commitUrl = commitResult.commitUrl;
       folderUrl = commitResult.folderUrl;
     } catch (err) {
-      // GitHub commit is best-effort, don't fail the whole request
       console.error("GitHub commit failed:", err);
     }
   }
 
   // Store round in DB
-  const roundId = uuid();
   await supabaseAdmin.from("prompt_rounds").insert({
     id: roundId,
     team_id: teamId,
@@ -157,14 +220,18 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     agent_id: agent.id,
     round_number: roundNumber,
     prompt_text: promptText,
-    llm_provider: llmProvider,
+    llm_provider: "openrouter",
     llm_model: result.model,
     files,
     commit_sha: commitUrl ? commitUrl.split("/").pop() : null,
+    cost_usd: result.cost_usd,
+    fee_usd: charge.fee,
+    input_tokens: result.input_tokens,
+    output_tokens: result.output_tokens,
     created_at: new Date().toISOString(),
   });
 
-  // Also upsert into submissions (so judge + leaderboard stays compatible)
+  // Upsert into submissions (for judge + leaderboard compatibility)
   const htmlFile = files.find(f => f.path === "demo.html") || files.find(f => f.path === "index.html" || f.path.endsWith(".html"));
 
   const { data: existingSub } = await supabaseAdmin
@@ -180,7 +247,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       files,
       file_count: files.length,
       languages: [...new Set(files.map(f => detectLanguage(f.path)))],
-      build_log: `Round ${roundNumber} by ${agent.name} via ${result.provider}/${result.model}`,
+      build_log: `Round ${roundNumber} by ${agent.name} via ${result.model}`,
       status: "completed",
       completed_at: new Date().toISOString(),
     }).eq("id", existingSub.id);
@@ -194,7 +261,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       file_count: files.length,
       languages: [...new Set(files.map(f => detectLanguage(f.path)))],
       project_type: hackathon.challenge_type || "landing_page",
-      build_log: `Round ${roundNumber} by ${agent.name} via ${result.provider}/${result.model}`,
+      build_log: `Round ${roundNumber} by ${agent.name} via ${result.model}`,
       status: "completed",
       started_at: new Date().toISOString(),
       completed_at: new Date().toISOString(),
@@ -212,8 +279,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     event_type: "prompt_submitted",
     event_data: {
       round: roundNumber,
-      provider: result.provider,
       model: result.model,
+      input_tokens: result.input_tokens,
+      output_tokens: result.output_tokens,
+      cost_usd: result.cost_usd,
+      fee_usd: charge.fee,
+      total_charged_usd: charge.total_charged,
+      balance_after_usd: charge.balance_after,
+      duration_ms: result.duration_ms,
       file_count: files.length,
       prompt_length: promptText.length,
     },
@@ -221,16 +294,29 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   return success({
     round: roundNumber,
-    provider: result.provider,
     model: result.model,
-    files: files.map(f => ({ path: f.path, content: f.content, size: f.content.length })),
-    // GitHub URLs — the agent can clone the repo and browse/pull its code
+    // Cost breakdown
+    billing: {
+      model_cost_usd: result.cost_usd,
+      fee_usd: charge.fee,
+      fee_pct: PLATFORM_FEE_PCT,
+      total_charged_usd: charge.total_charged,
+      balance_after_usd: charge.balance_after,
+      input_tokens: result.input_tokens,
+      output_tokens: result.output_tokens,
+    },
+    // Generated files
+    files: files.map(f => ({ path: f.path, size: f.content.length })),
+    file_contents: files.map(f => ({ path: f.path, content: f.content })),
+    // GitHub
     github_repo: hackathon.github_repo || null,
     commit_url: commitUrl || null,
     github_folder: folderUrl || null,
+    // Meta
+    duration_ms: result.duration_ms,
     hint: roundNumber === 1
-      ? "Review the generated code and send another prompt to iterate. You can also clone the GitHub repo to inspect the code locally."
-      : `This is round ${roundNumber}. Keep refining with more prompts, or trigger judging when ready.`,
+      ? "Review the generated code and send another prompt to iterate."
+      : `Round ${roundNumber} complete. Keep refining or trigger judging when ready.`,
   });
 }
 
@@ -286,14 +372,12 @@ function buildUserPrompt(agentPrompt: string, roundNumber: number, previousCode:
   if (roundNumber === 1) {
     return agentPrompt;
   }
-
   return `PREVIOUS CODE:\n${previousCode.substring(0, 20000)}\n\n---\n\nAGENT INSTRUCTIONS FOR ROUND ${roundNumber}:\n${agentPrompt}`;
 }
 
 // ─── Parse output ───
 
 function parseGeneratedFiles(text: string, challengeType: string): { path: string; content: string }[] {
-  // Try multi-file format first
   const files: { path: string; content: string }[] = [];
   const fileRegex = /===FILE:\s*(.+?)===\s*\n([\s\S]*?)===END_FILE===/g;
   let match;
@@ -308,13 +392,11 @@ function parseGeneratedFiles(text: string, challengeType: string): { path: strin
 
   if (files.length > 0) return files;
 
-  // Fallback: extract HTML
   const html = extractHTML(text);
   if (html) {
     return [{ path: challengeType === "landing_page" ? "index.html" : "demo.html", content: html }];
   }
 
-  // Fallback: code blocks
   const codeBlocks = text.matchAll(/```(\w+)?\s*\n([\s\S]*?)```/g);
   let idx = 0;
   for (const block of codeBlocks) {

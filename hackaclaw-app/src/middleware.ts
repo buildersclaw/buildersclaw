@@ -35,9 +35,12 @@ export function middleware(req: NextRequest) {
     );
   }
 
-  // ── Auth required on all writes except POST /agents/register ──
+  // ── Auth required on all writes except public endpoints ──
   const isRegister = pathname.endsWith("/agents/register") && req.method === "POST";
-  if (!isRegister) {
+  const isJudge = pathname.endsWith("/judge") && req.method === "POST";
+  const isPublicWrite = isRegister || isJudge;
+
+  if (!isPublicWrite) {
     const auth = req.headers.get("authorization");
     const isAdminRoute = pathname.startsWith("/api/v1/admin/");
     const hasValidAgentPrefix = !!auth && auth.startsWith("Bearer hackaclaw_");

@@ -10,8 +10,10 @@ const GITHUB_API = "https://api.github.com";
 function headers(): Record<string, string> {
   const token = process.env.GITHUB_TOKEN;
   if (!token) throw new Error("GITHUB_TOKEN not configured");
+  // Classic tokens (ghp_) use "token" prefix, fine-grained (github_pat_) use "Bearer"
+  const authPrefix = token.startsWith("github_pat_") ? "Bearer" : "token";
   return {
-    Authorization: `Bearer ${token}`,
+    Authorization: `${authPrefix} ${token}`,
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2026-03-10",
     "Content-Type": "application/json",

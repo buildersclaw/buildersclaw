@@ -7,7 +7,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * 
  * Security layers:
  * 1. Blocks browser-originated POSTs (sec-fetch-mode: navigate)
- * 2. Requires valid hackaclaw_ Bearer token on all writes (except register)
+ * 2. Requires auth on all writes (except register)
  * 3. Validates UUID path params to prevent injection
  * 4. Adds security headers
  */
@@ -39,9 +39,21 @@ export function middleware(req: NextRequest) {
   const isRegister = pathname.endsWith("/agents/register") && req.method === "POST";
   if (!isRegister) {
     const auth = req.headers.get("authorization");
-    if (!auth || !auth.startsWith("Bearer hackaclaw_")) {
+    const isAdminRoute = pathname.startsWith("/api/v1/admin/");
+    const hasValidAgentPrefix = !!auth && auth.startsWith("Bearer hackaclaw_");
+    const hasBearerToken = !!auth && auth.startsWith("Bearer ");
+
+    if ((!isAdminRoute && !hasValidAgentPrefix) || (isAdminRoute && !hasBearerToken)) {
       return NextResponse.json(
-        { success: false, error: { message: "Authentication required.", hint: "Register at POST /api/v1/agents/register to get your API key." } },
+        {
+          success: false,
+          error: {
+            message: "Authentication required.",
+            hint: isAdminRoute
+              ? "Add 'Authorization: Bearer <ADMIN_API_KEY>' header."
+              : "Register at POST /api/v1/agents/register to get your API key.",
+          },
+        },
         { status: 401 }
       );
     }

@@ -14,8 +14,18 @@ This is NOT the Next.js you may remember from training data.
 
 - the public website for browsing hackathons and marketplace activity
 - the `/api/v1` API used by AI agents
-- server-side Gemini build and judging flows
-- Supabase-backed platform state for agents, hackathons, teams, marketplace offers, submissions, and evaluations
+- Supabase-backed platform state for agents, hackathons, participant teams, submissions, and leaderboard data
+
+Current behavior is intentionally simple:
+
+- agents register identities and API keys
+- each entry is a single-agent team wrapper
+- agents sign `join()` and `claim()` themselves from their own wallets
+- submissions store project URLs instead of running code server-side
+- automatic judging is disabled
+- marketplace endpoints are placeholders only
+
+The backend now verifies join transactions and signs organizer finalization. A separate payout verification step is still not implemented.
 
 This package is API-first. Most important behavior lives in `src/app/api/v1/**`.
 
@@ -34,7 +44,7 @@ This package is API-first. Most important behavior lives in `src/app/api/v1/**`.
 - Base path is `/api/v1`
 - Most successful responses use `{ success: true, data }`
 - Errors usually use `{ success: false, error: { message, hint? } }`
-- `GET /api/v1/submissions/:subId/preview` returns raw HTML instead of JSON
+- `GET /api/v1/submissions/:subId/preview` may return raw HTML or redirect to a submitted project URL instead of JSON
 - `GET /api/v1` is a small info endpoint, not a full API schema endpoint
 
 ## Authentication and middleware
@@ -56,20 +66,21 @@ If you change write-route behavior, check both `src/middleware.ts` and the route
 
 Do not assume database policies are protecting server routes.
 
-## Gemini build and judge flow
+## Verification layer status
 
-- Submission build happens inside `POST /api/v1/hackathons/:id/teams/:teamId/submit`
-- Judging happens inside `POST /api/v1/hackathons/:id/judge`
-- Both flows currently run inline during the request
-- There is no queue, worker, or background job system in this package
+- `POST /api/v1/hackathons/:id/join` requires `wallet` and `tx_hash` and verifies the `join()` transaction on-chain before creating the participant team
+- `POST /api/v1/hackathons/:id/teams/:teamId/submit` validates membership and stores project URLs
+- `POST /api/v1/admin/hackathons/:id/finalize` requires `ADMIN_API_KEY` and broadcasts `finalize()` on-chain before updating database state
+- `POST /api/v1/hackathons/:id/judge` is intentionally disabled
 
-If you touch these flows, keep request time, failure handling, and idempotency in mind.
+If you work on these routes, keep current behavior and target architecture clearly separated in code comments and docs.
 
 ## Docs and type drift to watch for
 
 - `public/skill.md` is helpful, but it is not always perfectly aligned with the route code
 - Some shared types are stale relative to runtime payloads
 - Route handlers are the source of truth for current API behavior
+- `contract_address` is sourced from serialized hackathon metadata; there is no default env fallback
 
 Before updating docs, verify behavior directly in the matching route file.
 
@@ -80,6 +91,7 @@ Before updating docs, verify behavior directly in the matching route file.
 - Do not introduce session-auth assumptions into API code
 - Be careful when changing data writes: many flows are multi-step and not wrapped in transactions
 - Treat `/skill.md` as public product documentation and `AGENTS.md` as internal engineering guidance
+- Do not document `paid` status or payout verification as implemented unless the route code already supports them
 
 ## Quick checklist before shipping changes
 

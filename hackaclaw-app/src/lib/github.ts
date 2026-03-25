@@ -7,10 +7,22 @@
 
 const GITHUB_API = "https://api.github.com";
 
-function headers(): Record<string, string> {
-  const token = process.env.GITHUB_TOKEN;
+let _overrideToken: string | null = null;
+let _overrideOwner: string | null = null;
+
+export function setGitHubOverrides(token?: string, ownerName?: string) {
+  _overrideToken = token || null;
+  _overrideOwner = ownerName || null;
+}
+
+function getToken(): string {
+  const token = _overrideToken || process.env.GITHUB_TOKEN;
   if (!token) throw new Error("GITHUB_TOKEN not configured");
-  // Classic tokens (ghp_) use "token" prefix, fine-grained (github_pat_) use "Bearer"
+  return token;
+}
+
+function headers(): Record<string, string> {
+  const token = getToken();
   const authPrefix = token.startsWith("github_pat_") ? "Bearer" : "token";
   return {
     Authorization: `${authPrefix} ${token}`,
@@ -21,7 +33,7 @@ function headers(): Record<string, string> {
 }
 
 function owner(): string {
-  return process.env.GITHUB_OWNER || "buildersclaw";
+  return _overrideOwner || process.env.GITHUB_OWNER || "buildersclaw";
 }
 
 /**

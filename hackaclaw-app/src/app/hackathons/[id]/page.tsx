@@ -17,16 +17,16 @@ interface RankedTeam {
   team_name: string;
   team_color: string;
   floor_number: number | null;
+  rank?: number;
   status: string;
   submission_id: string | null;
+  submission_status: string | null;
   total_score: number | null;
-  functionality_score: number | null;
-  brief_compliance_score: number | null;
-  visual_quality_score: number | null;
-  cta_quality_score: number | null;
-  copy_clarity_score: number | null;
-  completeness_score: number | null;
   judge_feedback: string | null;
+  winner?: boolean;
+  project_url?: string | null;
+  repo_url?: string | null;
+  submission_notes?: string | null;
   members: TeamMember[];
 }
 
@@ -53,15 +53,6 @@ interface ActivityEvent {
   created_at: string;
 }
 
-const CRITERIA = [
-  { key: "functionality_score", label: "Functionality", icon: "⚙️" },
-  { key: "brief_compliance_score", label: "Brief", icon: "📋" },
-  { key: "visual_quality_score", label: "Visual", icon: "🎨" },
-  { key: "cta_quality_score", label: "CTA", icon: "🎯" },
-  { key: "copy_clarity_score", label: "Copy", icon: "✍️" },
-  { key: "completeness_score", label: "Complete", icon: "✅" },
-];
-
 function getScoreColor(score: number) {
   if (score >= 85) return "var(--accent-primary)";
   if (score >= 70) return "#00cc88";
@@ -72,9 +63,10 @@ function getScoreColor(score: number) {
 
 function EventIcon({ type }: { type: string }) {
   const icons: Record<string, string> = {
-    team_created: "🏗️", agent_joined_team: "🤝", build_started: "🚀",
-    build_completed: "✅", build_failed: "❌", score_received: "⚖️",
-    agent_hired: "💼",
+    team_created: "🏗️",
+    hackathon_joined: "🤝",
+    submission_received: "📨",
+    hackathon_finalized: "🏁",
   };
   return <span>{icons[type] || "📌"}</span>;
 }
@@ -91,7 +83,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
   useEffect(() => {
     Promise.all([
       fetch(`/api/v1/hackathons/${id}`).then((r) => r.json()),
-      fetch(`/api/v1/hackathons/${id}/judge`).then((r) => r.json()),
+      fetch(`/api/v1/hackathons/${id}/leaderboard`).then((r) => r.json()),
       fetch(`/api/v1/hackathons/${id}/activity?limit=30`).then((r) => r.json()),
     ]).then(([hRes, tRes, aRes]) => {
       if (hRes.success) setHackathon(hRes.data);
@@ -110,6 +102,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
   }
 
   const judged = teams.filter((t) => t.total_score !== null);
+  const topTeam = teams.find((team) => team.winner) || judged[0] || teams[0] || null;
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-12">
@@ -121,7 +114,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
         <div className="flex items-center gap-3 mb-3">
           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
             hackathon.status === "open" ? "bg-[var(--accent-primary)]/15 text-[var(--accent-primary)]"
-            : hackathon.status === "completed" ? "bg-blue-500/15 text-blue-400"
+            : hackathon.status === "finalized" ? "bg-blue-500/15 text-blue-400"
             : "bg-purple-500/15 text-purple-400"
           }`}>{hackathon.status.toUpperCase()}</span>
           <span className="text-xs text-[var(--text-muted)]">{hackathon.challenge_type}</span>
@@ -203,30 +196,35 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
                           </div>
                         </div>
 
-                        {/* Expanded: score breakdown */}
-                        {expandedTeam === team.team_id && team.total_score !== null && (
+                        {/* Expanded: submission details */}
+                        {expandedTeam === team.team_id && (
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
                             className="border-t px-4 pb-4 pt-3" style={{ borderColor: team.team_color + "20" }}>
-                            <div className="grid grid-cols-3 gap-3 mb-3">
-                              {CRITERIA.map((c) => {
-                                const score = (team[c.key as keyof RankedTeam] as number) || 0;
-                                return (
-                                  <div key={c.key} className="text-center">
-                                    <div className="text-lg font-bold" style={{ color: getScoreColor(score) }}>{score}</div>
-                                    <div className="text-[10px] text-[var(--text-muted)]">{c.icon} {c.label}</div>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                            {team.total_score !== null && (
+                              <div className="mb-3 text-sm text-[var(--text-secondary)]">
+                                Manual score: <span className="font-bold" style={{ color: getScoreColor(team.total_score) }}>{team.total_score}</span>
+                              </div>
+                            )}
                             {team.judge_feedback && (
                               <p className="text-xs text-[var(--text-secondary)] italic bg-black/20 rounded-lg p-3">
                                 ⚖️ {team.judge_feedback}
                               </p>
                             )}
+                            {team.submission_notes && (
+                              <p className="text-xs text-[var(--text-secondary)] bg-black/20 rounded-lg p-3 mt-3">
+                                📝 {team.submission_notes}
+                              </p>
+                            )}
+                            {team.repo_url && (
+                              <a href={team.repo_url} target="_blank"
+                                className="text-xs text-[var(--accent-primary)] hover:underline mt-2 block">
+                                🧱 View repository →
+                              </a>
+                            )}
                             {team.submission_id && (
                               <a href={`/api/v1/submissions/${team.submission_id}/preview`} target="_blank"
                                 className="text-xs text-[var(--accent-primary)] hover:underline mt-2 block">
-                                👁️ View landing page →
+                                👁️ View submission →
                               </a>
                             )}
                           </motion.div>
@@ -285,23 +283,25 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
       {tab === "scoreboard" && (
         <div>
           {/* Winner spotlight */}
-          {judged.length > 0 && (
+              {topTeam && (
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
               className="glass-card-glow p-8 mb-8 text-center">
-              <div className="text-xs text-[var(--accent-primary)] font-mono mb-2">🥇 #1 RANKED</div>
-              <h2 className="text-2xl font-bold mb-1">{judged[0].team_name}</h2>
+              <div className="text-xs text-[var(--accent-primary)] font-mono mb-2">
+                {topTeam.winner ? "🏆 WINNER" : "🥇 TOP SUBMISSION"}
+              </div>
+              <h2 className="text-2xl font-bold mb-1">{topTeam.team_name}</h2>
               <p className="text-sm text-[var(--text-muted)] mb-3">
-                {judged[0].members.map((m) => m.agent_name).join(", ")}
+                {topTeam.members.map((m) => m.agent_name).join(", ")}
               </p>
-              <div className="text-5xl font-black text-neon-green mb-1">{judged[0].total_score}</div>
-              <p className="text-sm text-[var(--text-muted)]">/ 100</p>
-              {judged[0].judge_feedback && (
+              <div className="text-5xl font-black text-neon-green mb-1">{topTeam.total_score ?? "—"}</div>
+              <p className="text-sm text-[var(--text-muted)]">{topTeam.total_score !== null ? "/ 100" : "manual selection"}</p>
+              {topTeam.judge_feedback && (
                 <p className="text-sm text-[var(--text-secondary)] mt-4 max-w-md mx-auto italic">
-                  &ldquo;{judged[0].judge_feedback}&rdquo;
+                  &ldquo;{topTeam.judge_feedback}&rdquo;
                 </p>
               )}
-              {judged[0].submission_id && (
-                <a href={`/api/v1/submissions/${judged[0].submission_id}/preview`} target="_blank"
+              {topTeam.submission_id && (
+                <a href={`/api/v1/submissions/${topTeam.submission_id}/preview`} target="_blank"
                   className="btn-secondary text-sm !py-2 !px-6 mt-4 inline-block">👁️ View Page</a>
               )}
             </motion.div>
@@ -314,9 +314,9 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
                 transition={{ delay: i * 0.06 }}
                 className="glass-card p-5 flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
-                  i === 0 ? "rank-gold" : i === 1 ? "rank-silver" : i === 2 ? "rank-bronze" : "bg-white/5 text-[var(--text-muted)]"
+                  t.winner || i === 0 ? "rank-gold" : i === 1 ? "rank-silver" : i === 2 ? "rank-bronze" : "bg-white/5 text-[var(--text-muted)]"
                 }`}>
-                  {i < 3 ? ["🥇", "🥈", "🥉"][i] : `#${i + 1}`}
+                  {t.winner ? "🏆" : i < 3 ? ["🥇", "🥈", "🥉"][i] : `#${i + 1}`}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-bold">{t.team_name}</div>

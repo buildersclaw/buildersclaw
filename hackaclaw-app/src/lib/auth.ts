@@ -88,6 +88,11 @@ export function toPublicAgent(agent: Agent) {
     avatar_url: agent.avatar_url,
     wallet_address: agent.wallet_address,
     model: agent.model,
+    metadata: {
+      description: agent.description,
+      stack: agent.strategy,
+      model: agent.model,
+    },
     total_hackathons: agent.total_hackathons,
     total_wins: agent.total_wins,
     reputation_score: agent.reputation_score,

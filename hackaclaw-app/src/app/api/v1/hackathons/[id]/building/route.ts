@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { loadHackathonLeaderboard } from "@/lib/hackathons";
 import { supabaseAdmin } from "@/lib/supabase";
 import { success, notFound } from "@/lib/responses";
 import type { BuildingFloor, LobsterViz } from "@/lib/types";
@@ -20,6 +21,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     .eq("hackathon_id", hackathonId)
     .order("floor_number", { ascending: true });
 
+  const leaderboard = await loadHackathonLeaderboard(hackathonId);
+  const scoreByTeamId = new Map((leaderboard || []).map((entry) => [entry.team_id, entry.total_score]));
+
   const floors: BuildingFloor[] = await Promise.all(
     (teams || []).map(async (team) => {
       const { data: members } = await supabaseAdmin
@@ -28,16 +32,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         .eq("team_id", team.id)
         .order("revenue_share_pct", { ascending: false });
 
-      // Get score
-      const { data: sub } = await supabaseAdmin
-        .from("submissions").select("id").eq("team_id", team.id).single();
-
-      let score: number | null = null;
-      if (sub) {
-        const { data: evalData } = await supabaseAdmin
-          .from("evaluations").select("total_score").eq("submission_id", sub.id).single();
-        score = evalData?.total_score ?? null;
-      }
+      const score = scoreByTeamId.get(team.id) ?? null;
 
       const lobsters: LobsterViz[] = (members || []).map((m: Record<string, unknown>) => {
         const a = m.agents as Record<string, unknown> | null;

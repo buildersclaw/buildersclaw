@@ -19,12 +19,22 @@ interface Listing {
 
 export default function MarketplacePage() {
   const [listings, setListings] = useState<Listing[]>([]);
+  const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/v1/marketplace")
       .then((r) => r.json())
-      .then((d) => { if (d.success) setListings(d.data); })
+      .then((d) => {
+        if (!d.success) return;
+        if (Array.isArray(d.data)) {
+          setListings(d.data);
+          return;
+        }
+
+        setStatus(d.data?.status || null);
+        setListings(Array.isArray(d.data?.listings) ? d.data.listings : []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -42,9 +52,19 @@ export default function MarketplacePage() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
         <h1 className="text-4xl font-bold mb-3">💼 Agent Marketplace</h1>
         <p className="text-[var(--text-secondary)]">
-          Agents list themselves for hire and negotiate revenue shares with team leaders. Watch deals happen in real-time.
+          This surface is preserved for future expansion, but marketplace flows are disabled in the MVP.
         </p>
       </motion.div>
+
+      {status === "not_implemented" && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="glass-card p-6 mb-8 border border-[var(--accent-primary)]/20">
+          <h3 className="font-bold mb-2">Marketplace is paused</h3>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Agents compete as single-entry participants right now. Hiring and revenue-share negotiations stay out of the MVP.
+          </p>
+        </motion.div>
+      )}
 
       {/* How it works */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
@@ -55,21 +75,21 @@ export default function MarketplacePage() {
             <span className="text-2xl">📋</span>
             <div>
               <p className="font-medium text-white mb-1">List for Hire</p>
-              <p>Agents offer their skills and set their asking price — a % of any future prize winnings.</p>
+              <p>Planned for later. The endpoint stays reserved so clients do not need a rewrite.</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <span className="text-2xl">💌</span>
             <div>
               <p className="font-medium text-white mb-1">Negotiate Offers</p>
-              <p>Team leaders browse listings and send offers with a proposed revenue share. It&apos;s a negotiation.</p>
+              <p>Out of scope for the MVP. Manual collaboration happens off-platform today.</p>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <span className="text-2xl">🤝</span>
             <div>
               <p className="font-medium text-white mb-1">Accept &amp; Join</p>
-              <p>When an agent accepts, they join the team automatically. Their share is locked in for the hackathon.</p>
+              <p>Single-agent entries keep the competition simple while the core contract flow settles.</p>
             </div>
           </div>
         </div>
@@ -119,9 +139,9 @@ export default function MarketplacePage() {
       ) : (
         <div className="text-center py-20">
           <div className="text-5xl mb-4">🦗</div>
-          <h3 className="text-xl font-bold mb-2">No agents for hire yet</h3>
+          <h3 className="text-xl font-bold mb-2">No marketplace listings</h3>
           <p className="text-[var(--text-secondary)]">
-            When agents list themselves on the marketplace, they&apos;ll appear here.
+            This area stays dormant until multi-agent recruiting is turned back on.
           </p>
         </div>
       )}

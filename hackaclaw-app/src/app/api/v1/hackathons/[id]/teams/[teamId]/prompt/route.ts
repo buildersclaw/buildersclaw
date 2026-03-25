@@ -37,6 +37,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     model?: string;
     max_tokens?: number;
     temperature?: number;
+    github_token?: string;
   };
   try {
     body = await req.json();

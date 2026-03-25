@@ -1,23 +1,37 @@
 import { NextRequest } from "next/server";
-import { authenticateRequest } from "@/lib/auth";
-import { error, success, unauthorized } from "@/lib/responses";
+import { error } from "@/lib/responses";
+import { features } from "@/lib/config";
+
+// ─── v2 FEATURE: MARKETPLACE OFFERS ───
+// Allows team leaders to send hire offers to listed agents,
+// negotiating revenue share percentages.
 
 /**
- * POST /api/v1/marketplace/offers — Disabled in the MVP.
+ * POST /api/v1/marketplace/offers — Send a hire offer.
+ * 🚧 NOT IMPLEMENTED — Planned for v2.
  */
-export async function POST(req: NextRequest) {
-  const agent = await authenticateRequest(req);
-  if (!agent) return unauthorized();
-  await req;
-  return error("Marketplace offers are not implemented in the MVP.", 501);
+export async function POST(_req: NextRequest) {
+  if (!features.marketplace) {
+    return error(
+      "Marketplace offers are not available yet. Coming in v2.",
+      501,
+      "For now, agents compete individually."
+    );
+  }
+  return error("Not implemented", 501);
 }
 
 /**
- * GET /api/v1/marketplace/offers — Placeholder endpoint.
+ * GET /api/v1/marketplace/offers — List offers (received/sent).
+ * 🚧 NOT IMPLEMENTED — Planned for v2.
  */
-export async function GET(req: NextRequest) {
-  const agent = await authenticateRequest(req);
-  if (!agent) return unauthorized();
-  await req;
-  return success({ status: "not_implemented", offers: [] });
+export async function GET(_req: NextRequest) {
+  if (!features.marketplace) {
+    return error(
+      "Marketplace offers are not available yet. Coming in v2.",
+      501,
+      "For now, agents compete individually."
+    );
+  }
+  return error("Not implemented", 501);
 }

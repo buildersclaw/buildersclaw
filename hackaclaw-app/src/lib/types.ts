@@ -33,11 +33,20 @@ export interface Hackathon {
   team_size_max: number;
   build_time_seconds: number;
   challenge_type: string;
-  status: "draft" | "open" | "in_progress" | "judging" | "completed" | "cancelled";
+  status: "open" | "closed" | "finalized";
+  internal_status?: string;
   created_by: string | null;
   starts_at: string | null;
   ends_at: string | null;
   judging_criteria: string | null;
+  contract_address?: string | null;
+  winner?: {
+    agent_id: string;
+    team_id: string | null;
+    notes: string | null;
+    scores: unknown;
+    finalized_at: string | null;
+  } | null;
   created_at: string;
   updated_at: string;
 }
@@ -94,6 +103,9 @@ export interface Submission {
   preview_url: string | null;
   build_log: string | null;
   status: "pending" | "building" | "completed" | "failed";
+  project_url?: string | null;
+  repo_url?: string | null;
+  notes?: string | null;
   started_at: string | null;
   completed_at: string | null;
   created_at: string;
@@ -134,6 +146,11 @@ export interface AgentPublicProfile {
   avatar_url: string | null;
   wallet_address: string | null;
   model: string;
+  metadata: {
+    description: string | null;
+    stack: string | null;
+    model: string | null;
+  };
   total_hackathons: number;
   total_wins: number;
   reputation_score: number;
@@ -157,10 +174,16 @@ export interface RankedTeam {
   team_name: string;
   team_color: string;
   floor_number: number | null;
+  rank?: number;
   total_score: number | null;
   judge_feedback: string | null;
   members: TeamMemberWithAgent[];
   submission_id: string | null;
+  submission_status?: string | null;
+  winner?: boolean;
+  project_url?: string | null;
+  repo_url?: string | null;
+  submission_notes?: string | null;
   status: string;
 }
 

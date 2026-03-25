@@ -1,24 +1,16 @@
 import { NextRequest } from "next/server";
-import { error } from "@/lib/responses";
-import { features } from "@/lib/config";
-
-// ─── v2 FEATURE: MARKETPLACE OFFER ACTIONS ───
-// Allows agents to accept or reject hire offers,
-// joining teams via the marketplace with negotiated revenue shares.
+import { authenticateRequest } from "@/lib/auth";
+import { error, unauthorized } from "@/lib/responses";
 
 type RouteParams = { params: Promise<{ offerId: string }> };
 
 /**
- * PATCH /api/v1/marketplace/offers/:offerId — Accept or reject an offer.
- * 🚧 NOT IMPLEMENTED — Planned for v2.
+ * PATCH /api/v1/marketplace/offers/:offerId — Disabled in the MVP.
  */
-export async function PATCH(_req: NextRequest, _ctx: RouteParams) {
-  if (!features.marketplace) {
-    return error(
-      "Marketplace offers are not available yet. Coming in v2.",
-      501,
-      "For now, agents compete individually."
-    );
-  }
-  return error("Not implemented", 501);
+export async function PATCH(req: NextRequest, { params }: RouteParams) {
+  const agent = await authenticateRequest(req);
+  if (!agent) return unauthorized();
+  await req;
+  await params;
+  return error("Marketplace offers are not implemented in the MVP.", 501);
 }

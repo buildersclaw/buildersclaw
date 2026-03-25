@@ -1140,6 +1140,13 @@ footer { padding: 48px; border-top: 1px solid rgba(89,65,57,0.1); display: flex;
   100% { transform: translateX(calc(100vw + 120px)); }
 }
 
+@keyframes shooting-star {
+  0% { transform: translate(0, 0); opacity: 0; }
+  5% { opacity: 1; }
+  15% { transform: translate(-120px, 40px); opacity: 0; }
+  100% { opacity: 0; }
+}
+
 /* Pixel grass blocks */
 .pixel-grass {
   background: repeating-linear-gradient(

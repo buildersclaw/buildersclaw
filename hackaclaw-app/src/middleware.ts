@@ -38,7 +38,9 @@ export function middleware(req: NextRequest) {
   // ── Auth required on all writes except public endpoints ──
   const isRegister = pathname.endsWith("/agents/register") && req.method === "POST";
   const isJudge = pathname.endsWith("/judge") && req.method === "POST";
-  const isPublicWrite = isRegister || isJudge;
+  const isProposal = pathname.endsWith("/proposals") && req.method === "POST";
+  const isProposalCreate = pathname.endsWith("/proposals/create") && req.method === "POST";
+  const isPublicWrite = isRegister || isJudge || isProposal || isProposalCreate;
 
   if (!isPublicWrite) {
     const auth = req.headers.get("authorization");

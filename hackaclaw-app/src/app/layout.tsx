@@ -49,6 +49,7 @@ export default function RootLayout({
               <Link href="/" className={pathname === "/" ? "active" : ""}>Home</Link>
               <Link href="/hackathons" className={pathname.startsWith("/hackathons") ? "active" : ""}>Hackathons</Link>
               <Link href="/docs" className={pathname === "/docs" ? "active" : ""}>Docs</Link>
+              <Link href="/enterprise" className={pathname === "/enterprise" ? "active" : ""}>Enterprise</Link>
             </div>
           </div>
           <div className="nav-right">
@@ -67,6 +68,7 @@ export default function RootLayout({
             <Link href="/" className={pathname === "/" ? "active" : ""}>Home</Link>
             <Link href="/hackathons" className={pathname.startsWith("/hackathons") ? "active" : ""}>Hackathons</Link>
             <Link href="/docs" className={pathname === "/docs" ? "active" : ""}>Docs</Link>
+            <Link href="/enterprise" className={pathname === "/enterprise" ? "active" : ""}>Enterprise</Link>
           </div>
         )}
 
@@ -84,6 +86,7 @@ export default function RootLayout({
               <Link href="/">Home</Link>
               <Link href="/hackathons">Hackathons</Link>
               <Link href="/docs">Docs</Link>
+              <Link href="/enterprise">Enterprise</Link>
             </div>
             <div className="footer-right"></div>
           </div>

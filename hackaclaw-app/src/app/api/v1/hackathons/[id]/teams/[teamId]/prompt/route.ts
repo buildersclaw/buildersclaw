@@ -6,6 +6,7 @@ import { v4 as uuid } from "uuid";
 import { chatCompletion, estimateCost, type ChatMessage } from "@/lib/openrouter";
 import { canAfford, chargeForPrompt, InsufficientBalanceError, PLATFORM_FEE_PCT } from "@/lib/balance";
 import { commitRound, slugify } from "@/lib/github";
+import { sanitizePrompt, sanitizeGeneratedOutput } from "@/lib/prompt-security";
 
 type RouteParams = { params: Promise<{ id: string; teamId: string }> };
 
@@ -29,13 +30,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   const { id: hackathonId, teamId } = await params;
 
-  // Parse body
+  // Parse body — NO system_prompt override allowed (security)
   let body: {
     prompt?: string;
     model?: string;
     max_tokens?: number;
     temperature?: number;
-    system_prompt?: string;
   };
   try {
     body = await req.json();
@@ -43,17 +43,28 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return error("Invalid request body", 400);
   }
 
-  const promptText = body.prompt?.trim();
   const modelId = body.model?.trim() || "google/gemini-2.0-flash-001";
   const maxTokens = Math.min(Math.max(1, body.max_tokens || 4096), 32000);
   const temperature = Math.min(Math.max(0, body.temperature ?? 0.7), 2);
 
-  if (!promptText) {
+  // ── PROMPT VALIDATION + INJECTION DETECTION ──
+
+  if (!body.prompt || !body.prompt.trim()) {
     return error("prompt is required", 400, "Send a text prompt describing what to build or improve.");
   }
-  if (promptText.length > 10000) {
+  if (body.prompt.length > 10000) {
     return error("Prompt too long. Max 10,000 characters.", 400);
   }
+
+  const sanitized = sanitizePrompt(body.prompt);
+  if (!sanitized.safe) {
+    return error(
+      `Prompt rejected: ${sanitized.blocked_reason}`,
+      400,
+      "Send a clear description of what to build. No meta-instructions."
+    );
+  }
+  const promptText = sanitized.cleaned;
 
   // Validate hackathon
   const { data: hackathon } = await supabaseAdmin
@@ -64,6 +75,18 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return error("Hackathon is not accepting prompts", 400, `Current status: ${hackathon.status}`);
   }
 
+  // ── DEADLINE CHECK ──
+  if (hackathon.ends_at) {
+    const deadline = new Date(hackathon.ends_at);
+    if (!isNaN(deadline.getTime()) && deadline.getTime() <= Date.now()) {
+      return error(
+        "Hackathon deadline has passed",
+        400,
+        `Deadline was: ${hackathon.ends_at}. No more prompts accepted.`
+      );
+    }
+  }
+
   // Validate team membership
   const { data: team } = await supabaseAdmin
     .from("teams").select("*").eq("id", teamId).eq("hackathon_id", hackathonId).single();
@@ -72,6 +95,29 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const { data: membership } = await supabaseAdmin
     .from("team_members").select("*").eq("team_id", teamId).eq("agent_id", agent.id).single();
   if (!membership) return error("You are not a member of this team", 403);
+
+  // ── RATE LIMIT: max 1 prompt per 10 seconds per agent ──
+  const { data: recentPrompt } = await supabaseAdmin
+    .from("prompt_rounds")
+    .select("created_at")
+    .eq("agent_id", agent.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (recentPrompt) {
+    const lastPromptAt = new Date(recentPrompt.created_at).getTime();
+    const cooldownMs = 10_000; // 10 seconds
+    const elapsed = Date.now() - lastPromptAt;
+    if (elapsed < cooldownMs) {
+      const waitSec = Math.ceil((cooldownMs - elapsed) / 1000);
+      return error(
+        `Rate limited. Wait ${waitSec} more second(s) before sending another prompt.`,
+        429,
+        "Max 1 prompt every 10 seconds."
+      );
+    }
+  }
 
   // Determine round number
   const { count: existingRounds } = await supabaseAdmin
@@ -100,8 +146,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     }
   }
 
-  // Build messages
-  const systemPrompt = body.system_prompt || buildSystemPrompt(
+  // Build messages — system prompt is ALWAYS platform-controlled (no override)
+  const systemPrompt = buildSystemPrompt(
     hackathon.brief,
     agent.personality || "",
     agent.strategy || "",
@@ -188,7 +234,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   // ── PARSE & STORE ──
 
-  const files = parseGeneratedFiles(result.text, hackathon.challenge_type || "landing_page");
+  const rawFiles = parseGeneratedFiles(result.text, hackathon.challenge_type || "landing_page");
+
+  // Sanitize generated output (strip exfil attempts, etc.)
+  const files = rawFiles.map(f => ({
+    path: f.path,
+    content: sanitizeGeneratedOutput(f.content),
+  }));
 
   // Commit to GitHub (best-effort)
   let commitUrl = "";
@@ -292,6 +344,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     },
   });
 
+  // Build the browse URL even if commit failed (so agent always knows the folder)
+  const teamSlugForUrl = slugify(team.name);
+  const expectedFolder = hackathon.github_repo
+    ? `${hackathon.github_repo}/tree/main/${teamSlugForUrl}/round-${roundNumber}`
+    : null;
+
   return success({
     round: roundNumber,
     model: result.model,
@@ -305,18 +363,21 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       input_tokens: result.input_tokens,
       output_tokens: result.output_tokens,
     },
-    // Generated files
+    // Generated files (summary + full content)
     files: files.map(f => ({ path: f.path, size: f.content.length })),
     file_contents: files.map(f => ({ path: f.path, content: f.content })),
-    // GitHub
-    github_repo: hackathon.github_repo || null,
-    commit_url: commitUrl || null,
-    github_folder: folderUrl || null,
+    // GitHub — always present so the agent knows where to look
+    github: {
+      repo: hackathon.github_repo || null,
+      folder: folderUrl || expectedFolder,
+      commit: commitUrl || null,
+      clone_cmd: hackathon.github_repo ? `git clone ${hackathon.github_repo}` : null,
+    },
     // Meta
     duration_ms: result.duration_ms,
     hint: roundNumber === 1
-      ? "Review the generated code and send another prompt to iterate."
-      : `Round ${roundNumber} complete. Keep refining or trigger judging when ready.`,
+      ? `Round 1 complete. Review your code at: ${folderUrl || expectedFolder || "GitHub"}. Send another prompt to iterate.`
+      : `Round ${roundNumber} complete. Your code: ${folderUrl || expectedFolder || "GitHub"}. Keep refining or trigger judging.`,
   });
 }
 

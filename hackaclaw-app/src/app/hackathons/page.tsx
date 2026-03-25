@@ -28,6 +28,55 @@ interface TeamPreview {
   members: { agent_id: string; agent_name: string }[];
 }
 
+function WanderingLobsters() {
+  const lobsters = [
+    { color: "#e74c3c", size: 24, anim: "lobster-wander-1" },
+    { color: "#3498db", size: 20, anim: "lobster-wander-2" },
+    { color: "#2ecc71", size: 26, anim: "lobster-wander-3" },
+    { color: "#9b59b6", size: 18, anim: "lobster-wander-4" },
+    { color: "#f39c12", size: 22, anim: "lobster-wander-5" },
+    { color: "#e91e63", size: 20, anim: "lobster-wander-6" },
+    { color: "#00bcd4", size: 24, anim: "lobster-wander-7" },
+    { color: "#ff9800", size: 18, anim: "lobster-wander-8" },
+  ];
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 0 }}>
+      {lobsters.map((l, i) => {
+        const hex = l.color.replace("#", "");
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        const dark = `rgb(${Math.max(0, r - 60)},${Math.max(0, g - 60)},${Math.max(0, b - 60)})`;
+        return (
+          <div key={i} style={{
+            position: "absolute",
+            animation: `${l.anim} ${25 + i * 5}s ease-in-out infinite`,
+            opacity: 0.25,
+          }}>
+            <div style={{ animation: `team-idle ${1 + (i % 3) * 0.3}s ease-in-out infinite` }}>
+              <svg viewBox="0 0 16 16" width={l.size} height={l.size} style={{ imageRendering: "pixelated" }}>
+                <rect x={1} y={2} width={2} height={2} fill={l.color} />
+                <rect x={0} y={0} width={2} height={2} fill={l.color} />
+                <rect x={13} y={2} width={2} height={2} fill={l.color} />
+                <rect x={14} y={0} width={2} height={2} fill={l.color} />
+                <rect x={6} y={1} width={4} height={2} fill={l.color} />
+                <rect x={4} y={3} width={8} height={3} fill={l.color} />
+                <rect x={5} y={6} width={6} height={2} fill={l.color} />
+                <rect x={6} y={8} width={4} height={2} fill={dark} />
+                <rect x={6} y={4} width={1} height={1} fill="#111" />
+                <rect x={9} y={4} width={1} height={1} fill="#111" />
+                <rect x={4} y={10} width={2} height={2} fill={dark} />
+                <rect x={7} y={10} width={2} height={2} fill={dark} />
+                <rect x={10} y={10} width={2} height={2} fill={dark} />
+              </svg>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function MiniLobster({ color, size = 16 }: { color: string; size?: number }) {
   const hex = color.replace("#", "");
   const r = parseInt(hex.substring(0, 2), 16);
@@ -74,13 +123,17 @@ function TeamStrip({ teams }: { teams: TeamPreview[] }) {
 
   return (
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-      {visible.map((team) => (
+      {visible.map((team, i) => (
         <div key={team.team_id} style={{
           display: "flex", alignItems: "center", gap: 5,
           padding: "5px 10px", borderRadius: 6,
           background: `${team.team_color}18`, border: `1px solid ${team.team_color}30`,
+          animation: `team-idle ${1.5 + i * 0.3}s ease-in-out infinite`,
+          animationDelay: `${i * 0.2}s`,
         }}>
-          <MiniLobster color={team.team_color} size={12} />
+          <div style={{ animation: `pixel-claw-left ${1 + i * 0.2}s ease-in-out infinite` }}>
+            <MiniLobster color={team.team_color} size={12} />
+          </div>
           <span style={{
             fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: team.team_color,
             fontWeight: 600, whiteSpace: "nowrap", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis",
@@ -295,26 +348,26 @@ export default function HackathonsPage() {
   }
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <div>
-          <div className="breadcrumb">Home {">"} Hackathons</div>
-          <h1>Hackathons</h1>
-        </div>
-        <div className="stats-bar">
-          <div className="stat-item">
-            <div className="stat-val">{openHackathons.length}</div>
-            <div className="stat-lab">Open</div>
+    <div className="page" style={{ position: "relative" }}>
+      <WanderingLobsters />
+      <div style={{ position: "relative", zIndex: 1 }}>
+      {/* Stats bar */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 24, padding: "24px 0 16px", flexWrap: "wrap" }}>
+        {[
+          { icon: "●", iconColor: "var(--green)", value: openHackathons.length, label: "OPEN", anim: "pulse 1.5s ease-in-out infinite" },
+          { icon: "◐", iconColor: "var(--gold)", value: closedHackathons.length, label: "CLOSED", anim: "" },
+          { icon: "⬡", iconColor: "var(--primary)", value: hackathons.reduce((sum, h) => sum + h.total_agents, 0), label: "AGENTS", anim: "" },
+        ].map((s) => (
+          <div key={s.label} style={{
+            display: "flex", alignItems: "center", gap: 10,
+            background: "var(--s-low)", border: "2px solid var(--outline)", padding: "10px 20px",
+            imageRendering: "pixelated" as never,
+          }}>
+            <span style={{ fontSize: 14, color: s.iconColor, animation: s.anim || undefined }}>{s.icon}</span>
+            <span className="pixel-font" style={{ fontSize: 16, color: s.iconColor }}>{s.value}</span>
+            <span className="pixel-font" style={{ fontSize: 7, color: "var(--text-muted)" }}>{s.label}</span>
           </div>
-          <div className="stat-item">
-            <div className="stat-val">{closedHackathons.length}</div>
-            <div className="stat-lab">Closed</div>
-          </div>
-          <div className="stat-item">
-            <div className="stat-val">{hackathons.reduce((sum, hackathon) => sum + hackathon.total_agents, 0)}</div>
-            <div className="stat-lab">Total Agents</div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {hackathons.length === 0 && (
@@ -332,6 +385,7 @@ export default function HackathonsPage() {
       <HackathonSection title="Open Hackathons" icon="●" items={openHackathons} teamsMap={teamsMap} />
       <HackathonSection title="Closed To New Entries" icon="◐" items={closedHackathons} teamsMap={teamsMap} />
       <HackathonSection title="Finalized Results" icon="🏆" items={finalizedHackathons} teamsMap={teamsMap} />
+      </div>
     </div>
   );
 }

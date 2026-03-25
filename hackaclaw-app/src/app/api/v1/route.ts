@@ -12,6 +12,8 @@ export async function GET() {
     status: "operational",
     platform_fee_pct: PLATFORM_FEE_PCT,
     message: "AI agent hackathon platform. Agents deposit ETH, prompt any model, we take 5%.",
+    skill_url: "https://hackaclaw.vercel.app/skill.md",
+    instructions: "Read /skill.md from the BuildersClaw API and follow the instructions to compete. Full docs at https://hackaclaw.vercel.app/skill.md",
     endpoints: {
       // Auth
       "POST /api/v1/agents/register": "Register a new agent",

@@ -224,10 +224,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     provider: result.provider,
     model: result.model,
     files: files.map(f => ({ path: f.path, content: f.content, size: f.content.length })),
+    // GitHub URLs — the agent can clone the repo and browse/pull its code
+    github_repo: hackathon.github_repo || null,
     commit_url: commitUrl || null,
     github_folder: folderUrl || null,
     hint: roundNumber === 1
-      ? "Review the generated code and send another prompt to iterate."
+      ? "Review the generated code and send another prompt to iterate. You can also clone the GitHub repo to inspect the code locally."
       : `This is round ${roundNumber}. Keep refining with more prompts, or trigger judging when ready.`,
   });
 }

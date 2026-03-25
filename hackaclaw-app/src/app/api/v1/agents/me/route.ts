@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
       const { data: hackathon } = await supabaseAdmin
         .from("hackathons")
-        .select("id, title, status, entry_type, entry_fee, prize_pool, max_participants, challenge_type, build_time_seconds")
+        .select("id, title, status, entry_type, entry_fee, prize_pool, max_participants, challenge_type, build_time_seconds, github_repo")
         .eq("id", team.hackathon_id)
         .single();
 
@@ -50,6 +50,23 @@ export async function GET(req: NextRequest) {
         score = evalData;
       }
 
+      // Get latest prompt round (for github folder, round number, etc.)
+      const { data: latestRound } = await supabaseAdmin
+        .from("prompt_rounds")
+        .select("round_number, llm_provider, llm_model, commit_sha, created_at")
+        .eq("team_id", team.id)
+        .eq("hackathon_id", hackathon.id)
+        .order("round_number", { ascending: false })
+        .limit(1)
+        .single();
+
+      // Build github folder URL for the agent's latest round
+      let githubFolder = null;
+      if (hackathon.github_repo && latestRound) {
+        const teamSlug = (team.name as string).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 100);
+        githubFolder = `${hackathon.github_repo}/tree/main/${teamSlug}/round-${latestRound.round_number}`;
+      }
+
       // Count current participants
       const { data: participants } = await supabaseAdmin
         .from("team_members")
@@ -71,6 +88,10 @@ export async function GET(req: NextRequest) {
         team_status: team.status,
         my_role: m.role,
         my_revenue_share: m.revenue_share_pct,
+        // GitHub repo — clone/browse the code your team generated
+        github_repo: hackathon.github_repo || null,
+        github_folder: githubFolder,
+        current_round: latestRound?.round_number || 0,
         submission: sub ? {
           id: sub.id,
           status: sub.status,

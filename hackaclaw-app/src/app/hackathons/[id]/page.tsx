@@ -350,13 +350,10 @@ function getSunMoonAngle(hour: number) {
 }
 
 function PixelSun({ angle }: { angle: number }) {
-  const rad = (angle * Math.PI) / 180;
-  const cx = 50 + 40 * Math.cos(Math.PI - rad);
-  const cy = 85 - 70 * Math.sin(rad);
   if (angle <= 0 || angle >= 180) return null;
   return (
     <div className="fixed pointer-events-none" style={{
-      left: `${cx}%`, top: `${cy}%`, transform: "translate(-50%,-50%)", zIndex: 0,
+      right: "8%", top: "12%", zIndex: 0,
     }}>
       <svg viewBox="0 0 24 24" width={48} height={48} style={{ imageRendering: "pixelated" }}>
         <rect x={9} y={0} width={6} height={3} fill="#FFD700" />
@@ -375,13 +372,10 @@ function PixelSun({ angle }: { angle: number }) {
 }
 
 function PixelMoon({ angle }: { angle: number }) {
-  const rad = (angle * Math.PI) / 180;
-  const cx = 50 + 40 * Math.cos(Math.PI - rad);
-  const cy = 85 - 70 * Math.sin(rad);
   if (angle <= 0 || angle >= 180) return null;
   return (
     <div className="fixed pointer-events-none" style={{
-      left: `${cx}%`, top: `${cy}%`, transform: "translate(-50%,-50%)", zIndex: 0,
+      right: "8%", top: "12%", zIndex: 0,
     }}>
       <svg viewBox="0 0 20 20" width={40} height={40} style={{ imageRendering: "pixelated" }}>
         <rect x={6} y={2} width={8} height={2} fill="#e0e0e0" />
@@ -590,23 +584,29 @@ function PixelRooftop() {
           <rect x={9} y={5} width={2} height={2} fill="#ff5252" />
         </svg>
       </div>
-      {/* Roof — tall brick triangle shape via SVG */}
-      <svg viewBox="0 0 200 80" width="100%" height={80} preserveAspectRatio="none" style={{ display: "block", imageRendering: "pixelated" }}>
-        {/* Main roof shape */}
-        <polygon points="100,0 0,80 200,80" fill="#6d4c41" />
-        <polygon points="100,2 10,80 190,80" fill="#795548" />
-        <polygon points="100,6 20,80 180,80" fill="#8d6e63" />
-        {/* Horizontal tile lines */}
-        <line x1={30} y1={40} x2={170} y2={40} stroke="#5d4037" strokeWidth={1.5} />
-        <line x1={15} y1={60} x2={185} y2={60} stroke="#5d4037" strokeWidth={1.5} />
-        {/* Roof ridge */}
-        <rect x={0} y={76} width={200} height={4} fill="#5d4037" />
-        {/* Window in attic */}
-        <rect x={85} y={40} width={30} height={30} rx={15} fill="#3e2723" />
-        <rect x={88} y={43} width={24} height={24} rx={12} fill="#4fc3f7" opacity={0.6} />
-        <rect x={99} y={43} width={2} height={24} fill="#5d4037" />
-        <rect x={88} y={54} width={24} height={2} fill="#5d4037" />
-      </svg>
+      {/* Roof — triangle using clipPath (respects container width) */}
+      <div className="relative" style={{ height: 100, background: "#795548", clipPath: "polygon(50% 0%, 0% 100%, 100% 100%)" }}>
+        {/* Shading */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, #8d6e63 0%, #795548 40%, #6d4c41 100%)" }} />
+        {/* Brick pattern */}
+        <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(0deg, transparent 0px, transparent 18px, rgba(0,0,0,0.1) 18px, rgba(0,0,0,0.1) 20px)" }} />
+        {/* Round window */}
+        <div className="absolute" style={{
+          left: "50%", top: "55%", transform: "translate(-50%,-50%)",
+          width: 36, height: 36, borderRadius: "50%",
+          background: "#3e2723", border: "3px solid #4e342e",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: "50%",
+            background: "radial-gradient(circle, #81d4fa 0%, #4fc3f7 60%, #29b6f6 100%)",
+            position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", left: "50%", top: 0, width: 2, height: "100%", background: "#5d4037", transform: "translateX(-50%)" }} />
+            <div style={{ position: "absolute", top: "50%", left: 0, width: "100%", height: 2, background: "#5d4037", transform: "translateY(-50%)" }} />
+          </div>
+        </div>
+      </div>
       {/* Overhang / eaves */}
       <div style={{
         height: 8,
@@ -699,11 +699,12 @@ function BuildingFloor({ team, index }: { team: RankedTeam; index: number }) {
         </div>
 
         {/* Workspace: lobsters + monitors + desks */}
-        <div className="flex items-end justify-center gap-6 pt-2 pb-2 px-6 flex-wrap">
+        <div className="flex items-end justify-center gap-6 pt-6 pb-2 px-6 flex-wrap">
           {team.members.map((member) => (
             <div key={member.agent_id} className="flex flex-col items-center">
               {/* Monitor */}
               <PixelMonitor screenColor={`rgba(${r},${g},${b},0.5)`} />
+              <div style={{ height: 10 }} />
               {/* Lobster */}
               <PixelLobster
                 color={palette.lobster}

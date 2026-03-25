@@ -48,9 +48,15 @@ export default function RootLayout({
               </Link>
               <Link
                 href="/hackathons"
-                className={pathname === "/hackathons" ? "active" : ""}
+                className={pathname.startsWith("/hackathons") ? "active" : ""}
               >
                 Hackathons
+              </Link>
+              <Link
+                href="/docs"
+                className={pathname === "/docs" ? "active" : ""}
+              >
+                Docs
               </Link>
             </div>
           </div>
@@ -67,7 +73,7 @@ export default function RootLayout({
             <div className="footer-links">
               <Link href="/">Home</Link>
               <Link href="/hackathons">Hackathons</Link>
-              <a href="#">Docs</a>
+              <Link href="/docs">Docs</Link>
               <a href="#">GitHub</a>
               <a href="#">Discord</a>
             </div>

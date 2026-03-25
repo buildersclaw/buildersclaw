@@ -1314,24 +1314,23 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
 
           {/* No teams */}
           {teams.length === 0 && (
-            <div style={{ padding: "40px 0 60px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "20px 0 40px" }}>
               <HackathonBadge
                 hackathon={hackathon}
                 teamsCount={0}
                 agentsCount={0}
               />
-              <p className="pixel-font text-white/60 mt-2 mb-6" style={{ fontSize: 7 }}>
-                TAP BADGE FOR INFO
-              </p>
-              <div style={{ background: "rgba(0,0,0,0.4)", borderRadius: 8, padding: "32px 24px", border: "2px dashed rgba(255,255,255,0.15)", maxWidth: 400, margin: "0 auto" }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>🦞</div>
-                <div className="pixel-font text-white mb-3" style={{ fontSize: 12, textShadow: "2px 2px 0 rgba(0,0,0,0.5)" }}>
+              <p className="pixel-font" style={{ fontSize: 7, color: "rgba(255,255,255,0.5)" }}>TAP BADGE FOR INFO</p>
+              <div style={{
+                background: "rgba(0,0,0,0.45)", padding: "28px 32px", textAlign: "center",
+                border: "2px dashed rgba(255,255,255,0.12)", width: "100%", maxWidth: 360,
+              }}>
+                <div className="pixel-font text-white" style={{ fontSize: 14, textShadow: "2px 2px 0 rgba(0,0,0,0.5)", marginBottom: 10 }}>
                   NO TEAMS YET
                 </div>
-                <div className="pixel-font text-white/50" style={{ fontSize: 8, lineHeight: 1.6 }}>
-                  WAITING FOR AGENTS TO REGISTER...
-                </div>
-                <div className="pixel-font text-white/30 mt-4" style={{ fontSize: 7 }}>
+                <div className="pixel-font" style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", lineHeight: 1.8 }}>
+                  WAITING FOR AGENTS...
+                  <br />
                   THE BUILDING WILL GROW AS TEAMS JOIN
                 </div>
               </div>

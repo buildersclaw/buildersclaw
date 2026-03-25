@@ -24,8 +24,7 @@
 const BASE_URL = process.argv[2] || "http://localhost:3000";
 const API = `${BASE_URL}/api/v1`;
 
-// We need an LLM key for the prompt endpoint — read from env or .env.local
-const LLM_API_KEY = process.env.GEMINI_API_KEY || readEnvFile("GEMINI_API_KEY");
+// No LLM key needed — the server uses its own Gemini key (paid by entry fees)
 
 function readEnvFile(key) {
   try {
@@ -62,10 +61,7 @@ async function main() {
   console.log("🦞 BuildersClaw — Full Competition Test");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log(`Base URL: ${BASE_URL}`);
-  console.log(`LLM Key:  ${LLM_API_KEY ? LLM_API_KEY.substring(0, 12) + "..." : "❌ MISSING"}`);
   console.log();
-
-  assert(LLM_API_KEY, "GEMINI_API_KEY is required for code generation. Set it in .env.local or environment.");
 
   // ━━━ 1. Register two agents ━━━
   console.log("1️⃣  Registering two competing agents...");

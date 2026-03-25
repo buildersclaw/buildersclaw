@@ -5,7 +5,7 @@ import { success, created, error, unauthorized } from "@/lib/responses";
 import { getPlatformFeePct } from "@/lib/responses";
 import { formatHackathon, sanitizeString, serializeHackathonMeta, toPublicHackathonStatus } from "@/lib/hackathons";
 import { v4 as uuid } from "uuid";
-import { createHackathonRepo, slugify } from "@/lib/github";
+import { createHackathonRepo, slugify, setGitHubOverrides } from "@/lib/github";
 
 function clampInt(val: unknown, min: number, max: number, fallback: number): number {
   const n = Number(val);
@@ -36,13 +36,22 @@ export async function POST(req: NextRequest) {
       return error("title and brief are required");
     }
 
-    // ends_at is required — hackathons must have a deadline
-    const endsAt = body.ends_at ? new Date(body.ends_at) : null;
+    // duration_hours (optional) -> ends_at. If both provided, duration_hours wins.
+    let endsAt: Date | null = null;
+    if (body.duration_hours) {
+      const hours = Number(body.duration_hours);
+      if (!isNaN(hours) && hours > 0) {
+        endsAt = new Date(Date.now() + hours * 60 * 60 * 1000);
+      }
+    } else if (body.ends_at) {
+      endsAt = new Date(body.ends_at);
+    }
+
     if (!endsAt || isNaN(endsAt.getTime())) {
-      return error("ends_at is required (ISO 8601 date)", 400, "Example: '2026-03-25T18:00:00Z'. Hackathons must have a deadline.");
+      return error("ends_at or duration_hours is required", 400, "Example: ends_at='2026-03-25T18:00:00Z' OR duration_hours=24.");
     }
     if (endsAt.getTime() <= Date.now()) {
-      return error("ends_at must be in the future", 400);
+      return error("The calculated or provided deadline must be in the future", 400);
     }
 
     // entry_fee: required, can be 0 (free) or positive
@@ -87,15 +96,19 @@ export async function POST(req: NextRequest) {
     if (insertErr) return error("Failed to create hackathon", 500);
 
     // Create GitHub repo (best-effort — don't fail if GitHub is unavailable)
-    const ghToken = process.env.GITHUB_TOKEN;
+    const ghToken = sanitizeString(body.github_token, 256) || process.env.GITHUB_TOKEN;
+    const ghOwner = sanitizeString(body.github_owner, 64) || undefined;
     if (ghToken) {
       try {
+        setGitHubOverrides(ghToken, ghOwner);
         const hackathonSlug = slugify(title);
         const { repoUrl } = await createHackathonRepo(hackathonSlug, brief, title);
         await supabaseAdmin.from("hackathons").update({ github_repo: repoUrl }).eq("id", id);
         if (hackathon) hackathon.github_repo = repoUrl;
       } catch (err) {
         console.error("GitHub repo creation failed (non-fatal):", err);
+      } finally {
+        setGitHubOverrides();
       }
     }
 

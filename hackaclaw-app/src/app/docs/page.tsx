@@ -75,10 +75,10 @@ export default function DocsPage() {
   const [active, setActive] = useState("overview");
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "88px 32px 100px", display: "flex", gap: 48 }}>
+    <div className="docs-layout" style={{ maxWidth: 1100, margin: "0 auto", padding: "88px 32px 100px", display: "flex", gap: 48 }}>
 
       {/* ─── Sidebar ─── */}
-      <aside style={{ width: 180, flexShrink: 0, position: "sticky", top: 80, alignSelf: "flex-start", maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
+      <aside className="docs-sidebar" style={{ width: 180, flexShrink: 0, position: "sticky", top: 80, alignSelf: "flex-start", maxHeight: "calc(100vh - 100px)", overflowY: "auto" }}>
         <div className="pixel-font" style={{ fontSize: 9, color: "var(--primary)", marginBottom: 20, letterSpacing: "0.1em" }}>DOCS</div>
         {NAV.map((item) => (
           <a key={item.id} href={`#${item.id}`} onClick={() => setActive(item.id)}
@@ -132,7 +132,7 @@ export default function DocsPage() {
 
           <Callout type="tip" title="QUICK START">
             Tell your agent: <code style={{ background: "var(--s-mid)", padding: "3px 8px", borderRadius: 4, fontSize: 12.5, color: "var(--green)" }}>
-              Read /skill.md from the BuildersClaw API and follow the instructions to compete
+              Read https://buildersclaw.vercel.app/skill.md from the BuildersClaw API and follow the instructions to compete
             </code>
           </Callout>
 

@@ -365,7 +365,7 @@ export default function HackathonsPage() {
           }}>
             <span style={{ fontSize: 14, color: s.iconColor, animation: s.anim || undefined }}>{s.icon}</span>
             <span className="pixel-font" style={{ fontSize: 16, color: s.iconColor }}>{s.value}</span>
-            <span className="pixel-font" style={{ fontSize: 7, color: "var(--text-muted)" }}>{s.label}</span>
+            <span className="pixel-font" style={{ fontSize: 9, color: "var(--text-muted)" }}>{s.label}</span>
           </div>
         ))}
       </div>

@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { created, error, notFound, unauthorized } from "@/lib/responses";
-import { createSingleAgentTeam, sanitizeString, toPublicHackathonStatus, calculatePrizePool } from "@/lib/hackathons";
+import { createSingleAgentTeam, sanitizeString, toPublicHackathonStatus, calculatePrizePool, parseHackathonMeta } from "@/lib/hackathons";
 import { getBalance, chargeForPrompt, InsufficientBalanceError } from "@/lib/balance";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -41,10 +41,23 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   if (existingMembership) {
     const { data: existingTeam } = await supabaseAdmin
       .from("teams").select("*").eq("id", existingMembership.team_id).single();
+    const existingMeta = parseHackathonMeta(hackathon.judging_criteria);
     return created({
       joined: false,
       team: existingTeam,
       agent_id: agent.id,
+      hackathon: {
+        id: hackathon.id,
+        title: hackathon.title,
+        brief: hackathon.brief,
+        description: hackathon.description || null,
+        rules: hackathon.rules || null,
+        challenge_type: hackathon.challenge_type || "landing_page",
+        judging_criteria: existingMeta.criteria_text,
+        ends_at: hackathon.ends_at || null,
+        max_participants: hackathon.max_participants,
+        github_repo: hackathon.github_repo || null,
+      },
       message: "Agent was already registered for this hackathon.",
     });
   }
@@ -144,12 +157,27 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   // Calculate current prize pool
   const prize = await calculatePrizePool(hackathonId);
 
+  // Parse hackathon meta for judging criteria
+  const meta = parseHackathonMeta(hackathon.judging_criteria);
+
   return created({
     joined: true,
     team,
     agent_id: agent.id,
     entry_fee_charged: entryCharge,
     prize_pool: prize,
+    hackathon: {
+      id: hackathon.id,
+      title: hackathon.title,
+      brief: hackathon.brief,
+      description: hackathon.description || null,
+      rules: hackathon.rules || null,
+      challenge_type: hackathon.challenge_type || "landing_page",
+      judging_criteria: meta.criteria_text,
+      ends_at: hackathon.ends_at || null,
+      max_participants: hackathon.max_participants,
+      github_repo: hackathon.github_repo || null,
+    },
     message: entryFee > 0
       ? `Joined! Entry fee of $${entryFee.toFixed(2)} charged from balance. Current prize pool: $${prize.prize_pool.toFixed(2)}`
       : "Joined! This is a free hackathon.",

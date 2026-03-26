@@ -40,6 +40,8 @@ export default function AdminProposalsPage() {
     setLoading(false);
   };
 
+  const [judgeKeyResult, setJudgeKeyResult] = useState<{ key: string; url: string; skillUrl: string } | null>(null);
+
   const handleAction = async (id: string, status: "approved" | "rejected") => {
     setActing(id);
     const res = await fetch("/api/v1/proposals", {
@@ -48,8 +50,15 @@ export default function AdminProposalsPage() {
       body: JSON.stringify({ id, status }),
     });
     const data = await res.json();
-    if (data.success && data.data?.hackathon_url) {
-      alert(`Hackathon created: ${window.location.origin}${data.data.hackathon_url}`);
+    if (data.success && data.data?.judge_api_key) {
+      // Custom judge — show the key in a modal (shown only once!)
+      setJudgeKeyResult({
+        key: data.data.judge_api_key,
+        url: `${window.location.origin}${data.data.hackathon_url}`,
+        skillUrl: data.data.judge_skill_url,
+      });
+    } else if (data.success && data.data?.hackathon_url) {
+      alert(`✅ Hackathon created!\n${window.location.origin}${data.data.hackathon_url}`);
     }
     await fetchProposals(adminKey, filter);
     setActing(null);
@@ -216,6 +225,84 @@ export default function AdminProposalsPage() {
           </div>
         )}
       </div>
+
+      {/* ─── Judge Key Modal ─── */}
+      {judgeKeyResult && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 999,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+        }} onClick={() => setJudgeKeyResult(null)}>
+          <div style={{
+            background: "var(--s-low)", border: "1px solid var(--outline)", borderRadius: 12,
+            padding: "32px 28px", maxWidth: 560, width: "100%",
+          }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 28, textAlign: "center", marginBottom: 16 }}>⚖️</div>
+            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 700, textAlign: "center", marginBottom: 8 }}>
+              Custom Judge Key Generated
+            </h3>
+            <p style={{ fontSize: 13, color: "var(--red)", textAlign: "center", marginBottom: 20, fontWeight: 600 }}>
+              ⚠️ This key is shown ONLY ONCE. Copy it now and send it to the enterprise.
+            </p>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>JUDGE API KEY</div>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 8, padding: "12px 14px",
+                background: "var(--s-mid)", borderRadius: 8, border: "1px solid rgba(255,215,0,0.2)",
+              }}>
+                <code style={{ fontSize: 12, color: "var(--gold)", flex: 1, wordBreak: "break-all" }}>
+                  {judgeKeyResult.key}
+                </code>
+                <button onClick={() => navigator.clipboard.writeText(judgeKeyResult.key)}
+                  className="pixel-font" style={{
+                    fontSize: 8, padding: "6px 14px", background: "var(--s-high)", border: "1px solid var(--outline)",
+                    color: "var(--gold)", cursor: "pointer", borderRadius: 4, whiteSpace: "nowrap",
+                  }}>COPY KEY</button>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>HACKATHON</div>
+              <a href={judgeKeyResult.url} style={{ fontSize: 13, color: "var(--green)", wordBreak: "break-all" }}>
+                {judgeKeyResult.url}
+              </a>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>JUDGE SKILL FILE</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <code style={{ fontSize: 12, color: "var(--green)", flex: 1 }}>{judgeKeyResult.skillUrl}</code>
+                <button onClick={() => navigator.clipboard.writeText(judgeKeyResult.skillUrl)}
+                  className="pixel-font" style={{
+                    fontSize: 8, padding: "6px 14px", background: "var(--s-high)", border: "1px solid var(--outline)",
+                    color: "var(--text-muted)", cursor: "pointer", borderRadius: 4, whiteSpace: "nowrap",
+                  }}>COPY</button>
+              </div>
+            </div>
+
+            <div style={{
+              padding: "12px 16px", background: "rgba(255,107,53,0.05)", borderRadius: 8,
+              border: "1px solid rgba(255,107,53,0.12)", marginBottom: 20,
+            }}>
+              <div style={{ fontSize: 11, color: "var(--primary)", fontWeight: 600, marginBottom: 4 }}>SEND TO THE ENTERPRISE</div>
+              <p style={{ fontSize: 12, color: "var(--text-dim)", lineHeight: 1.6, margin: 0 }}>
+                Send them the judge API key and tell them:
+                <em style={{ display: "block", marginTop: 6, color: "var(--green)" }}>
+                  &quot;Pass your judge agent this key and tell it to read {judgeKeyResult.skillUrl} to evaluate submissions.&quot;
+                </em>
+              </p>
+            </div>
+
+            <button onClick={() => setJudgeKeyResult(null)} style={{
+              width: "100%", padding: "12px", background: "var(--primary)", color: "#fff",
+              border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer",
+              fontFamily: "'Space Grotesk', sans-serif",
+            }}>
+              I&apos;ve Copied the Key
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

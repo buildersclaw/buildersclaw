@@ -18,7 +18,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const { data: hackathon } = await supabaseAdmin
     .from("hackathons").select("*").eq("id", hackathonId).single();
   if (!hackathon) return notFound("Hackathon");
-  if (toPublicHackathonStatus(hackathon.status) !== "open") return error("Hackathon is not open for registration", 400);
+  const pubStatus = toPublicHackathonStatus(hackathon.status);
+  if (pubStatus !== "open" && pubStatus !== "scheduled") return error("Hackathon is not open for registration", 400);
 
   const body = await req.json();
   const { team, existed } = await createSingleAgentTeam({

@@ -1,9 +1,10 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useCallback, useRef, use } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { getArgentinaHour, formatDeadlineGMT3 } from "@/lib/date-utils";
 
 /* ─── Types ─── */
 
@@ -275,17 +276,11 @@ function PixelTurbine() {
 /* ─── Day/Night Cycle (Argentina GMT-3) ─── */
 
 function useArgentinaTime() {
-  const [hour, setHour] = useState(() => {
-    const now = new Date();
-    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-    return new Date(utc - 3 * 3600000).getHours();
-  });
+  const [hour, setHour] = useState(() => getArgentinaHour());
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const now = new Date();
-      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-      setHour(new Date(utc - 3 * 3600000).getHours());
+      setHour(getArgentinaHour());
     }, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -644,12 +639,16 @@ function ShootingStars() {
 
 /* ─── Building Floor ─── */
 
+function isSafeUrl(url: string): boolean {
+  try { const p = new URL(url, "https://x.com"); return p.protocol === "https:" || p.protocol === "http:"; }
+  catch { return false; }
+}
+
 function teamProjectUrl(team: RankedTeam): string | null {
-  // Priority: repo_url (submitted repo) > project_url > github_repo subfolder > preview
-  if (team.repo_url) {
+  if (team.repo_url && isSafeUrl(team.repo_url)) {
     return team.repo_url;
   }
-  if (team.project_url) {
+  if (team.project_url && isSafeUrl(team.project_url)) {
     return team.project_url;
   }
   if (team.github_repo && team.team_slug) {
@@ -768,21 +767,7 @@ function BuildingFloor({ team, index }: { team: RankedTeam; index: number }) {
           </div>
         )}
 
-        {/* View project hint */}
-        {teamProjectUrl(team) && (
-          <div
-            className="absolute top-2 right-3 pixel-font"
-            style={{
-              fontSize: 9,
-              color: "#fff",
-              background: "rgba(0,0,0,0.5)",
-              padding: "3px 8px",
-              textShadow: "1px 1px 0 rgba(0,0,0,0.8)",
-            }}
-          >
-            {team.repo_url ? "VIEW REPO ↗" : team.github_repo ? "VIEW REPO ↗" : "VIEW PROJECT ↗"}
-          </div>
-        )}
+
       </div>
 
       {/* Concrete slab between floors */}
@@ -894,6 +879,8 @@ function HackathonBadge({
                   <span style={{
                     color: hackathon.status === "finalized" ? "#ffd700"
                       : hackathon.status === "open" ? "#00ffaa"
+                      : hackathon.status === "judging" ? "#ffa500"
+                      : hackathon.status === "scheduled" ? "#87ceeb"
                       : "#87ceeb",
                   }}>
                     {hackathon.status.toUpperCase().replace("_", " ")}
@@ -904,6 +891,13 @@ function HackathonBadge({
                   <div className="flex justify-between items-center">
                     <span className="text-[var(--text-muted)]">TIME</span>
                     <span className="text-[var(--accent-warning)]">{getTimeRemaining()}</span>
+                  </div>
+                )}
+
+                {hackathon.ends_at && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-[var(--text-muted)]">DEADLINE</span>
+                    <span className="text-white" style={{ fontSize: 7 }}>{formatDeadlineGMT3(hackathon.ends_at)}</span>
                   </div>
                 )}
 
@@ -962,6 +956,144 @@ function HackathonBadge({
 }
 
 /* ─── Completed Leaderboard ─── */
+
+/* ─── Countdown Timer ─── */
+
+function CountdownTimer({ endsAt, onExpired }: { endsAt: string; onExpired: () => void }) {
+  const [remaining, setRemaining] = useState<number>(() => {
+    const diff = new Date(endsAt).getTime() - Date.now();
+    return Math.max(0, Math.floor(diff / 1000));
+  });
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    const tick = () => {
+      const diff = new Date(endsAt).getTime() - Date.now();
+      const secs = Math.max(0, Math.floor(diff / 1000));
+      setRemaining(secs);
+      if (secs <= 0 && !firedRef.current) {
+        firedRef.current = true;
+        onExpired();
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [endsAt, onExpired]);
+
+  if (remaining <= 0) {
+    return (
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="flex flex-col items-center"
+        style={{ zIndex: 10 }}
+      >
+        <div className="pixel-font" style={{
+          fontSize: 20, color: "#ff3333", textShadow: "2px 2px 0 rgba(0,0,0,0.8), 0 0 20px rgba(255,50,50,0.6)",
+          animation: "pulse 1s ease-in-out infinite",
+        }}>
+          TIME&apos;S UP!
+        </div>
+        <div className="pixel-font" style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", marginTop: 8 }}>
+          JUDGING IN PROGRESS...
+        </div>
+      </motion.div>
+    );
+  }
+
+  const hrs = Math.floor(remaining / 3600);
+  const mins = Math.floor((remaining % 3600) / 60);
+  const secs = remaining % 60;
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const isUrgent = remaining <= 60;
+  const isWarning = remaining <= 180;
+
+  const timerColor = isUrgent ? "#ff3333" : isWarning ? "#ffa500" : "#00ffaa";
+  const glowColor = isUrgent ? "rgba(255,50,50,0.5)" : isWarning ? "rgba(255,165,0,0.3)" : "rgba(0,255,170,0.2)";
+
+  return (
+    <div className="flex flex-col items-center" style={{ zIndex: 10 }}>
+      <div className="pixel-font" style={{ fontSize: 8, color: "rgba(255,255,255,0.5)", marginBottom: 6, letterSpacing: 2 }}>
+        TIME REMAINING
+      </div>
+      <div
+        className="pixel-font"
+        style={{
+          fontSize: isUrgent ? 28 : 22,
+          color: timerColor,
+          textShadow: `2px 2px 0 rgba(0,0,0,0.8), 0 0 15px ${glowColor}`,
+          fontVariantNumeric: "tabular-nums",
+          transition: "font-size 0.3s ease, color 0.5s ease",
+          animation: isUrgent ? "pulse 0.5s ease-in-out infinite" : undefined,
+        }}
+      >
+        {hrs > 0 ? `${pad(hrs)}:` : ""}{pad(mins)}:{pad(secs)}
+      </div>
+      {isWarning && !isUrgent && (
+        <div className="pixel-font" style={{ fontSize: 7, color: "#ffa500", marginTop: 4, opacity: 0.8 }}>
+          HURRY UP!
+        </div>
+      )}
+      {isUrgent && (
+        <div className="pixel-font" style={{ fontSize: 7, color: "#ff3333", marginTop: 4, animation: "pulse 0.5s ease-in-out infinite" }}>
+          FINAL SECONDS!
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Judging Overlay ─── */
+
+function JudgingOverlay() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 flex items-center justify-center"
+      style={{ zIndex: 50, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+    >
+      <div className="flex flex-col items-center gap-4">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          style={{ width: 48, height: 48 }}
+        >
+          <svg viewBox="0 0 16 16" width={48} height={48} style={{ imageRendering: "pixelated" }}>
+            <rect x={1} y={2} width={2} height={2} fill="#ffd700" />
+            <rect x={0} y={0} width={2} height={2} fill="#ffd700" />
+            <rect x={13} y={2} width={2} height={2} fill="#ffd700" />
+            <rect x={14} y={0} width={2} height={2} fill="#ffd700" />
+            <rect x={5} y={1} width={6} height={2} fill="#ffd700" />
+            <rect x={3} y={3} width={10} height={4} fill="#ffd700" />
+            <rect x={5} y={7} width={6} height={2} fill="#ffd700" />
+            <rect x={6} y={9} width={4} height={2} fill="#e6b800" />
+          </svg>
+        </motion.div>
+        <div className="pixel-font" style={{ fontSize: 14, color: "#ffd700", textShadow: "2px 2px 0 rgba(0,0,0,0.8)" }}>
+          AI JUDGE ANALYZING...
+        </div>
+        <div className="pixel-font" style={{ fontSize: 8, color: "rgba(255,255,255,0.5)", textAlign: "center", maxWidth: 240, lineHeight: 1.8 }}>
+          REVIEWING CODE REPOS<br />SCORING SUBMISSIONS<br />DETERMINING WINNER
+        </div>
+        <motion.div
+          className="flex gap-1 mt-2"
+          style={{ gap: 4 }}
+        >
+          {[0, 1, 2, 3, 4].map((i) => (
+            <motion.div
+              key={i}
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+              style={{ width: 6, height: 6, background: "#ffd700" }}
+            />
+          ))}
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
 
 function SkyWrapper({ children, skyTheme, sunAngle, moonAngle }: {
   children: React.ReactNode;
@@ -1037,10 +1169,12 @@ function CompletedLeaderboard({
     <SkyWrapper skyTheme={skyTheme} sunAngle={sunAngle} moonAngle={moonAngle}>
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "90px 24px 100px" }}>
         {/* Back */}
-        <Link href="/hackathons" className="pixel-font text-white hover:text-[#ffd700] transition-colors"
-          style={{ fontSize: 14, textShadow: "2px 2px 0 rgba(0,0,0,0.6)", background: "rgba(0,0,0,0.3)", padding: "8px 16px", display: "inline-block", marginBottom: 32 }}>
-          {"<"} BACK
-        </Link>
+        <div style={{ textAlign: "left", marginBottom: 32 }}>
+          <Link href="/hackathons" className="pixel-font text-white hover:text-[#ffd700] transition-colors"
+            style={{ fontSize: 14, textShadow: "2px 2px 0 rgba(0,0,0,0.6)", background: "rgba(0,0,0,0.3)", padding: "8px 16px", display: "inline-block" }}>
+            {"<"} BACK
+          </Link>
+        </div>
 
         {/* Title */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
@@ -1150,20 +1284,80 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
   const [hackathon, setHackathon] = useState<HackathonDetail | null>(null);
   const [teams, setTeams] = useState<RankedTeam[]>([]);
   const [loading, setLoading] = useState(true);
+  const [judging, setJudging] = useState(false);
   const argHour = useArgentinaTime();
   const skyTheme = getSkyTheme(argHour);
   const { sunAngle, moonAngle } = getSunMoonAngle(argHour);
 
-  useEffect(() => {
-    Promise.all([
+  const fetchData = useCallback(() => {
+    return Promise.all([
       fetch(`/api/v1/hackathons/${id}`).then((r) => r.json()),
       fetch(`/api/v1/hackathons/${id}/judge`).then((r) => r.json()),
     ]).then(([hRes, tRes]) => {
       if (hRes.success) setHackathon(hRes.data);
       if (tRes.success) setTeams(tRes.data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    });
   }, [id]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchData().finally(() => setLoading(false));
+  }, [fetchData]);
+
+  // Called when countdown hits 0 or when page loads after deadline passed
+  const handleDeadlineExpired = useCallback(async () => {
+    setJudging(true);
+    try {
+      const res = await fetch(`/api/v1/hackathons/${id}/check-deadline`, { method: "POST" });
+      const data = await res.json();
+      if (data.success && data.data?.status === "finalized") {
+        // Refresh everything to get final scores
+        await fetchData();
+        setJudging(false);
+      } else if (data.success && data.data?.status === "judging") {
+        // Still judging, poll until done
+        const poll = setInterval(async () => {
+          const r = await fetch(`/api/v1/hackathons/${id}`).then(r2 => r2.json());
+          if (r.success && (r.data.status === "finalized" || r.data.internal_status === "completed")) {
+            clearInterval(poll);
+            await fetchData();
+            setJudging(false);
+          }
+        }, 3000);
+        setTimeout(() => { clearInterval(poll); setJudging(false); fetchData(); }, 120_000);
+      } else {
+        setJudging(false);
+        await fetchData();
+      }
+    } catch {
+      setJudging(false);
+      await fetchData();
+    }
+  }, [id, fetchData]);
+
+  // Auto-refresh teams every 10s while hackathon is active
+  useEffect(() => {
+    if (!hackathon || hackathon.status === "finalized" || judging) return;
+    const interval = setInterval(() => {
+      fetch(`/api/v1/hackathons/${id}/judge`).then(r => r.json()).then(tRes => {
+        if (tRes.success) setTeams(tRes.data);
+      }).catch(() => {});
+    }, 10_000);
+    return () => clearInterval(interval);
+  }, [id, hackathon, judging]);
+
+  // If user arrives after the deadline has passed but hackathon isn't finalized yet,
+  // trigger the check-deadline to kick off judging
+  useEffect(() => {
+    if (!hackathon || judging) return;
+    if (hackathon.status === "finalized") return;
+    if (!hackathon.ends_at) return;
+
+    const deadline = new Date(hackathon.ends_at).getTime();
+    if (Date.now() >= deadline) {
+      handleDeadlineExpired();
+    }
+  }, [hackathon, judging, handleDeadlineExpired]);
 
   if (loading || !hackathon) {
     return (
@@ -1180,6 +1374,102 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
   /* ─── COMPLETED → LEADERBOARD ─── */
   if (hackathon.status === "finalized") {
     return <CompletedLeaderboard teams={teams} hackathon={hackathon} skyTheme={skyTheme} sunAngle={sunAngle} moonAngle={moonAngle} />;
+  }
+
+  /* ─── CANCELLED ─── */
+  if (hackathon.status === "cancelled") {
+    return (
+      <SkyWrapper skyTheme={skyTheme} sunAngle={sunAngle} moonAngle={moonAngle}>
+        <div style={{ maxWidth: 640, margin: "0 auto", padding: "90px 24px 100px" }}>
+          <div style={{ textAlign: "left", marginBottom: 32 }}>
+            <Link href="/hackathons" className="pixel-font text-white hover:text-[#ffd700] transition-colors"
+              style={{ fontSize: 14, textShadow: "2px 2px 0 rgba(0,0,0,0.6)", background: "rgba(0,0,0,0.3)", padding: "8px 16px", display: "inline-block" }}>
+              {"<"} BACK
+            </Link>
+          </div>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <div style={{ fontSize: 56, marginBottom: 8 }}>🚫</div>
+            <h1 className="pixel-font text-white" style={{ fontSize: 16, textShadow: "2px 2px 0 rgba(0,0,0,0.5)", marginBottom: 6 }}>
+              {hackathon.title}
+            </h1>
+            <p className="pixel-font" style={{ fontSize: 10, color: "#ff4444" }}>HACKATHON CANCELLED</p>
+          </div>
+          <div style={{ background: "rgba(0,0,0,0.55)", border: "3px solid #ff4444", padding: "32px 24px", textAlign: "center" }}>
+            <div className="pixel-font" style={{ fontSize: 11, color: "#ff4444", marginBottom: 12 }}>NOT ENOUGH PARTICIPANTS</div>
+            <div className="pixel-font" style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", lineHeight: 1.8 }}>
+              {teams.length} TEAM{teams.length !== 1 ? "S" : ""} REGISTERED
+              <br />
+              THE MINIMUM WAS NOT REACHED BEFORE THE DEADLINE
+            </div>
+          </div>
+        </div>
+      </SkyWrapper>
+    );
+  }
+
+  /* ─── SCHEDULED → WAITING FOR START ─── */
+  if (hackathon.status === "scheduled") {
+    return (
+      <SkyWrapper skyTheme={skyTheme} sunAngle={sunAngle} moonAngle={moonAngle}>
+        <div style={{ maxWidth: 640, margin: "0 auto", padding: "90px 24px 100px" }}>
+          <div style={{ textAlign: "left", marginBottom: 32 }}>
+            <Link href="/hackathons" className="pixel-font text-white hover:text-[#ffd700] transition-colors"
+              style={{ fontSize: 14, textShadow: "2px 2px 0 rgba(0,0,0,0.6)", background: "rgba(0,0,0,0.3)", padding: "8px 16px", display: "inline-block" }}>
+              {"<"} BACK
+            </Link>
+          </div>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <div style={{ fontSize: 56, marginBottom: 8 }}>⏳</div>
+            <h1 className="pixel-font text-white" style={{ fontSize: 16, textShadow: "2px 2px 0 rgba(0,0,0,0.5)", marginBottom: 6 }}>
+              {hackathon.title}
+            </h1>
+            <p className="pixel-font" style={{ fontSize: 10, color: "#87ceeb" }}>REGISTRATION OPEN</p>
+          </div>
+
+          {/* Countdown to deadline */}
+          {hackathon.ends_at && (
+            <div style={{ background: "rgba(0,0,0,0.55)", border: "3px solid #87ceeb", padding: "24px", textAlign: "center", marginBottom: 24 }}>
+              <div className="pixel-font" style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", marginBottom: 8 }}>STARTS WHEN DEADLINE ARRIVES</div>
+              <CountdownTimer endsAt={hackathon.ends_at} onExpired={handleDeadlineExpired} />
+            </div>
+          )}
+
+          {/* Registration stats */}
+          <div style={{ background: "rgba(0,0,0,0.45)", padding: "24px", textAlign: "center", marginBottom: 24 }}>
+            <div className="pixel-font" style={{ fontSize: 28, color: "#00ffaa", textShadow: "2px 2px 0 rgba(0,0,0,0.8)" }}>
+              {teams.length}
+            </div>
+            <div className="pixel-font" style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>
+              TEAM{teams.length !== 1 ? "S" : ""} REGISTERED
+            </div>
+            {totalAgents > 0 && (
+              <div className="pixel-font" style={{ fontSize: 8, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>
+                {totalAgents} AGENT{totalAgents !== 1 ? "S" : ""}
+              </div>
+            )}
+          </div>
+
+          {/* Brief */}
+          {hackathon.brief && (
+            <div style={{ background: "rgba(0,0,0,0.35)", padding: "20px 24px" }}>
+              <div className="pixel-font" style={{ fontSize: 9, color: "#87ceeb", marginBottom: 8 }}>CHALLENGE BRIEF</div>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, fontFamily: "Inter, sans-serif" }}>
+                {hackathon.brief}
+              </p>
+            </div>
+          )}
+
+          {/* Info */}
+          <div className="pixel-font" style={{ fontSize: 8, color: "rgba(255,255,255,0.3)", textAlign: "center", marginTop: 24, lineHeight: 1.8 }}>
+            AGENTS CAN JOIN NOW
+            <br />
+            WHEN THE TIMER HITS ZERO, THE HACKATHON STARTS
+            <br />
+            IF NOT ENOUGH PARTICIPANTS, IT WILL BE CANCELLED
+          </div>
+        </div>
+      </SkyWrapper>
+    );
   }
 
   /* ─── ACTIVE → PIXEL BUILDING ─── */
@@ -1304,10 +1594,13 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
         <div className="absolute bottom-[87px] right-[13%]"><PixelPlant /></div>
       </div>
 
+      {/* Judging overlay */}
+      {judging && <JudgingOverlay />}
+
       {/* Content wrapper — scrollable */}
       <div className="flex flex-col items-center relative" style={{ minHeight: "120vh", paddingBottom: 80, zIndex: 1 }}>
-        {/* BACK button */}
-        <div className="max-w-2xl w-full px-4" style={{ paddingTop: 80 }}>
+        {/* BACK + TIMER row */}
+        <div className="w-full px-4 flex items-start justify-between" style={{ paddingTop: 80, maxWidth: "100%" }}>
           <Link
             href="/hackathons"
             className="pixel-font text-white hover:text-[#ffd700] transition-colors"
@@ -1321,10 +1614,17 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
           >
             {"<"} BACK
           </Link>
+
+          {/* Countdown timer */}
+          {hackathon.ends_at && (
+            <div style={{ background: "rgba(0,0,0,0.4)", padding: "8px 16px" }}>
+              <CountdownTimer endsAt={hackathon.ends_at} onExpired={handleDeadlineExpired} />
+            </div>
+          )}
         </div>
 
         {/* Spacer for scroll */}
-        <div style={{ height: 60 }} />
+        <div style={{ height: 40 }} />
 
         {/* Building structure anchored to bottom */}
         <div className="max-w-2xl mx-auto px-4 w-full">

@@ -15,7 +15,24 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Direct add_member: bypass marketplace, just add agent to team
+    // Add marketplace listing directly (bypasses schema cache issue)
+    if (body.action === "add_listing") {
+      const { error: err } = await supabaseAdmin
+        .from("marketplace_listings")
+        .insert({
+          id: uuid(),
+          agent_id: body.agent_id,
+          hackathon_id: body.hackathon_id || null,
+          skills: body.skills || "general",
+          asking_share_pct: body.asking_share_pct || 20,
+          description: body.description || null,
+          status: "active",
+          created_at: new Date().toISOString(),
+        });
+      if (err) return error("Listing insert: " + JSON.stringify(err), 500);
+      return success({ ok: true });
+    }
+
     if (body.action === "add_member") {
       const { error: err } = await supabaseAdmin.from("team_members").insert({
         id: uuid(),

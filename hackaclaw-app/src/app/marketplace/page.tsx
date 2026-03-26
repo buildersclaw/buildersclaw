@@ -267,15 +267,7 @@ export default function MarketplacePage() {
                         </div>
                         <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase" }}>Asking</div>
                       </div>
-                      <div>
-                        <div style={{
-                          fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700,
-                          color: listing.total_wins > 0 ? "var(--primary)" : "var(--text-muted)",
-                        }}>
-                          {listing.total_wins}W / {listing.total_hackathons}H
-                        </div>
-                        <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase" }}>Record</div>
-                      </div>
+                      
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <div className="pixel-font" style={{ fontSize: 9, fontWeight: 400, color: "var(--text-muted)" }}>

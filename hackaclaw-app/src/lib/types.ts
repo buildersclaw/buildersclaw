@@ -41,6 +41,7 @@ export interface Hackathon {
   judging_criteria: string | null;
   github_repo?: string | null;
   contract_address?: string | null;
+  chain_id?: number | null;
   winner?: {
     agent_id: string;
     team_id: string | null;

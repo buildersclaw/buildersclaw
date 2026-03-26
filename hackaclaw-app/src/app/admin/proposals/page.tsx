@@ -11,7 +11,7 @@ interface Proposal {
   judge_agent: string | null;
   budget: string | null;
   timeline: string | null;
-  approval_token: string | null;
+  hackathon_config: { title?: string; brief?: string } | null;
   status: string;
   admin_notes: string | null;
   created_at: string;
@@ -42,11 +42,15 @@ export default function AdminProposalsPage() {
 
   const handleAction = async (id: string, status: "approved" | "rejected") => {
     setActing(id);
-    await fetch("/api/v1/proposals", {
+    const res = await fetch("/api/v1/proposals", {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminKey}` },
       body: JSON.stringify({ id, status }),
     });
+    const data = await res.json();
+    if (data.success && data.data?.hackathon_url) {
+      alert(`Hackathon created: ${window.location.origin}${data.data.hackathon_url}`);
+    }
     await fetchProposals(adminKey, filter);
     setActing(null);
   };
@@ -80,7 +84,7 @@ export default function AdminProposalsPage() {
   }
 
   const statusColors: Record<string, string> = {
-    pending: "var(--gold)", approved: "var(--green)", rejected: "var(--red)",
+    pending: "var(--gold)", approved: "var(--green)", rejected: "var(--red)", hackathon_created: "var(--green)",
   };
 
   return (
@@ -173,21 +177,28 @@ export default function AdminProposalsPage() {
               </div>
             )}
 
-            {p.approval_token && p.status === "approved" && (
+            {p.hackathon_config && p.status === "pending" && (
+              <div style={{
+                marginTop: 12, padding: "12px 16px", background: "rgba(255,107,53,0.04)",
+                border: "1px solid rgba(255,107,53,0.12)", borderRadius: 8,
+              }}>
+                <div style={{ fontSize: 11, color: "var(--primary)", fontWeight: 600, marginBottom: 4 }}>HACKATHON CONFIG</div>
+                <div style={{ fontSize: 12, color: "var(--text-dim)" }}>
+                  {p.hackathon_config.title} — Approving will auto-create this hackathon.
+                </div>
+              </div>
+            )}
+
+            {p.status === "hackathon_created" && p.admin_notes?.includes("Hackathon auto-created:") && (
               <div style={{
                 marginTop: 12, padding: "12px 16px", background: "rgba(74,222,128,0.05)",
                 border: "1px solid rgba(74,222,128,0.15)", borderRadius: 8,
               }}>
-                <div style={{ fontSize: 11, color: "var(--green)", fontWeight: 600, marginBottom: 6 }}>CREATION LINK</div>
-                <code style={{
-                  fontSize: 12, color: "var(--text-dim)", wordBreak: "break-all",
-                  background: "var(--s-mid)", padding: "4px 8px", borderRadius: 4, display: "block",
-                }}>
-                  {typeof window !== "undefined" ? window.location.origin : ""}/enterprise/create/{p.approval_token}
-                </code>
-                <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 6 }}>
-                  Share this link with the company to let them create their hackathon.
-                </p>
+                <div style={{ fontSize: 11, color: "var(--green)", fontWeight: 600, marginBottom: 4 }}>HACKATHON CREATED</div>
+                <a href={`/hackathons/${p.admin_notes.split(": ")[1]}`}
+                  style={{ fontSize: 12, color: "var(--green)" }}>
+                  View Hackathon →
+                </a>
               </div>
             )}
 

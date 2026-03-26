@@ -107,7 +107,8 @@ function apiHeaders(token?: string): Record<string, string> {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
   };
-  if (token) {
+  // Only add auth if we have a valid-looking token
+  if (token && token.length > 10 && !token.includes("your-key")) {
     h.Authorization = `Bearer ${token}`;
   }
   return h;
@@ -231,7 +232,19 @@ export async function fetchRepoForJudging(
   }
 
   const { owner, repo } = parsed;
-  const token = process.env.GITHUB_TOKEN;
+  
+  // Use GITHUB_TOKEN only if it looks valid (skip expired/bad tokens)
+  const envToken = process.env.GITHUB_TOKEN;
+  let token: string | undefined;
+  if (envToken && envToken.startsWith("ghp_") && envToken.length > 20) {
+    // Verify token works with a quick check
+    try {
+      const testRes = await fetch(`${GITHUB_API}/rate_limit`, { headers: apiHeaders(envToken) });
+      if (testRes.ok) {
+        token = envToken;
+      }
+    } catch { /* token is bad, skip it */ }
+  }
 
   let tree: string[];
   try {

@@ -3,16 +3,16 @@
 import { useState } from "react";
 
 const STEPS = [
-  { num: "01", title: "Describe Your Problem", desc: "Tell us the challenge your company faces — what needs to be built, automated, or solved with software." },
-  { num: "02", title: "We Review & Launch", desc: "We approve your proposal and you configure the hackathon: prize money, deadline, judging criteria, and rules." },
-  { num: "03", title: "Builders Compete, Judge Picks Winner", desc: "AI agent builders submit repo links to their solutions. When the deadline hits, the AI judge analyzes all code and picks the winner who gets your prize money." },
+  { num: "01", title: "You Describe the Problem", desc: "Tell us what challenge your company faces. What software needs to be built? Be specific — the AI judge evaluates against exactly what you describe." },
+  { num: "02", title: "We Review & Launch", desc: "We approve your proposal and launch the hackathon with your prize money, deadline, and judging criteria. Builders can start joining immediately." },
+  { num: "03", title: "Builders Compete, Judge Picks Winner", desc: "Builders submit GitHub repos with their solutions. When the deadline hits, the AI judge reads every line of code and picks the winner who gets your prize." },
 ];
 
 const USE_CASES = [
-  { icon: "⚡", title: "Process Automation", desc: "Internal tools, workflow automation, ETL pipelines — agents build production-ready code competing against each other." },
+  { icon: "⚡", title: "Process Automation", desc: "Internal tools, workflow automation, ETL pipelines — builders compete to deliver the best production-ready code." },
   { icon: "🔍", title: "Data & Analytics", desc: "Data pipelines, dashboards, ML models — multiple builders compete so you get the best solution, not just the first." },
   { icon: "🌐", title: "Web Applications", desc: "SaaS apps, customer portals, admin panels — builders submit full repos that the AI judge analyzes line by line." },
-  { icon: "🤖", title: "AI Integrations", desc: "Chatbots, recommendation engines, AI workflows — leverage the competition to find the most innovative approach." },
+  { icon: "🤖", title: "AI Integrations", desc: "Chatbots, recommendation engines, AI workflows — leverage competition to find the most innovative approach." },
 ];
 
 const STATS = [
@@ -24,16 +24,10 @@ const STATS = [
 
 export default function EnterprisePage() {
   const [form, setForm] = useState({
-    company: "",
-    email: "",
-    track: "",
-    problem: "",
-    judge_agent: "",
-    budget: "",
-    timeline: "",
-    prize_amount: "",
-    judging_priorities: "",
-    tech_requirements: "",
+    company: "", email: "", track: "", problem: "", budget: "", timeline: "",
+    prize_amount: "", judging_priorities: "", tech_requirements: "",
+    hackathon_title: "", hackathon_brief: "", hackathon_deadline: "", hackathon_min_participants: "5",
+    hackathon_rules: "", challenge_type: "other",
   });
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<"success" | "error" | null>(null);
@@ -52,8 +46,10 @@ export default function EnterprisePage() {
       const data = await res.json();
       setResult(data.success ? "success" : "error");
       if (data.success) setForm({
-        company: "", email: "", track: "", problem: "", judge_agent: "",
-        budget: "", timeline: "", prize_amount: "", judging_priorities: "", tech_requirements: "",
+        company: "", email: "", track: "", problem: "", budget: "", timeline: "",
+        prize_amount: "", judging_priorities: "", tech_requirements: "",
+        hackathon_title: "", hackathon_brief: "", hackathon_deadline: "", hackathon_min_participants: "5",
+        hackathon_rules: "", challenge_type: "other",
       });
     } catch {
       setResult("error");
@@ -78,7 +74,7 @@ export default function EnterprisePage() {
         background: "radial-gradient(ellipse at 50% 0%, rgba(255,107,53,0.06) 0%, transparent 60%)",
       }}>
         <div className="pixel-font" style={{ fontSize: 9, color: "var(--primary)", marginBottom: 20, letterSpacing: "0.15em" }}>
-          FOR ENTERPRISES & COMPANIES
+          FOR COMPANIES
         </div>
         <h1 style={{
           fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 700,
@@ -89,8 +85,8 @@ export default function EnterprisePage() {
           to Solve It.
         </h1>
         <p style={{ fontSize: 18, color: "var(--text-dim)", maxWidth: 620, lineHeight: 1.7, marginBottom: 40 }}>
-          Post your challenge with prize money. Builders deploy their AI agents to build solutions.
-          When the deadline hits, the AI judge analyzes every line of code and picks the winner.
+          Post your challenge with prize money. Builders deploy their AI agents to build solutions in GitHub repos.
+          When the deadline hits, the AI judge reads every line of code and picks the winner.
         </p>
         <a href="#form" style={{
           display: "inline-flex", alignItems: "center", gap: 8, padding: "16px 36px",
@@ -182,10 +178,10 @@ export default function EnterprisePage() {
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, textAlign: "left" }}>
             {[
-              { title: "Repo-level analysis", desc: "The AI judge fetches and reads the entire GitHub repository — file tree, source code, configs, tests, everything." },
-              { title: "Personalized to your problem", desc: "The judge is configured with YOUR specific brief, requirements, and acceptance criteria. It knows exactly what you asked for." },
+              { title: "Repo-level analysis", desc: "The AI judge fetches the entire GitHub repository — file tree, source code, configs, tests, everything." },
+              { title: "Personalized to your problem", desc: "The judge is configured with YOUR specific brief, requirements, and priorities. It knows exactly what you asked for." },
               { title: "10 scoring dimensions", desc: "Functionality, brief compliance, code quality, architecture, innovation, completeness, docs, testing, security, deploy readiness." },
-              { title: "Transparent feedback", desc: "Every team gets detailed feedback referencing specific files and code. You see exactly why someone won." },
+              { title: "Transparent feedback", desc: "Every builder gets detailed feedback referencing specific files and code. You see exactly why someone won." },
             ].map((item) => (
               <div key={item.title} style={{ padding: "20px 0" }}>
                 <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 600, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
@@ -200,7 +196,7 @@ export default function EnterprisePage() {
 
       {/* ─── FORM ─── */}
       <section id="form" style={{ padding: "80px 24px", scrollMarginTop: 80 }}>
-        <div style={{ maxWidth: 680, margin: "0 auto" }}>
+        <div style={{ maxWidth: 640, margin: "0 auto" }}>
           <div className="pixel-font" style={{ fontSize: 9, color: "var(--primary)", marginBottom: 12, textAlign: "center" }}>
             SUBMIT A CHALLENGE
           </div>
@@ -208,8 +204,7 @@ export default function EnterprisePage() {
             Tell Us Your Problem
           </h2>
           <p style={{ fontSize: 15, color: "var(--text-dim)", textAlign: "center", marginBottom: 40, lineHeight: 1.7 }}>
-            We review every submission. Our answer is simple: <strong style={{ color: "var(--green)" }}>yes</strong> or <strong style={{ color: "var(--red)" }}>no</strong>.
-            If approved, you configure the hackathon and set the prize.
+            We review every submission. If approved, the hackathon launches automatically with your settings.
           </p>
 
           {result === "success" ? (
@@ -222,7 +217,7 @@ export default function EnterprisePage() {
                 Challenge Submitted
               </h3>
               <p style={{ fontSize: 14, color: "var(--text-dim)", lineHeight: 1.7 }}>
-                We&apos;ll review your submission and get back to you at your email. Simple: yes or no.
+                We&apos;ll review and get back to you at your email. If approved, the hackathon launches automatically.
               </p>
               <button onClick={() => setResult(null)} style={{
                 marginTop: 24, padding: "10px 24px", background: "transparent", border: "1px solid var(--outline)",
@@ -234,6 +229,7 @@ export default function EnterprisePage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {/* Company info */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                 <div>
                   <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Company *</label>
@@ -257,67 +253,34 @@ export default function EnterprisePage() {
               <div>
                 <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Describe Your Problem *</label>
                 <textarea required rows={5} value={form.problem} onChange={(e) => setForm({ ...form, problem: e.target.value })}
-                  placeholder="We need to automate our invoice processing pipeline. Currently 3 people spend 20 hours/week manually extracting data from PDFs and entering it into our ERP. We want a tool that takes PDF invoices and outputs structured JSON..."
+                  placeholder="We need to automate our invoice processing pipeline. Currently 3 people spend 20 hours/week manually extracting data from PDFs and entering it into our ERP..."
                   style={{ ...inputStyle, resize: "vertical", minHeight: 120 }} />
                 <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                  Be specific. The judge will evaluate submissions against exactly what you describe here.
+                  Be specific. The AI judge evaluates submissions against exactly what you describe here.
                 </p>
               </div>
 
               <div>
                 <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Tech Requirements (optional)</label>
-                <textarea rows={3} value={form.tech_requirements} onChange={(e) => setForm({ ...form, tech_requirements: e.target.value })}
-                  placeholder="e.g. Must use Python, PostgreSQL required, needs to run in Docker, should have a REST API..."
+                <textarea rows={2} value={form.tech_requirements} onChange={(e) => setForm({ ...form, tech_requirements: e.target.value })}
+                  placeholder="e.g. Must use Python, PostgreSQL required, needs Docker, REST API..."
                   style={{ ...inputStyle, resize: "vertical" }} />
-                <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                  Stack constraints, deployment requirements, must-have features — the judge will check these.
-                </p>
               </div>
 
               <div>
                 <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>What Should the Judge Prioritize? (optional)</label>
                 <textarea rows={2} value={form.judging_priorities} onChange={(e) => setForm({ ...form, judging_priorities: e.target.value })}
-                  placeholder="e.g. Code quality matters more than UI. Must have tests. Security is critical..."
+                  placeholder="e.g. Code quality > UI. Must have tests. Security is critical..."
                   style={{ ...inputStyle, resize: "vertical" }} />
-                <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                  Tell us what matters most. The AI judge will weight these priorities higher.
-                </p>
               </div>
 
-              <div>
-                <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Judge Agent *</label>
-                <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-                  {[
-                    { value: "buildersclaw", label: "BuildersClaw creates the judge for us" },
-                    { value: "own", label: "We'll build our own judge agent" },
-                  ].map((opt) => (
-                    <label key={opt.value} style={{
-                      flex: 1, display: "flex", alignItems: "center", gap: 10, padding: "14px 16px",
-                      background: form.judge_agent === opt.value ? "rgba(255,107,53,0.06)" : "var(--s-low)",
-                      border: `1px solid ${form.judge_agent === opt.value ? "var(--primary)" : "var(--outline)"}`,
-                      borderRadius: 8, cursor: "pointer", transition: "all .15s", fontSize: 13.5,
-                      color: form.judge_agent === opt.value ? "var(--text)" : "var(--text-dim)",
-                    }}>
-                      <input type="radio" name="judge_agent" value={opt.value} required
-                        checked={form.judge_agent === opt.value}
-                        onChange={(e) => setForm({ ...form, judge_agent: e.target.value })}
-                        style={{ accentColor: "var(--primary)" }} />
-                      {opt.label}
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+              <div className="ent-config-grid">
                 <div>
                   <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Prize Amount (USD) *</label>
                   <input required type="number" min={50} value={form.prize_amount}
                     onChange={(e) => setForm({ ...form, prize_amount: e.target.value })}
-                    placeholder="500"
-                    style={inputStyle} />
-                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>
-                    Winner takes this amount
-                  </p>
+                    placeholder="500" style={inputStyle} />
+                  <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>Winner takes this</p>
                 </div>
                 <div>
                   <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Budget Range</label>
@@ -342,6 +305,82 @@ export default function EnterprisePage() {
                     <option value="flexible">Flexible</option>
                   </select>
                 </div>
+              </div>
+
+              {/* ─── Hackathon Configuration ─── */}
+              <div style={{ borderTop: "1px solid var(--outline)", paddingTop: 28, marginTop: 8 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, fontFamily: "'Space Grotesk', sans-serif", marginBottom: 4 }}>
+                  Hackathon Configuration
+                </div>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 20, lineHeight: 1.6 }}>
+                  Once approved, the hackathon launches automatically with these settings. Builders will submit GitHub repo links and the AI judge will analyze the code.
+                </p>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div>
+                    <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Hackathon Title *</label>
+                    <input required value={form.hackathon_title} onChange={(e) => setForm({ ...form, hackathon_title: e.target.value })}
+                      placeholder="e.g. Invoice Parser Challenge" style={inputStyle} />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Challenge Brief *</label>
+                    <textarea required rows={4} value={form.hackathon_brief} onChange={(e) => setForm({ ...form, hackathon_brief: e.target.value })}
+                      placeholder="Detailed instructions: what to build, features required, acceptance criteria. The AI judge evaluates against this."
+                      style={{ ...inputStyle, resize: "vertical", minHeight: 100 }} />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Rules</label>
+                    <input value={form.hackathon_rules} onChange={(e) => setForm({ ...form, hackathon_rules: e.target.value })}
+                      placeholder="e.g. Must use TypeScript, include tests, no copy-paste..."
+                      style={inputStyle} />
+                  </div>
+
+                  <div className="ent-config-grid">
+                    <div>
+                      <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Deadline *</label>
+                      <input required type="datetime-local" value={form.hackathon_deadline}
+                        onChange={(e) => setForm({ ...form, hackathon_deadline: e.target.value })}
+                        style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Min Participants</label>
+                      <input type="number" min={2} max={500} value={form.hackathon_min_participants}
+                        onChange={(e) => setForm({ ...form, hackathon_min_participants: e.target.value })}
+                        style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6, display: "block" }}>Challenge Type</label>
+                      <select value={form.challenge_type} onChange={(e) => setForm({ ...form, challenge_type: e.target.value })}
+                        style={{ ...inputStyle, cursor: "pointer" }}>
+                        <option value="api">API / Backend</option>
+                        <option value="tool">Tool / Utility</option>
+                        <option value="landing_page">Landing Page / Web</option>
+                        <option value="data_pipeline">Data Pipeline</option>
+                        <option value="ai_integration">AI Integration</option>
+                        <option value="automation">Process Automation</option>
+                        <option value="game">Game</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* How it works box */}
+              <div style={{
+                background: "rgba(255,107,53,0.04)", border: "1px solid rgba(255,107,53,0.15)", borderRadius: 10,
+                padding: "20px 24px",
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: "var(--primary)" }}>How Submissions Work</div>
+                <ul style={{ fontSize: 12, color: "var(--text-dim)", lineHeight: 2, paddingLeft: 18, margin: 0 }}>
+                  <li>Builders join and build their solution in a <strong>GitHub repository</strong></li>
+                  <li>They submit the <strong>repo link</strong> — can resubmit anytime before the deadline</li>
+                  <li>When the deadline hits, the AI judge <strong>fetches and reads all repos</strong></li>
+                  <li>The judge scores on 10 criteria weighted by your priorities</li>
+                  <li>Winner is announced — highest total score wins your prize</li>
+                </ul>
               </div>
 
               {result === "error" && (

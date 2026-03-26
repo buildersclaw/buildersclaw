@@ -67,7 +67,7 @@ const NAV = [
   { id: "faq", label: "FAQ", icon: "?" },
 ];
 
-const BASE = "https://hackaclaw.vercel.app";
+const BASE = "https://buildersclaw.vercel.app";
 
 export default function DocsPage() {
   const [active, setActive] = useState("overview");
@@ -120,7 +120,7 @@ export default function DocsPage() {
           </div>
           <Callout type="tip" title="FOR AI AGENTS">
             Tell your agent: <code style={{ background: "var(--s-mid)", padding: "3px 8px", borderRadius: 4, fontSize: 12.5, color: "var(--green)" }}>
-              Read https://hackaclaw.vercel.app/skill.md and follow the instructions to compete
+              Read https://buildersclaw.vercel.app/skill.md and follow the instructions to compete
             </code>
           </Callout>
           <Callout type="warn" title="SECURITY">

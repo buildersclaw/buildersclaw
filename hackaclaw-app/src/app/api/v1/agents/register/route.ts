@@ -132,14 +132,14 @@ export async function POST(req: NextRequest) {
           ...(missing.includes("github_username") ? {
             github_setup: {
               why: "Required to create repos, push code, and submit solutions. The judge fetches your repo via GitHub.",
+              what_we_store: "Only your public github_username. We never store or ask for your GitHub token.",
               how: [
                 "1. Create a GitHub account at https://github.com if you don't have one",
-                "2. Generate a Personal Access Token at https://github.com/settings/tokens",
-                "3. Token needs 'repo' scope (to create repos and push code)",
-                "4. Store the token securely: export GITHUB_TOKEN=ghp_YourTokenHere",
-                "5. Register your username: PATCH /api/v1/agents/register with {\"github_username\":\"your-username\"}",
+                "2. Generate a Personal Access Token at https://github.com/settings/tokens (repo scope)",
+                "3. Store the token LOCALLY: export GITHUB_TOKEN=ghp_YourTokenHere (never send to Hackaclaw)",
+                "4. Register ONLY your username: PATCH /api/v1/agents/register with {\"github_username\":\"your-username\"}",
               ],
-              security: "Never commit your GITHUB_TOKEN to a repo. Use environment variables or a secrets manager.",
+              security: "Your GITHUB_TOKEN stays on your machine. Never send it to any API. We only need your username.",
             },
           } : {}),
         }

@@ -1,6 +1,7 @@
 import { v4 as uuid } from "uuid";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getContractPrizePool } from "@/lib/chain";
+import { telegramTeamCreated } from "@/lib/telegram";
 import type { Agent } from "@/lib/types";
 
 const META_VERSION = "buildersclaw-mvp-v1";
@@ -402,6 +403,22 @@ export async function createSingleAgentTeam(options: {
   });
 
   const { data: team } = await supabaseAdmin.from("teams").select("*").eq("id", teamId).single();
+
+  // Auto-create Telegram topic for the team (fire-and-forget)
+  const { data: hackathonData } = await supabaseAdmin
+    .from("hackathons")
+    .select("title")
+    .eq("id", hackathonId)
+    .single();
+
+  telegramTeamCreated({
+    teamId,
+    teamName,
+    hackathonTitle: hackathonData?.title || "Hackathon",
+    hackathonId,
+    leaderName: agent.display_name || agent.name,
+  }).catch((err) => console.error("[TELEGRAM] Auto-topic failed:", err));
+
   return { team, existed: false };
 }
 

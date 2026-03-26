@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { MARKETPLACE_ROLES, getRole, type RoleDefinition } from "@/lib/roles";
 
 /* ═══════════════════════════════════════════════════════════════
    🏪 Team Marketplace
@@ -159,7 +160,7 @@ export default function MarketplacePage() {
       </div>
 
       {/* ── Filter ── */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 10, padding: "12px 16px 32px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: 10, padding: "12px 16px 16px", flexWrap: "wrap" }}>
         <select
           value={filter}
           onChange={e => setFilter(e.target.value)}
@@ -172,6 +173,37 @@ export default function MarketplacePage() {
           <option value="all">🔍 All Hackathons</option>
           {hackathons.map(h => <option key={h.id} value={h.id}>🏆 {h.title}</option>)}
         </select>
+      </div>
+
+      {/* ── Role Guide ── */}
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 16px 24px" }}>
+        <details style={{ background: "var(--s-low)", border: "1px solid var(--outline)", borderRadius: 12, padding: "12px 16px" }}>
+          <summary style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: "var(--text)", cursor: "pointer", fontWeight: 600 }}>
+            📋 Available Roles Guide
+          </summary>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12, marginTop: 12 }}>
+            {Object.values(MARKETPLACE_ROLES).map((role: RoleDefinition) => (
+              <div key={role.id} style={{
+                background: "rgba(255,255,255,0.02)", border: `1px solid ${role.color}33`,
+                borderRadius: 8, padding: "12px 14px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                  <span style={{ fontSize: 16 }}>{role.emoji}</span>
+                  <span style={{ fontSize: 12, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: role.color }}>{role.title}</span>
+                  {role.blocks_iteration && (
+                    <span style={{ fontSize: 8, background: "rgba(255,215,0,0.2)", color: "#ffd700", padding: "2px 6px", borderRadius: 4, fontFamily: "'JetBrains Mono', monospace" }}>
+                      GATES LOOP
+                    </span>
+                  )}
+                </div>
+                <p style={{ fontSize: 11, color: "var(--text-dim)", lineHeight: 1.5, marginBottom: 6 }}>{role.tagline}</p>
+                <div style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                  💰 Suggested: {role.suggested_share.min}–{role.suggested_share.max}% · ⏱ {role.active_phase}
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
       </div>
 
       {/* ── States ── */}
@@ -235,12 +267,27 @@ function Card({ listing: l }: { listing: Listing }) {
     : deadline === "Ended" ? "var(--red)"
     : deadlineUrgent ? "var(--red)" : "var(--green)";
 
+  // Resolve role type for badge
+  const roleType = (l as unknown as Record<string, unknown>).role_type as string | undefined;
+  const roleDef = roleType ? getRole(roleType) : null;
+
   return (
     <div className="challenge-card" style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative", overflow: "hidden" }}>
 
       {/* ── Header: badge + challenge type ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <RoleBadge status={l.status} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <RoleBadge status={l.status} />
+          {roleDef && (
+            <span style={{
+              fontSize: 9, padding: "3px 8px", borderRadius: 4,
+              background: `${roleDef.color}22`, color: roleDef.color,
+              fontFamily: "'JetBrains Mono', monospace", fontWeight: 600,
+            }}>
+              {roleDef.emoji} {roleDef.title.toUpperCase()}
+            </span>
+          )}
+        </div>
         <span style={{
           fontSize: 9, color: "var(--text-muted)", fontFamily: "'JetBrains Mono', monospace",
           letterSpacing: "0.08em", textTransform: "uppercase",
@@ -336,6 +383,21 @@ function Card({ listing: l }: { listing: Listing }) {
             padding: "5px 10px", borderRadius: 6,
             background: "rgba(255,255,255,0.03)", border: "1px solid rgba(89,65,57,0.15)",
           }}>
+            <svg viewBox="0 0 16 16" width={20} height={20} style={{ imageRendering: "pixelated", flexShrink: 0 }}>
+              <rect x={1} y={2} width={2} height={2} fill="#ff6b35" />
+              <rect x={0} y={0} width={2} height={2} fill="#ff6b35" />
+              <rect x={13} y={2} width={2} height={2} fill="#ff6b35" />
+              <rect x={14} y={0} width={2} height={2} fill="#ff6b35" />
+              <rect x={6} y={1} width={4} height={2} fill="#ff6b35" />
+              <rect x={4} y={3} width={8} height={3} fill="#ff6b35" />
+              <rect x={5} y={6} width={6} height={2} fill="#ff6b35" />
+              <rect x={6} y={8} width={4} height={2} fill="#e65100" />
+              <rect x={6} y={4} width={1} height={1} fill="#111" />
+              <rect x={9} y={4} width={1} height={1} fill="#111" />
+              <rect x={4} y={10} width={2} height={2} fill="#e65100" />
+              <rect x={7} y={10} width={2} height={2} fill="#e65100" />
+              <rect x={10} y={10} width={2} height={2} fill="#e65100" />
+            </svg>
             <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: "var(--text-dim)", fontWeight: 500 }}>
               {l.poster_name || "Anon"}
             </span>

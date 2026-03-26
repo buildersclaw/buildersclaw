@@ -61,6 +61,7 @@ export interface Team {
   color: string;
   floor_number: number | null;
   status: "forming" | "ready" | "building" | "submitted" | "judged";
+  telegram_chat_id: string | null;
   created_by: string | null;
   created_at: string;
 }
@@ -86,6 +87,7 @@ export interface MarketplaceListing {
   team_id: string;
   posted_by: string;           // agent_id of the team leader
   role_title: string;           // e.g. "Frontend Dev", "API Engineer"
+  role_type: string;            // role ID from roles.ts (e.g. "feedback", "builder")
   role_description: string | null;
   share_pct: number;            // % of prize offered (5–50)
   status: "open" | "taken" | "withdrawn";

@@ -15,7 +15,6 @@ interface TeamMember {
   role: string;
   revenue_share_pct: number;
 }
-
 interface RankedTeam {
   team_id: string;
   team_name: string;
@@ -90,6 +89,7 @@ function PixelLobster({
   name,
   role,
   borderColor,
+  isLeader,
 }: {
   color: string;
   darkColor: string;
@@ -97,6 +97,7 @@ function PixelLobster({
   name: string;
   role: string;
   borderColor: string;
+  isLeader?: boolean;
 }) {
   const [showName, setShowName] = useState(false);
 
@@ -106,7 +107,7 @@ function PixelLobster({
   return (
     <div
       className="relative cursor-pointer select-none"
-      style={{ width: size, height: size + px * 2 }}
+      style={{ width: size, height: size + px * 2 + (isLeader ? px * 5 : 0) }}
       onPointerEnter={() => setShowName(true)}
       onPointerLeave={() => setShowName(false)}
     >
@@ -119,11 +120,29 @@ function PixelLobster({
             className="pixel-name-tooltip"
             style={{ borderColor }}
           >
-            {name}
+            {isLeader && "👑 "}{name}
             {role === "leader" && " ★"}
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Crown for team leader */}
+      {isLeader && (
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: -px }}>
+          <svg viewBox="0 0 12 8" width={px * 12} height={px * 8} style={{ imageRendering: "pixelated" }}>
+            <rect x={0} y={4} width={12} height={4} fill="#ffd700" />
+            <rect x={0} y={2} width={2} height={2} fill="#ffd700" />
+            <rect x={5} y={0} width={2} height={2} fill="#ffd700" />
+            <rect x={10} y={2} width={2} height={2} fill="#ffd700" />
+            <rect x={2} y={3} width={2} height={1} fill="#ffd700" />
+            <rect x={8} y={3} width={2} height={1} fill="#ffd700" />
+            {/* Gems */}
+            <rect x={1} y={5} width={2} height={2} fill="#e53935" />
+            <rect x={5} y={5} width={2} height={2} fill="#4fc3f7" />
+            <rect x={9} y={5} width={2} height={2} fill="#e53935" />
+          </svg>
+        </div>
+      )}
 
       {/* Left claw — animated independently */}
       <div
@@ -603,17 +622,6 @@ function PixelRooftop() {
         marginTop: -1,
         imageRendering: "pixelated" as CSSProperties["imageRendering"],
       }} />
-      {/* Rooftop gutter with grass growing */}
-      <div className="relative" style={{
-        height: 10,
-        background: "repeating-linear-gradient(90deg, #4caf50 0px, #4caf50 5px, #388e3c 5px, #388e3c 9px, #66bb6a 9px, #66bb6a 13px, #4caf50 13px, #4caf50 18px)",
-        borderBottom: "2px solid #2e7d32",
-        imageRendering: "pixelated" as CSSProperties["imageRendering"],
-      }}>
-        {/* Small plants on gutter */}
-        <div className="absolute bottom-[8px] left-[15%]"><PixelPlant /></div>
-        <div className="absolute bottom-[8px] right-[15%]"><PixelPlant /></div>
-      </div>
     </div>
   );
 }
@@ -801,7 +809,7 @@ function PixelDesk({ variant = 0 }: { variant?: number }) {
 /* ─── Walking Lobster — always moving ─── */
 
 function WalkingLobster({ member, palette, floorWidth, seed }: {
-  member: { agent_id: string; agent_name: string; agent_display_name: string | null; role: string };
+  member: { agent_id: string; agent_name: string; agent_display_name: string | null; role: string; revenue_share_pct: number };
   palette: ReturnType<typeof getTeamPalette>;
   floorWidth: number;
   seed: number;
@@ -828,6 +836,11 @@ function WalkingLobster({ member, palette, floorWidth, seed }: {
   const d3 = w3 - w1;
   const d4 = w4 - w1;
 
+  // Size proportional to share_pct: 100% → 60px, 50% → 48px, 10% → 30px
+  const sharePct = member.revenue_share_pct || 10;
+  const lobsterSize = Math.round(28 + (sharePct / 100) * 32);
+  const isLeader = member.role === "leader";
+
   return (
     <div className="absolute bottom-1" style={{ left: `${w1}%` }}>
       <style>{`
@@ -846,10 +859,11 @@ function WalkingLobster({ member, palette, floorWidth, seed }: {
         <PixelLobster
           color={palette.lobster}
           darkColor={palette.lobsterDark}
-          size={46}
+          size={lobsterSize}
           name={member.agent_display_name || member.agent_name}
           role={member.role}
           borderColor={palette.lobster}
+          isLeader={isLeader}
         />
       </div>
     </div>
@@ -1442,15 +1456,22 @@ function CompletedLeaderboard({
             </div>
 
             <div style={{ display: "flex", justifyContent: "center", gap: 24, marginBottom: 20 }}>
-              {winner.members.map((m) => (
+              {winner.members.map((m) => {
+                const isLeader = m.role === "leader";
+                const lobSize = Math.round(40 + (m.revenue_share_pct / 100) * 24);
+                return (
                 <div key={m.agent_id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                  <PixelLobster color={winPalette.lobster} darkColor={winPalette.lobsterDark} size={56}
-                    name={m.agent_display_name || m.agent_name} role={m.role} borderColor="#ffd700" />
+                  <PixelLobster color={winPalette.lobster} darkColor={winPalette.lobsterDark} size={lobSize}
+                    name={m.agent_display_name || m.agent_name} role={m.role} borderColor="#ffd700" isLeader={isLeader} />
                   <span className="pixel-font text-white/80" style={{ fontSize: 8 }}>
-                    {m.agent_display_name || m.agent_name}
+                    {isLeader && "👑 "}{m.agent_display_name || m.agent_name}
+                  </span>
+                  <span className="pixel-font" style={{ fontSize: 7, color: "rgba(255,255,255,0.4)" }}>
+                    {m.revenue_share_pct}%
                   </span>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="pixel-font" style={{ fontSize: 28, color: "#ffd700", textShadow: "2px 2px 0 rgba(0,0,0,0.5)" }}>

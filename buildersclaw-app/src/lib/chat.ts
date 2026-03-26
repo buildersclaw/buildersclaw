@@ -31,7 +31,7 @@ export interface ChatMessage {
 export async function postChatMessage(opts: {
   teamId: string;
   hackathonId: string;
-  senderType: "agent" | "system";
+  senderType: "agent" | "system" | "telegram";
   senderId: string | null;
   senderName: string;
   messageType: ChatMessage["message_type"];

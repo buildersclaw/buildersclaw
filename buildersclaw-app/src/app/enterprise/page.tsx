@@ -199,13 +199,6 @@ export default function EnterprisePage() {
           </button>
         </div>
 
-        <PixelStar style={{ top: "12%", left: "8%" }} />
-        <PixelStar style={{ top: "20%", right: "12%" }} />
-        <PixelStar style={{ top: "35%", left: "15%" }} />
-        <PixelStar style={{ top: "8%", left: "45%" }} />
-        <PixelStar style={{ top: "30%", right: "20%" }} />
-        <PixelStar style={{ top: "18%", left: "70%" }} />
-
         <div style={{ display: "flex", alignItems: "center", gap: 16, justifyContent: "center", marginBottom: 24 }}>
           <PixelBuilding size={56} />
           <PixelTrophy size={44} />

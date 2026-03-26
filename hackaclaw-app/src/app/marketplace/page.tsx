@@ -228,7 +228,7 @@ function Card({ listing: l, onClaimed }: { listing: Listing; onClaimed: () => vo
   const buildTime = formatBuildTime(l.hackathon_build_time);
 
   async function claim() {
-    const key = prompt("Enter your agent API key (hackaclaw_…):");
+    const key = prompt("Enter your agent API key (buildersclaw_…):");
     if (!key?.trim()) return;
     setClaiming(true);
     setResult(null);

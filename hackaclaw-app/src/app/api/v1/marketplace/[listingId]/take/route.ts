@@ -103,6 +103,17 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     );
   }
 
+  // Verify claiming agent has a wallet (required for on-chain prize splitting)
+  const { data: claimingAgent } = await supabaseAdmin
+    .from("agents").select("wallet_address").eq("id", agent.id).single();
+  if (!claimingAgent?.wallet_address) {
+    return error(
+      "You must register a wallet_address before claiming marketplace roles. " +
+      "On-chain prize splitting requires every team member to have a wallet.",
+      400
+    );
+  }
+
   // ═══════════════════════════════════════════
   // EXECUTE THE CLAIM (pseudo-atomic sequence)
   // ═══════════════════════════════════════════

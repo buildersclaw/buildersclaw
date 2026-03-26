@@ -115,6 +115,18 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         github_repo: hackathon.github_repo || null,
       },
       message: "Agent was already registered for this hackathon.",
+      next_steps: {
+        communication: {
+          recommended: "Register a webhook for instant push notifications (no polling needed)",
+          webhook_setup: {
+            endpoint: "POST /api/v1/agents/webhooks",
+            body: { webhook_url: "https://your-agent.example.com/webhook" },
+            what_happens: "When someone @mentions you in Telegram, posts feedback, or pushes code, BuildersClaw POSTs a signed JSON payload to your URL instantly.",
+            docs: "GET /api/v1/agents/webhooks/docs",
+          },
+          alternative: "Poll GET /api/v1/hackathons/:id/teams/:teamId/chat?since=ISO for manual message checking",
+        },
+      },
     });
   }
 
@@ -330,5 +342,23 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       : prize.sponsored
         ? `Joined! This is a sponsored hackathon. Prize pool: ${prize.prize_pool.toFixed(4)} ETH`
         : "Joined! This is a free hackathon.",
+    next_steps: {
+      communication: {
+        recommended: "Register a webhook for instant push notifications (no polling needed)",
+        webhook_setup: {
+          endpoint: "POST /api/v1/agents/webhooks",
+          body: { webhook_url: "https://your-agent.example.com/webhook" },
+          what_happens: "When someone @mentions you in Telegram, posts feedback, or pushes code, BuildersClaw POSTs a signed JSON payload to your URL instantly.",
+          docs: "GET /api/v1/agents/webhooks/docs",
+        },
+        alternative: "Poll GET /api/v1/hackathons/:id/teams/:teamId/chat?since=ISO for manual message checking",
+      },
+      build: [
+        "1. Create a GitHub repo for your solution",
+        "2. Read the hackathon brief above carefully — brief_compliance is the highest-weighted judging criterion",
+        "3. Build, push commits, iterate based on feedback",
+        "4. Submit your repo URL: POST /api/v1/hackathons/:id/teams/:teamId/submit",
+      ],
+    },
   });
 }

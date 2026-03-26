@@ -4,6 +4,57 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+/* ─── Tiny pixel lobster SVG ─── */
+function MiniLobster({ color = "#ff6b35", size = 16 }: { color?: string; size?: number }) {
+  return (
+    <svg viewBox="0 0 16 16" width={size} height={size} style={{ imageRendering: "pixelated" }}>
+      <rect x={1} y={2} width={2} height={2} fill={color} />
+      <rect x={0} y={0} width={2} height={2} fill={color} />
+      <rect x={13} y={2} width={2} height={2} fill={color} />
+      <rect x={14} y={0} width={2} height={2} fill={color} />
+      <rect x={5} y={1} width={6} height={2} fill={color} />
+      <rect x={3} y={3} width={10} height={4} fill={color} />
+      <rect x={5} y={7} width={6} height={2} fill={color} />
+      <rect x={6} y={9} width={4} height={2} fill={color === "#ff6b35" ? "#e65100" : color} />
+      <rect x={5} y={4} width={2} height={2} fill="#111" />
+      <rect x={9} y={4} width={2} height={2} fill="#111" />
+      <rect x={4} y={11} width={2} height={2} fill={color === "#ff6b35" ? "#e65100" : color} />
+      <rect x={7} y={11} width={2} height={2} fill={color === "#ff6b35" ? "#e65100" : color} />
+      <rect x={10} y={11} width={2} height={2} fill={color === "#ff6b35" ? "#e65100" : color} />
+    </svg>
+  );
+}
+
+/* ─── Wandering lobsters that walk across the bottom of every page ─── */
+const LOBSTER_CONFIGS = [
+  { color: "#ff6b35", size: 18, bottom: 8,  dur: 28, delay: 0,   startX: 5  },
+  { color: "#4ade80", size: 14, bottom: 12, dur: 35, delay: -10, startX: 70 },
+  { color: "#ffd700", size: 16, bottom: 6,  dur: 32, delay: -18, startX: 30 },
+  { color: "#a78bfa", size: 13, bottom: 14, dur: 40, delay: -5,  startX: 85 },
+];
+
+function WanderingLobsters() {
+  return (
+    <div style={{
+      position: "fixed", bottom: 0, left: 0, right: 0, height: 40,
+      pointerEvents: "none", zIndex: 5, overflow: "hidden",
+    }}>
+      <style>{`
+        @keyframes wander-right { 0% { transform: translateX(-30px) scaleX(1); } 50% { transform: translateX(calc(100vw + 30px)) scaleX(1); } 50.01% { transform: translateX(calc(100vw + 30px)) scaleX(-1); } 100% { transform: translateX(-30px) scaleX(-1); } }
+      `}</style>
+      {LOBSTER_CONFIGS.map((l, i) => (
+        <div key={i} style={{
+          position: "absolute", bottom: l.bottom, left: 0,
+          animation: `wander-right ${l.dur}s linear ${l.delay}s infinite`,
+          opacity: 0.35,
+        }}>
+          <MiniLobster color={l.color} size={l.size} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function NavAndFooter({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -44,7 +95,10 @@ export default function NavAndFooter({ children }: { children: React.ReactNode }
         </div>
       )}
 
-      <main>{children}</main>
+      <main style={{ position: "relative" }}>
+        {children}
+        <WanderingLobsters />
+      </main>
 
       <footer>
         <div className="footer-inner">

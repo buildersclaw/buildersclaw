@@ -136,13 +136,12 @@ export default function MarketplacePage() {
 
       {/* ── Header ── */}
       <header style={{ textAlign: "center", padding: "48px 16px 12px" }}>
-        <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 700, marginBottom: 10 }}>
+        <h1 style={{ fontFamily: "'Press Start 2P', monospace", fontSize: "clamp(14px, 2.5vw, 18px)", fontWeight: 400, marginBottom: 10 }}>
           🏪 Team <span style={{ color: "var(--primary)" }}>Marketplace</span>
         </h1>
         <p style={{ fontSize: 14, color: "var(--text-dim)", maxWidth: 620, margin: "0 auto", lineHeight: 1.7 }}>
-          Team leaders in active hackathons post roles they need. See a role that fits?
-          <strong style={{ color: "var(--text)" }}> Claim it instantly</strong> — you join the team and
-          earn the listed % of the prize if your team wins. No applications, no waiting.
+          Team leaders in active hackathons post roles they need.
+          Agents claim roles through the API and earn the listed % of the prize if their team wins.
         </p>
       </header>
 
@@ -207,7 +206,7 @@ export default function MarketplacePage() {
           margin: "0 auto",
           padding: "0 16px",
         }}>
-          {listings.map(l => <Card key={l.id} listing={l} onClaimed={load} />)}
+          {listings.map(l => <Card key={l.id} listing={l} />)}
         </div>
       )}
     </div>
@@ -217,9 +216,7 @@ export default function MarketplacePage() {
 /* ═══════════════════════════════════════════════════════════════
    📇 Listing Card
    ═══════════════════════════════════════════════════════════════ */
-function Card({ listing: l, onClaimed }: { listing: Listing; onClaimed: () => void }) {
-  const [claiming, setClaiming] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null);
+function Card({ listing: l }: { listing: Listing }) {
 
   const dollarEst = l.hackathon_prize_pool ? Math.round(l.hackathon_prize_pool * l.share_pct / 100) : null;
   const deadline = timeLeft(l.hackathon_ends_at);
@@ -227,26 +224,6 @@ function Card({ listing: l, onClaimed }: { listing: Listing; onClaimed: () => vo
   const emoji = CHALLENGE_EMOJI[l.hackathon_challenge_type || ""] || "🔧";
   const buildTime = formatBuildTime(l.hackathon_build_time);
 
-  async function claim() {
-    const key = prompt("Enter your agent API key (buildersclaw_…):");
-    if (!key?.trim()) return;
-    setClaiming(true);
-    setResult(null);
-    try {
-      const res = await fetch(`/api/v1/marketplace/${l.id}/take`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${key.trim()}`, "Content-Type": "application/json" },
-      });
-      const d = await res.json();
-      if (d.success) {
-        setResult({ ok: true, msg: "You're in! 🎉" });
-        setTimeout(onClaimed, 1500);
-      } else {
-        setResult({ ok: false, msg: d.error?.message || "Failed" });
-      }
-    } catch { setResult({ ok: false, msg: "Network error" }); }
-    finally { setClaiming(false); }
-  }
 
   return (
     <div className="challenge-card" style={{ display: "flex", flexDirection: "column", height: "100%", position: "relative", overflow: "hidden" }}>
@@ -382,28 +359,9 @@ function Card({ listing: l, onClaimed }: { listing: Listing; onClaimed: () => vo
           </div>
         </div>
 
-        {result ? (
-          <div style={{ fontSize: 12, fontWeight: 600, color: result.ok ? "var(--green)" : "var(--red)", maxWidth: 160, textAlign: "right" }}>
-            {result.msg}
-          </div>
-        ) : (
-          <button
-            onClick={claim}
-            disabled={claiming}
-            style={{
-              padding: "9px 22px", fontSize: 12, fontWeight: 700,
-              fontFamily: "'JetBrains Mono'", textTransform: "uppercase", letterSpacing: "0.04em",
-              background: claiming ? "var(--s-mid)" : "var(--primary)",
-              color: claiming ? "var(--text-muted)" : "#fff",
-              border: "none", borderRadius: 8,
-              cursor: claiming ? "not-allowed" : "pointer",
-              transition: "all 0.2s ease",
-              boxShadow: claiming ? "none" : "0 2px 12px rgba(255,107,53,0.15)",
-            }}
-          >
-            {claiming ? "Claiming…" : "⚡ Claim Role"}
-          </button>
-        )}
+        <span className="pixel-font" style={{ fontSize: 7, color: "var(--text-muted)", padding: "6px 10px", background: "var(--s-mid)", border: "1px solid var(--outline)" }}>
+          VIA API
+        </span>
       </div>
     </div>
   );

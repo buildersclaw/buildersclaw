@@ -213,7 +213,7 @@ export default function EnterprisePage() {
         </div>
 
         <h1 style={{
-          fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 700,
+          fontFamily: "'Press Start 2P', monospace", fontSize: "clamp(14px, 2.5vw, 18px)", fontWeight: 400,
           lineHeight: 1.15, marginBottom: 20,
         }}>
           Stop Hiring.<br />
@@ -268,7 +268,7 @@ export default function EnterprisePage() {
                 }}>
                   STEP {step.icon}
                 </div>
-                <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, fontWeight: 600, marginBottom: 10, marginTop: 12 }}>
+                <h3 style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 12, fontWeight: 400, marginBottom: 10, marginTop: 12 }}>
                   {step.title}
                 </h3>
                 <p style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.7, margin: 0 }}>{step.desc}</p>
@@ -291,7 +291,7 @@ export default function EnterprisePage() {
                 background: "rgba(0,0,0,0.3)", border: "2px solid rgba(89,65,57,0.15)", padding: "24px 20px",
               }}>
                 <div className="pixel-font" style={{ fontSize: 11, fontWeight: 400, color: "var(--green)", marginBottom: 12 }}>{uc.icon}</div>
-                <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 600, marginBottom: 6 }}>{uc.title}</h3>
+                <h3 style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 11, fontWeight: 400, marginBottom: 6 }}>{uc.title}</h3>
                 <p style={{ fontSize: 12, color: "var(--text-dim)", lineHeight: 1.7, margin: 0 }}>{uc.desc}</p>
               </div>
             ))}
@@ -341,7 +341,7 @@ export default function EnterprisePage() {
               padding: "40px 32px", textAlign: "center",
             }}>
               <div className="pixel-font" style={{ fontSize: 16, fontWeight: 400, color: "var(--green)", marginBottom: 16 }}>GG!</div>
-              <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 700, marginBottom: 8 }}>
+              <h3 style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 14, fontWeight: 400, marginBottom: 8 }}>
                 Challenge Submitted
               </h3>
               <p style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.7, marginBottom: 24 }}>
@@ -737,7 +737,7 @@ export default function EnterprisePage() {
             <div className="pixel-font" style={{ fontSize: 9, fontWeight: 400, color: "var(--green)", marginBottom: 12 }}>
               WALLET CONNECTED
             </div>
-            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, margin: "0 0 10px" }}>
+            <h3 style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 14, fontWeight: 400, margin: "0 0 10px" }}>
               Sponsor wallet
             </h3>
             <p style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.7, margin: "0 0 18px" }}>

@@ -48,7 +48,6 @@ export default function RootLayout({
             <div className="nav-links">
               <Link href="/" className={pathname === "/" ? "active" : ""}>Home</Link>
               <Link href="/hackathons" className={pathname.startsWith("/hackathons") ? "active" : ""}>Hackathons</Link>
-              <Link href="/docs" className={pathname === "/docs" ? "active" : ""}>Docs</Link>
               <Link href="/enterprise" className={pathname === "/enterprise" ? "active" : ""}>Enterprise</Link>
             </div>
           </div>
@@ -67,7 +66,6 @@ export default function RootLayout({
           <div className="mobile-menu" onClick={() => setMenuOpen(false)}>
             <Link href="/" className={pathname === "/" ? "active" : ""}>Home</Link>
             <Link href="/hackathons" className={pathname.startsWith("/hackathons") ? "active" : ""}>Hackathons</Link>
-            <Link href="/docs" className={pathname === "/docs" ? "active" : ""}>Docs</Link>
             <Link href="/enterprise" className={pathname === "/enterprise" ? "active" : ""}>Enterprise</Link>
           </div>
         )}
@@ -85,7 +83,6 @@ export default function RootLayout({
             <div className="footer-links">
               <Link href="/">Home</Link>
               <Link href="/hackathons">Hackathons</Link>
-              <Link href="/docs">Docs</Link>
               <Link href="/enterprise">Enterprise</Link>
             </div>
             <div className="footer-right"></div>

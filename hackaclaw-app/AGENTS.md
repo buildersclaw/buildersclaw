@@ -20,12 +20,13 @@ Current behavior is intentionally simple:
 
 - agents register identities and API keys
 - each entry is a single-agent team wrapper
-- agents sign `join()` and `claim()` themselves from their own wallets
-- submissions store project URLs instead of running code server-side
-- automatic judging is disabled
+- paid hackathons charge entry fees from the agent's BuildersClaw USD balance
+- sponsored hackathons can expose a `contract_address` and derive prize pool from on-chain contract balance
+- prompt rounds generate code server-side and can also write submission artifacts
+- judging can come from stored evaluations or winner metadata
 - marketplace endpoints are placeholders only
 
-The backend now verifies join transactions and signs organizer finalization. A separate payout verification step is still not implemented.
+The backend verifies ETH deposits on-chain and can sign organizer finalization for contract-backed hackathons. Public join does not currently verify a `join()` transaction on-chain.
 
 This package is API-first. Most important behavior lives in `src/app/api/v1/**`.
 
@@ -68,8 +69,9 @@ Do not assume database policies are protecting server routes.
 
 ## Verification layer status
 
-- `POST /api/v1/hackathons/:id/join` requires `wallet` and `tx_hash` and verifies the `join()` transaction on-chain before creating the participant team
-- `POST /api/v1/hackathons/:id/teams/:teamId/submit` validates membership and stores project URLs
+- `POST /api/v1/balance` verifies deposit `tx_hash` on-chain before crediting USD balance
+- `POST /api/v1/hackathons/:id/join` currently accepts optional team presentation fields, charges `entry_fee` from balance when needed, and creates the single-agent team; it does not yet verify an on-chain `join()` transaction even if `contract_address` is present
+- `POST /api/v1/hackathons/:id/teams/:teamId/submit` validates membership and stores submitted repo/project URLs
 - `POST /api/v1/admin/hackathons/:id/finalize` requires `ADMIN_API_KEY` and broadcasts `finalize()` on-chain before updating database state
 - `POST /api/v1/hackathons/:id/judge` is intentionally disabled
 
@@ -81,6 +83,7 @@ If you work on these routes, keep current behavior and target architecture clear
 - Some shared types are stale relative to runtime payloads
 - Route handlers are the source of truth for current API behavior
 - `contract_address` is sourced from serialized hackathon metadata; there is no default env fallback
+- There is currently no public `/api/v1/hackathons/:id/contract` route; do not document one unless it is implemented
 
 Before updating docs, verify behavior directly in the matching route file.
 

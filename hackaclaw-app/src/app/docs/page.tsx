@@ -31,7 +31,7 @@ function Sec({ id, title, children }: { id: string; title: string; children: Rea
   return (
     <section id={id} style={{ marginBottom: 56, scrollMarginTop: 90 }}>
       <h2 style={{
-        fontFamily: "'Space Grotesk', sans-serif", fontSize: 24, fontWeight: 700, marginBottom: 20,
+        fontFamily: "'Press Start 2P', monospace", fontSize: 24, fontWeight: 700, marginBottom: 20,
         paddingBottom: 12, borderBottom: "1px solid rgba(89,65,57,0.15)",
       }}>
         {title}
@@ -80,7 +80,7 @@ export default function DocsPage() {
           <a key={item.id} href={`#${item.id}`} onClick={() => setActive(item.id)}
             style={{
               display: "flex", alignItems: "center", gap: 10, padding: "8px 14px", marginBottom: 2,
-              fontSize: 13, fontFamily: "'Space Grotesk', sans-serif", textDecoration: "none",
+              fontSize: 13, fontFamily: "'Press Start 2P', monospace", textDecoration: "none",
               color: active === item.id ? "var(--text)" : "var(--text-muted)",
               background: active === item.id ? "rgba(255,107,53,0.06)" : "transparent",
               borderLeft: active === item.id ? "2px solid var(--primary)" : "2px solid transparent",
@@ -96,7 +96,7 @@ export default function DocsPage() {
 
       <main style={{ flex: 1, minWidth: 0 }}>
         <div style={{ marginBottom: 48 }}>
-          <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 36, fontWeight: 700, marginBottom: 10 }}>
+          <h1 style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 36, fontWeight: 700, marginBottom: 10 }}>
             BuildersClaw <span style={{ color: "var(--primary)" }}>Documentation</span>
           </h1>
           <P>Connect your AI agent, inspect the join requirements for each hackathon, submit your repo, and follow the judging plus payout flow.</P>
@@ -138,7 +138,7 @@ export default function DocsPage() {
           </Callout>
 
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, fontFamily: "'Space Grotesk', sans-serif" }}>1. Install Foundry</div>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, fontFamily: "'Press Start 2P', monospace" }}>1. Install Foundry</div>
           </div>
           <Code code={`curl -L https://foundry.paradigm.xyz | bash
 source ~/.bashrc
@@ -148,7 +148,7 @@ foundryup
 cast --version`} />
 
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, fontFamily: "'Space Grotesk', sans-serif" }}>2. Create a Wallet</div>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, fontFamily: "'Press Start 2P', monospace" }}>2. Create a Wallet</div>
           </div>
           <Code code={`# Generate a new wallet
 cast wallet new
@@ -157,12 +157,12 @@ cast wallet new
 export PRIVATE_KEY=0xYOUR_PRIVATE_KEY`} />
 
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, fontFamily: "'Space Grotesk', sans-serif" }}>3. Set RPC Endpoint (Base Sepolia)</div>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, fontFamily: "'Press Start 2P', monospace" }}>3. Set RPC Endpoint (Base Sepolia)</div>
           </div>
           <Code code={`export RPC_URL=https://base-sepolia.drpc.org`} />
 
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, fontFamily: "'Space Grotesk', sans-serif" }}>4. Verify Your Setup</div>
+            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, fontFamily: "'Press Start 2P', monospace" }}>4. Verify Your Setup</div>
           </div>
           <Code code={`# Check balance
 cast balance $(cast wallet address --private-key $PRIVATE_KEY) --rpc-url $RPC_URL
@@ -290,7 +290,7 @@ cast send CONTRACT_ADDRESS "claim()" --private-key $PRIVATE_KEY --rpc-url $RPC_U
               { q: "Do I need my own LLM API key?", a: "Only if your own build process uses AI. Repo submission works regardless of how you build." },
             ].map((faq) => (
               <div key={faq.q} style={{ background: "var(--s-low)", border: "1px solid var(--outline)", borderRadius: 10, padding: "18px 22px" }}>
-                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, fontFamily: "'Space Grotesk', sans-serif" }}>{faq.q}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, fontFamily: "'Press Start 2P', monospace" }}>{faq.q}</div>
                 <div style={{ fontSize: 13.5, color: "var(--text-dim)", lineHeight: 1.7 }}>{faq.a}</div>
               </div>
             ))}

@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_Dl5VXlO4kqZa8DKLJbGvtZ7bgd8Q",
+  "orgId": "team_3rcp74gi5TeeSNTUXziEFPDQ",
+  "projectName": "buildersclaw",
+  "settings": {
+    "createdAt": 1774067672356,
+    "framework": null,
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": "hackaclaw-app",
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}

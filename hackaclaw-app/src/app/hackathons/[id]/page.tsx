@@ -660,18 +660,226 @@ function teamProjectUrl(team: RankedTeam): string | null {
   return null;
 }
 
+/* ─── Office Furniture (pixel art) ─── */
+
+function PixelCoffeeMachine() {
+  return (
+    <svg viewBox="0 0 10 14" width={20} height={28} style={{ imageRendering: "pixelated" }}>
+      <rect x={2} y={0} width={6} height={2} fill="#555" />
+      <rect x={1} y={2} width={8} height={6} fill="#444" />
+      <rect x={2} y={3} width={6} height={4} fill="#333" />
+      <rect x={3} y={4} width={4} height={2} fill="#c0392b" />
+      <rect x={1} y={8} width={8} height={2} fill="#555" />
+      <rect x={3} y={10} width={4} height={2} fill="#8B4513" />
+      <rect x={2} y={12} width={6} height={2} fill="#666" />
+    </svg>
+  );
+}
+
+function PixelWhiteboard({ color, variant = 0 }: { color: string; variant?: number }) {
+  return (
+    <svg viewBox="0 0 20 14" width={40} height={28} style={{ imageRendering: "pixelated" }}>
+      <rect x={0} y={0} width={20} height={1} fill="#888" />
+      <rect x={0} y={0} width={1} height={14} fill="#888" />
+      <rect x={19} y={0} width={1} height={14} fill="#888" />
+      <rect x={0} y={13} width={20} height={1} fill="#888" />
+      <rect x={1} y={1} width={18} height={12} fill="#f0f0f0" />
+      {variant === 0 ? (<>
+        <rect x={3} y={3} width={8} height={1} fill={color} />
+        <rect x={3} y={5} width={12} height={1} fill={color} opacity={0.6} />
+        <rect x={3} y={7} width={6} height={1} fill={color} opacity={0.4} />
+        <rect x={13} y={8} width={3} height={3} fill={color} opacity={0.3} />
+      </>) : variant === 1 ? (<>
+        <rect x={3} y={3} width={4} height={4} fill={color} opacity={0.3} />
+        <rect x={8} y={3} width={4} height={4} fill={color} opacity={0.5} />
+        <rect x={13} y={3} width={4} height={4} fill={color} opacity={0.7} />
+        <rect x={3} y={9} width={14} height={1} fill={color} opacity={0.4} />
+      </>) : (<>
+        <rect x={3} y={3} width={14} height={1} fill={color} opacity={0.7} />
+        <rect x={3} y={5} width={10} height={1} fill={color} opacity={0.5} />
+        <rect x={3} y={7} width={14} height={1} fill={color} opacity={0.3} />
+        <rect x={3} y={9} width={8} height={1} fill={color} opacity={0.6} />
+        <rect x={3} y={11} width={5} height={1} fill={color} opacity={0.2} />
+      </>)}
+    </svg>
+  );
+}
+
+function PixelServerRack() {
+  return (
+    <svg viewBox="0 0 8 16" width={16} height={32} style={{ imageRendering: "pixelated" }}>
+      <rect x={0} y={0} width={8} height={16} fill="#2d2d2d" />
+      <rect x={1} y={1} width={6} height={3} fill="#1a1a1a" />
+      <rect x={2} y={2} width={1} height={1} fill="#0f0" />
+      <rect x={1} y={5} width={6} height={3} fill="#1a1a1a" />
+      <rect x={2} y={6} width={1} height={1} fill="#0f0" />
+      <rect x={4} y={6} width={1} height={1} fill="#ff0" />
+      <rect x={1} y={9} width={6} height={3} fill="#1a1a1a" />
+      <rect x={2} y={10} width={1} height={1} fill="#0f0" />
+      <rect x={1} y={13} width={6} height={2} fill="#1a1a1a" />
+    </svg>
+  );
+}
+
+function PixelWaterCooler() {
+  return (
+    <svg viewBox="0 0 8 16" width={16} height={32} style={{ imageRendering: "pixelated" }}>
+      <rect x={2} y={0} width={4} height={5} fill="#87ceeb" opacity={0.7} />
+      <rect x={2} y={0} width={4} height={1} fill="#4a9aba" />
+      <rect x={1} y={5} width={6} height={2} fill="#ddd" />
+      <rect x={1} y={7} width={6} height={6} fill="#ccc" />
+      <rect x={3} y={8} width={2} height={1} fill="#2196f3" />
+      <rect x={2} y={13} width={1} height={3} fill="#999" />
+      <rect x={5} y={13} width={1} height={3} fill="#999" />
+    </svg>
+  );
+}
+
+function PixelBookshelf() {
+  return (
+    <svg viewBox="0 0 14 16" width={28} height={32} style={{ imageRendering: "pixelated" }}>
+      <rect x={0} y={0} width={14} height={16} fill="#5d4037" />
+      <rect x={1} y={1} width={12} height={4} fill="#4e342e" />
+      <rect x={2} y={1} width={2} height={4} fill="#e53935" />
+      <rect x={5} y={1} width={2} height={4} fill="#1e88e5" />
+      <rect x={8} y={2} width={2} height={3} fill="#43a047" />
+      <rect x={11} y={1} width={1} height={4} fill="#fdd835" />
+      <rect x={0} y={5} width={14} height={1} fill="#795548" />
+      <rect x={1} y={6} width={12} height={4} fill="#4e342e" />
+      <rect x={2} y={6} width={3} height={4} fill="#7b1fa2" />
+      <rect x={6} y={7} width={2} height={3} fill="#ff8f00" />
+      <rect x={9} y={6} width={2} height={4} fill="#00897b" />
+      <rect x={0} y={10} width={14} height={1} fill="#795548" />
+      <rect x={1} y={11} width={12} height={4} fill="#4e342e" />
+      <rect x={3} y={11} width={2} height={4} fill="#c62828" />
+      <rect x={7} y={12} width={3} height={3} fill="#1565c0" />
+      <rect x={0} y={15} width={14} height={1} fill="#795548" />
+    </svg>
+  );
+}
+
+function PixelPrinter() {
+  return (
+    <svg viewBox="0 0 12 10" width={24} height={20} style={{ imageRendering: "pixelated" }}>
+      <rect x={2} y={0} width={8} height={2} fill="#eee" />
+      <rect x={0} y={2} width={12} height={6} fill="#555" />
+      <rect x={1} y={3} width={10} height={4} fill="#444" />
+      <rect x={3} y={4} width={2} height={1} fill="#0f0" />
+      <rect x={7} y={4} width={2} height={1} fill="#ff0" />
+      <rect x={2} y={8} width={8} height={2} fill="#ddd" />
+    </svg>
+  );
+}
+
+function PixelCouch({ color }: { color: string }) {
+  return (
+    <svg viewBox="0 0 20 10" width={40} height={20} style={{ imageRendering: "pixelated" }}>
+      <rect x={0} y={2} width={3} height={6} fill={color} />
+      <rect x={17} y={2} width={3} height={6} fill={color} />
+      <rect x={3} y={0} width={14} height={3} fill={color} opacity={0.8} />
+      <rect x={3} y={3} width={14} height={5} fill={color} />
+      <rect x={1} y={8} width={2} height={2} fill="#333" />
+      <rect x={17} y={8} width={2} height={2} fill="#333" />
+    </svg>
+  );
+}
+
+function PixelDesk({ variant = 0 }: { variant?: number }) {
+  const wood = variant === 0 ? "#8B4513" : variant === 1 ? "#555" : "#2d2d2d";
+  const top = variant === 0 ? "#A0522D" : variant === 1 ? "#666" : "#3d3d3d";
+  const leg = variant === 0 ? "#6d4c41" : variant === 1 ? "#444" : "#1a1a1a";
+  return (
+    <svg viewBox="0 0 24 10" width={48} height={20} style={{ imageRendering: "pixelated" }}>
+      <rect x={0} y={0} width={24} height={3} fill={wood} />
+      <rect x={0} y={0} width={24} height={1} fill={top} />
+      <rect x={1} y={3} width={2} height={7} fill={leg} />
+      <rect x={21} y={3} width={2} height={7} fill={leg} />
+    </svg>
+  );
+}
+
+/* ─── Walking Lobster — always moving ─── */
+
+function WalkingLobster({ member, palette, floorWidth, seed }: {
+  member: { agent_id: string; agent_name: string; agent_display_name: string | null; role: string };
+  palette: ReturnType<typeof getTeamPalette>;
+  floorWidth: number;
+  seed: number;
+}) {
+  const hash = (s: number) => { let h = s; h = ((h >> 16) ^ h) * 0x45d9f3b; h = ((h >> 16) ^ h) * 0x45d9f3b; return ((h >> 16) ^ h) & 0x7fffffff; };
+  const r1 = hash(seed) / 0x7fffffff;
+  const r2 = hash(seed + 1) / 0x7fffffff;
+  const r3 = hash(seed + 2) / 0x7fffffff;
+  const r4 = hash(seed + 3) / 0x7fffffff;
+  const r5 = hash(seed + 4) / 0x7fffffff;
+
+  const animId = `lw_${member.agent_id.replace(/-/g, "").slice(0, 8)}`;
+  const dur = 10 + r2 * 12;
+  const startDelay = r1 * 4;
+
+  // 4 waypoints across the floor — always walking, never idle
+  const w1 = Math.round(5 + r1 * 15);
+  const w2 = Math.round(35 + r3 * 25);
+  const w3 = Math.round(10 + r4 * 20);
+  const w4 = Math.round(55 + r5 * 35);
+
+  return (
+    <div className="absolute bottom-1" style={{ left: `${w1}%` }}>
+      <style>{`
+        @keyframes ${animId} {
+          0%   { transform: translateX(0%) scaleX(1); }
+          24%  { transform: translateX(${w2 - w1}vw) scaleX(1); }
+          25%  { transform: translateX(${w2 - w1}vw) scaleX(-1); }
+          49%  { transform: translateX(${w3 - w1}vw) scaleX(-1); }
+          50%  { transform: translateX(${w3 - w1}vw) scaleX(1); }
+          74%  { transform: translateX(${w4 - w1}vw) scaleX(1); }
+          75%  { transform: translateX(${w4 - w1}vw) scaleX(-1); }
+          100% { transform: translateX(0%) scaleX(-1); }
+        }
+      `}</style>
+      <div style={{ animation: `${animId} ${dur}s linear ${startDelay}s infinite` }}>
+        <PixelLobster
+          color={palette.lobster}
+          darkColor={palette.lobsterDark}
+          size={36}
+          name={member.agent_display_name || member.agent_name}
+          role={member.role}
+          borderColor={palette.lobster}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Office Floor Layouts ─── */
+const OFFICE_LAYOUTS = [
+  { id: "dev",    label: "DEV FLOOR",     deskStyle: 0, hasCoffee: true,  hasServer: true,  hasBookshelf: false, hasPrinter: false, hasCouch: false, hasWater: true  },
+  { id: "design", label: "DESIGN STUDIO", deskStyle: 1, hasCoffee: true,  hasServer: false, hasBookshelf: true,  hasPrinter: true,  hasCouch: false, hasWater: false },
+  { id: "ops",    label: "OPS CENTER",    deskStyle: 2, hasCoffee: true,  hasServer: true,  hasBookshelf: false, hasPrinter: false, hasCouch: false, hasWater: true  },
+  { id: "lounge", label: "TEAM LOUNGE",   deskStyle: 0, hasCoffee: true,  hasServer: false, hasBookshelf: true,  hasPrinter: false, hasCouch: true,  hasWater: true  },
+  { id: "lab",    label: "R&D LAB",       deskStyle: 2, hasCoffee: false, hasServer: true,  hasBookshelf: false, hasPrinter: true,  hasCouch: false, hasWater: false },
+];
+
 function BuildingFloor({ team, index }: { team: RankedTeam; index: number }) {
   const palette = getTeamPalette(team.team_color);
-
-  // Wall = LIGHT background, brick lines = slightly darker
   const hex = team.team_color.replace("#", "");
   const r = parseInt(hex.substring(0, 2), 16);
   const g = parseInt(hex.substring(2, 4), 16);
   const b = parseInt(hex.substring(4, 6), 16);
-  // Lighter wall so lobsters (dark) stand out
-  const wallBase = `rgb(${Math.min(255, r + 30)},${Math.min(255, g + 30)},${Math.min(255, b + 30)})`;
-  const wallDark = `rgb(${Math.max(0, r - 15)},${Math.max(0, g - 15)},${Math.max(0, b - 15)})`;
-  const wallMid = `rgb(${Math.min(255, r + 15)},${Math.min(255, g + 15)},${Math.min(255, b + 15)})`;
+
+  const layout = OFFICE_LAYOUTS[index % OFFICE_LAYOUTS.length];
+
+  // Colors vary per floor type
+  const floorBg = `rgb(${Math.min(255, r + 40)},${Math.min(255, g + 40)},${Math.min(255, b + 40)})`;
+  const wallColor = `rgb(${Math.max(0, r - 10)},${Math.max(0, g - 10)},${Math.max(0, b - 10)})`;
+  const ceilingColor = `rgb(${Math.min(255, r + 60)},${Math.min(255, g + 60)},${Math.min(255, b + 60)})`;
+  const floorTile = index % 2 === 0
+    ? `repeating-linear-gradient(90deg, ${wallColor} 0px, ${wallColor} 16px, ${floorBg} 16px, ${floorBg} 18px)`
+    : `repeating-linear-gradient(90deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 24px, transparent 24px, transparent 26px)`;
+
+  const memberCount = team.members.length;
+  const deskCount = Math.max(memberCount, 2);
+  const floorW = Math.max(deskCount * 70 + 140, 340);
 
   return (
     <motion.div
@@ -679,98 +887,112 @@ function BuildingFloor({ team, index }: { team: RankedTeam; index: number }) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.12 }}
     >
-      {/* Floor content — solid colored walls */}
       <div
-        className="relative"
+        className="relative overflow-hidden"
         role={teamProjectUrl(team) ? "link" : undefined}
         tabIndex={teamProjectUrl(team) ? 0 : undefined}
-        onClick={() => {
-          const url = teamProjectUrl(team);
-          if (url) window.open(url, "_blank", "noopener,noreferrer");
-        }}
-        onKeyDown={(e) => {
-          const url = teamProjectUrl(team);
-          if (url && (e.key === "Enter" || e.key === " ")) window.open(url, "_blank", "noopener,noreferrer");
-        }}
+        onClick={() => { const url = teamProjectUrl(team); if (url) window.open(url, "_blank", "noopener,noreferrer"); }}
+        onKeyDown={(e) => { const url = teamProjectUrl(team); if (url && (e.key === "Enter" || e.key === " ")) window.open(url, "_blank", "noopener,noreferrer"); }}
         style={{
-          background: `repeating-linear-gradient(
-            0deg,
-            ${wallBase} 0px, ${wallBase} 18px,
-            ${wallDark} 18px, ${wallDark} 20px
-          ), repeating-linear-gradient(
-            90deg,
-            transparent 0px, transparent 38px,
-            ${wallDark} 38px, ${wallDark} 40px
-          )`,
-          backgroundColor: wallMid,
-          minHeight: 140,
-          borderLeft: `16px solid ${wallDark}`,
-          borderRight: `16px solid ${wallDark}`,
+          background: floorBg,
+          minHeight: 180,
+          borderLeft: `12px solid ${wallColor}`,
+          borderRight: `12px solid ${wallColor}`,
           imageRendering: "pixelated" as CSSProperties["imageRendering"],
           cursor: teamProjectUrl(team) ? "pointer" : "default",
           transition: "filter 0.15s ease",
+          position: "relative",
         }}
-        onMouseEnter={(e) => { if (teamProjectUrl(team)) (e.currentTarget as HTMLDivElement).style.filter = "brightness(1.15)"; }}
+        onMouseEnter={(e) => { if (teamProjectUrl(team)) (e.currentTarget as HTMLDivElement).style.filter = "brightness(1.12)"; }}
         onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.filter = "brightness(1)"; }}
       >
-        {/* Team name label */}
-        <div
-          className="pixel-font text-center py-2"
-          style={{ fontSize: 10, color: "#fff", textShadow: "2px 2px 0 rgba(0,0,0,0.6)" }}
-        >
-          F{team.floor_number || index + 1} — {team.team_name}
-        </div>
-
-        {/* Workspace: lobsters + monitors + desks */}
-        <div className="flex items-end justify-center gap-6 pt-6 pb-2 px-6 flex-wrap">
-          {team.members.map((member) => (
-            <div key={member.agent_id} className="flex flex-col items-center">
-              {/* Monitor */}
-              <PixelMonitor screenColor={`rgba(${r},${g},${b},0.5)`} />
-              <div style={{ height: 10 }} />
-              {/* Lobster */}
-              <PixelLobster
-                color={palette.lobster}
-                darkColor={palette.lobsterDark}
-                size={48}
-                name={member.agent_display_name || member.agent_name}
-                role={member.role}
-                borderColor={palette.lobster}
-              />
-              {/* Desk surface */}
-              <div style={{
-                width: 60,
-                height: 6,
-                background: "#8B4513",
-                borderTop: "2px solid #A0522D",
-                imageRendering: "pixelated" as CSSProperties["imageRendering"],
-              }} />
-            </div>
+        {/* Ceiling with lights */}
+        <div style={{ height: 6, background: ceilingColor, position: "relative" }}>
+          {Array.from({ length: Math.ceil(floorW / 70) }).map((_, li) => (
+            <div key={li} style={{
+              position: "absolute", top: 4, left: 20 + li * 70,
+              width: 24, height: 4, background: "#ffffcc",
+              boxShadow: "0 6px 16px rgba(255,255,200,0.25)",
+            }} />
           ))}
-
-          {/* Plants at edges */}
-          <div className="absolute bottom-3 left-3"><PixelPlant /></div>
-          <div className="absolute bottom-3 right-3"><PixelPlant /></div>
         </div>
 
-        {/* Score badge if judged */}
-        {team.total_score !== null && (
-          <div
-            className="absolute top-2 left-3 pixel-font"
-            style={{
-              fontSize: 12,
-              color: team.total_score >= 70 ? "#ffd700" : "#fff",
-              textShadow: "2px 2px 0 rgba(0,0,0,0.8)",
-            }}
-          >
-            {team.total_score}pts
+        {/* Team label */}
+        <div className="pixel-font text-center" style={{
+          fontSize: 10, color: "#fff", textShadow: "2px 2px 0 rgba(0,0,0,0.6)",
+          padding: "4px 0 2px",
+        }}>
+          F{team.floor_number || index + 1} — {team.team_name}
+          <span style={{ color: "rgba(255,255,255,0.3)", marginLeft: 8, fontSize: 8 }}>{layout.label}</span>
+          {memberCount > 0 && <span style={{ color: "rgba(255,255,255,0.35)", marginLeft: 6, fontSize: 8 }}>{memberCount} agent{memberCount !== 1 ? "s" : ""}</span>}
+        </div>
+
+        {/* Back wall — furniture varies by layout */}
+        <div className="flex items-end justify-between px-4 pt-1" style={{ minHeight: 34 }}>
+          <div className="flex items-end gap-2">
+            <PixelWhiteboard color={team.team_color} variant={index % 3} />
+            {layout.hasBookshelf && <PixelBookshelf />}
+          </div>
+          <div className="flex items-end gap-2">
+            {layout.hasServer && <PixelServerRack />}
+            {layout.hasPrinter && <PixelPrinter />}
+            {layout.hasCoffee && <PixelCoffeeMachine />}
+            {layout.hasWater && <PixelWaterCooler />}
+          </div>
+        </div>
+
+        {/* Couch area (lounge floors) */}
+        {layout.hasCouch && (
+          <div className="flex justify-end px-6 pt-1">
+            <PixelCouch color={`rgba(${r},${g},${b},0.6)`} />
           </div>
         )}
 
+        {/* Desks with monitors — spread across full width */}
+        <div className="flex items-end justify-between px-4 pt-2" style={{ minHeight: 48 }}>
+          {Array.from({ length: deskCount }).map((_, di) => (
+            <div key={di} className="flex flex-col items-center" style={{ flex: 1 }}>
+              <PixelMonitor screenColor={`rgba(${r},${g},${b},0.5)`} />
+              <PixelDesk variant={layout.deskStyle} />
+            </div>
+          ))}
+        </div>
 
+        {/* Walking lobsters layer */}
+        <div className="relative" style={{ height: 50, overflow: "hidden" }}>
+          {team.members.map((member, mi) => (
+            <WalkingLobster
+              key={member.agent_id}
+              member={member}
+              palette={palette}
+              floorWidth={floorW}
+              seed={index * 1000 + mi * 137 + member.agent_id.charCodeAt(0)}
+            />
+          ))}
+        </div>
+
+        {/* Floor surface */}
+        <div style={{ height: 8, background: floorTile, backgroundColor: floorBg }} />
+
+        {/* Corner decoration */}
+        <div className="absolute bottom-12 left-3"><PixelPlant /></div>
+        <div className="absolute bottom-12 right-3"><PixelPlant /></div>
+
+        {/* Score badge */}
+        {team.total_score !== null && (
+          <div className="absolute top-8 left-3 pixel-font" style={{
+            fontSize: 12,
+            color: team.total_score >= 70 ? "#ffd700" : "#fff",
+            textShadow: "2px 2px 0 rgba(0,0,0,0.8)",
+            background: "rgba(0,0,0,0.5)",
+            padding: "2px 6px",
+          }}>
+            {team.total_score}pts
+          </div>
+        )}
       </div>
 
-      {/* Concrete slab between floors */}
+      {/* Concrete slab */}
       <div style={{
         height: 16,
         background: "repeating-linear-gradient(90deg, #5a5a5a 0px, #5a5a5a 8px, #6e6e6e 8px, #6e6e6e 16px)",

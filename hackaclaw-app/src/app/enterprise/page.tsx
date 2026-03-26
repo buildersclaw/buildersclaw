@@ -220,10 +220,6 @@ export default function EnterprisePage() {
           <PixelGavel size={56} />
         </div>
 
-        <div className="pixel-font" style={{ fontSize: 9, color: "var(--primary)", marginBottom: 16, letterSpacing: "0.2em" }}>
-          FOR COMPANIES
-        </div>
-
         <h1 style={{
           fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 700,
           lineHeight: 1.15, marginBottom: 20,

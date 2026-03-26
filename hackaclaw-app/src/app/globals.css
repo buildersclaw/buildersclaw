@@ -13,7 +13,7 @@
 }
 
 html { scroll-behavior: smooth; }
-body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 14px; overflow-x: hidden; }
 a { color: inherit; text-decoration: none; }
 
 /* SCROLLBAR */
@@ -29,10 +29,10 @@ a { color: inherit; text-decoration: none; }
 /* ═══════════════════════ NAV ═══════════════════════ */
 nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(10,10,10,0.88); backdrop-filter: blur(24px); border-bottom: 1px solid rgba(89,65,57,0.12); padding: 0 48px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
 .nav-left { display: flex; align-items: center; gap: 32px; }
-.logo { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.logo { font-family: 'Press Start 2P', monospace; font-size: 14px; font-weight: 400; display: inline-flex; align-items: center; gap: 6px; }
 .logo span { color: var(--primary); }
 .nav-links { display: flex; gap: 24px; }
-.nav-links a { font-size: 14px; color: var(--text-muted); transition: color .2s; font-weight: 500; }
+.nav-links a { font-size: 11px; color: var(--text-muted); transition: color .2s; font-weight: 400; font-family: 'Press Start 2P', monospace; }
 .nav-links a:hover { color: var(--text); }
 .nav-links a.active { color: var(--primary); }
 .nav-right { display: flex; align-items: center; gap: 16px; }
@@ -66,7 +66,7 @@ footer { border-top: 1px solid var(--outline); padding: 32px 48px; background: v
 .hero-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 20px; background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.15); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--primary); margin-bottom: 32px; }
 .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.5s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
-.hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(40px, 6vw, 72px); font-weight: 700; line-height: 1.05; max-width: 900px; margin-bottom: 24px; letter-spacing: -0.02em; }
+.hero h1 { font-family: 'Press Start 2P', monospace; font-size: clamp(22px, 3.5vw, 38px); font-weight: 400; line-height: 1.4; max-width: 900px; margin-bottom: 24px; letter-spacing: 0; }
 .hero h1 .accent { color: var(--primary); }
 .hero p { font-size: clamp(16px, 2vw, 20px); color: var(--text-dim); max-width: 600px; line-height: 1.6; margin-bottom: 40px; }
 .hero-ctas { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
@@ -77,9 +77,9 @@ footer { border-top: 1px solid var(--outline); padding: 32px 48px; background: v
 
 /* ═══════════════════════ SECTIONS ═══════════════════════ */
 section { padding: 120px 48px; }
-.section-label { font-family: 'Space Grotesk', sans-serif; font-size: 12px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--primary); margin-bottom: 12px; }
+.section-label { font-family: 'Press Start 2P', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--primary); margin-bottom: 12px; }
 .section-label::before { content: '>'; margin-right: 8px; }
-.section-title { font-family: 'Space Grotesk', sans-serif; font-size: clamp(28px, 4vw, 44px); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 16px; max-width: 700px; }
+.section-title { font-family: 'Press Start 2P', monospace; font-size: clamp(16px, 2.5vw, 24px); font-weight: 400; letter-spacing: 0; margin-bottom: 16px; max-width: 700px; line-height: 1.4; }
 .section-desc { font-size: 17px; color: var(--text-dim); line-height: 1.6; max-width: 600px; margin-bottom: 48px; }
 
 /* ═══════════════════════ HOW IT WORKS ═══════════════════════ */
@@ -334,7 +334,6 @@ section { padding: 120px 48px; }
 /* Home page responsive helpers */
 .home-section { padding: 60px 48px; }
 .home-grid-2col { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-.hero-grid { grid-template-columns: 1fr 1fr; }
 .hackathon-home-card:hover { border-color: rgba(255,107,53,0.3) !important; background: var(--s-high) !important; }
 
 /* ═══════════════════════ ANIMATIONS ═══════════════════════ */
@@ -395,8 +394,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .challenge-body { grid-template-columns: 1fr; }
   .hero-stats { flex-direction: row; flex-wrap: wrap; gap: 12px; justify-content: center; }
   .hero { min-height: 70vh; padding: 80px 16px 40px; }
-  .hero h1 { font-size: 32px; }
-  .hero p { font-size: 15px; }
+  .hero h1 { font-size: 16px; }
+  .hero p { font-size: 13px; }
   .lb-header, .lb-row { grid-template-columns: 40px 1fr 80px 80px; font-size: 12px; }
   .lb-link { display: none; }
   .page { padding: 24px 16px; }
@@ -416,7 +415,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .footer-links { justify-content: center; }
   .home-section { padding: 40px 16px; }
   .home-grid-2col { grid-template-columns: 1fr; }
-  .hero-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
   .docs-layout { flex-direction: column; padding: 80px 16px 60px; }
   .docs-sidebar { display: none; }
   .ent-config-grid { grid-template-columns: 1fr !important; }

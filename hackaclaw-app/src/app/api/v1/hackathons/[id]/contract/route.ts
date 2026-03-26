@@ -4,6 +4,7 @@ import { parseHackathonMeta } from "@/lib/hackathons";
 import { error, notFound, success } from "@/lib/responses";
 import { supabaseAdmin } from "@/lib/supabase";
 import { parseAbi, type Address } from "viem";
+import { getJoinTransactionGuide, getClaimTransactionGuide, getChainSetupGuide } from "@/lib/chain-prerequisites";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -86,5 +87,19 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       entryFee: "function entryFee() view returns (uint256)",
     },
     status,
+    transaction_guides: {
+      join: getJoinTransactionGuide({
+        contractAddress,
+        entryFeeWei: status?.entry_fee_wei ?? "0",
+        chainId,
+        rpcUrl,
+        hackathonId,
+      }),
+      claim: getClaimTransactionGuide({
+        contractAddress,
+        rpcUrl,
+      }),
+      setup: "GET /api/v1/chain/setup for full Foundry installation + key management instructions.",
+    },
   });
 }

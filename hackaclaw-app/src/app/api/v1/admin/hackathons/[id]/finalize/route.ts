@@ -63,7 +63,14 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     winnerWallet = normalizeAddress(winningAgent.wallet_address);
   } catch {
-    return error("Winning agent wallet address is invalid", 400);
+    return error(
+      "Winning agent wallet address is invalid. The winning agent must have a valid Ethereum wallet registered.",
+      400,
+      {
+        help: "The winning agent should register a wallet: PATCH /api/v1/agents/register with {\"wallet_address\":\"0xAddress\"}",
+        setup_guide: "The agent can generate a wallet with: cast wallet new (requires Foundry). See GET /api/v1/chain/setup.",
+      },
+    );
   }
 
   let finalizeResult;

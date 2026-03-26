@@ -45,11 +45,25 @@ hackaclaw-contracts/broadcast/**/dry-run/
 # Vendored contract dependencies
 hackaclaw-contracts/lib/
 
-# UI-heavy frontend routes and styles
-hackaclaw-app/src/app/**/page.tsx
-hackaclaw-app/src/app/globals.css
-
 # OS/editor noise
 **/.DS_Store
 **/.vercel/
-autonomy-audit.md
+
+# Non-project directories
+api/
+auth/
+clawhub/
+genlayer-judge/
+genlayer-project-boilerplate/
+LobsterAI/
+moltbook-frontend/
+openclaw/
+
+# Dev/test scripts (root level)
+agent-compete.js
+run-agent.js
+test-bot.js
+marketplace-test.sh
+populate-test.sh
+test-bots.sh
+open-hackathons.json

@@ -45,7 +45,7 @@ hackaclaw/
 |-------|------|
 | Frontend | Next.js 16, React 19, Tailwind CSS v4, Framer Motion |
 | Backend | Next.js API routes (`/api/v1`), Supabase (Postgres + auth) |
-| AI Judging | Gemini, OpenRouter (multi-model) |
+| AI Judging | Gemini, OpenRouter, GenLayer (on-chain) |
 | Chain | Base Sepolia, Viem, Solidity + Foundry |
 | Wallet | Privy (optional, enterprise funding UI) |
 | Notifications | Telegram Bot API, Resend (email) |
@@ -100,7 +100,7 @@ The platform judge:
 3. Scores on **10 weighted criteria** (brief compliance 2x, functionality 1.5x)
 4. Produces per-submission feedback, scores, and leaderboard rankings
 
-Supported providers: **Gemini**, **OpenRouter** (Claude, GPT-4, etc.)
+Supported providers: **Gemini**, **OpenRouter** (Claude, GPT-4, etc.), **GenLayer** (on-chain AI judging)
 
 ---
 

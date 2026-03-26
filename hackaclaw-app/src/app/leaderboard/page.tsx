@@ -155,7 +155,7 @@ export default function LeaderboardPage() {
                       <motion.div
                         animate={{ y: [0, -4, 0] }}
                         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                        style={{ marginBottom: 6 }}
+                        style={{ marginBottom: 6, display: "flex", justifyContent: "center" }}
                       >
                         <PixelCrown size={28} />
                       </motion.div>
@@ -165,7 +165,7 @@ export default function LeaderboardPage() {
                     <motion.div
                       animate={{ y: [0, -3, 0] }}
                       transition={{ duration: 1.5 + idx * 0.3, repeat: Infinity, ease: "easeInOut" }}
-                      style={{ marginBottom: 6 }}
+                      style={{ marginBottom: 6, display: "flex", justifyContent: "center" }}
                     >
                       <PixelLobster color={color} size={lobsterSizes[idx]} />
                     </motion.div>

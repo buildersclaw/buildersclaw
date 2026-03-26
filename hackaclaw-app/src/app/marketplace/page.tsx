@@ -266,11 +266,6 @@ function Card({ listing: l }: { listing: Listing }) {
               {l.hackathon_challenge_type.replace(/_/g, " ")}
             </span>
           )}
-          {buildTime && (
-            <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
-              🕐 {buildTime}
-            </span>
-          )}
         </div>
 
         {/* Brief preview */}
@@ -288,7 +283,7 @@ function Card({ listing: l }: { listing: Listing }) {
       {/* ── Role header + share badge ── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
         <div style={{ flex: 1 }}>
-          <h3 style={{ fontFamily: "'Space Grotesk'", fontSize: 19, fontWeight: 700, color: "var(--text)", margin: 0, lineHeight: 1.25 }}>
+          <h3 style={{ fontFamily: "'Press Start 2P', monospace", fontSize: 11, fontWeight: 400, color: "var(--text)", margin: 0, lineHeight: 1.4 }}>
             {l.role_title}
           </h3>
           <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 4, fontFamily: "'JetBrains Mono'" }}>
@@ -298,9 +293,9 @@ function Card({ listing: l }: { listing: Listing }) {
 
         {/* Share badge */}
         <div style={{
-          flexShrink: 0, padding: "8px 14px", borderRadius: 10,
+          flexShrink: 0, padding: "10px 20px", borderRadius: 10,
           background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)",
-          textAlign: "center", minWidth: 72,
+          textAlign: "center", minWidth: 100,
         }}>
           <div style={{ fontFamily: "'JetBrains Mono'", fontSize: 22, fontWeight: 800, color: "var(--green)", lineHeight: 1 }}>
             {l.share_pct}%
@@ -339,15 +334,25 @@ function Card({ listing: l }: { listing: Listing }) {
         paddingTop: 14, marginTop: 8, borderTop: "1px solid rgba(89,65,57,0.1)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {/* Avatar or initial */}
+          {/* Lobster avatar */}
           <div style={{
-            width: 28, height: 28, borderRadius: "50%",
-            background: l.poster_avatar ? `url(${l.poster_avatar}) center/cover` : "var(--s-mid)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 12, fontWeight: 700, color: "var(--text-dim)",
-            border: "1px solid var(--outline)",
+            width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
           }}>
-            {!l.poster_avatar && (l.poster_name?.[0] || "?")}
+            <svg viewBox="0 0 16 16" width={20} height={20} style={{ imageRendering: "pixelated" }}>
+              <rect x={1} y={2} width={2} height={2} fill="#ff6b35" />
+              <rect x={0} y={0} width={2} height={2} fill="#ff6b35" />
+              <rect x={13} y={2} width={2} height={2} fill="#ff6b35" />
+              <rect x={14} y={0} width={2} height={2} fill="#ff6b35" />
+              <rect x={5} y={1} width={6} height={2} fill="#ff6b35" />
+              <rect x={3} y={3} width={10} height={4} fill="#ff6b35" />
+              <rect x={5} y={7} width={6} height={2} fill="#ff6b35" />
+              <rect x={6} y={9} width={4} height={2} fill="#e65100" />
+              <rect x={5} y={4} width={2} height={2} fill="#111" />
+              <rect x={9} y={4} width={2} height={2} fill="#111" />
+              <rect x={4} y={11} width={2} height={2} fill="#e65100" />
+              <rect x={7} y={11} width={2} height={2} fill="#e65100" />
+              <rect x={10} y={11} width={2} height={2} fill="#e65100" />
+            </svg>
           </div>
           <div>
             <div style={{ fontSize: 12, color: "var(--text-dim)", fontWeight: 500 }}>
@@ -359,9 +364,6 @@ function Card({ listing: l }: { listing: Listing }) {
           </div>
         </div>
 
-        <span className="pixel-font" style={{ fontSize: 7, color: "var(--text-muted)", padding: "6px 10px", background: "var(--s-mid)", border: "1px solid var(--outline)" }}>
-          VIA API
-        </span>
       </div>
     </div>
   );

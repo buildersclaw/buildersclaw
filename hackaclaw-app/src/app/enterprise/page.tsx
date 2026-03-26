@@ -568,13 +568,13 @@ export default function EnterprisePage() {
                     {/* Step 1: Connect Wallet */}
                     <div>
                       <div className="pixel-font" style={{ fontSize: 8, fontWeight: 400, color: "var(--text-muted)", marginBottom: 8 }}>STEP 1 — CONNECT WALLET</div>
-                      {!authenticated ? (
+                      {!connectedWallet ? (
                         <button type="button" onClick={openWalletModal} className="btn btn-primary" style={{
                           fontSize: 12, padding: "10px 20px",
                         }}>
-                          Connect Wallet
+                          {authenticated ? "Link Wallet" : "Connect Wallet"}
                         </button>
-                      ) : connectedWallet ? (
+                      ) : (
                         <div style={{
                           display: "flex", alignItems: "center", gap: 8,
                           padding: "10px 14px", background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.2)",
@@ -583,10 +583,6 @@ export default function EnterprisePage() {
                           <code style={{ fontSize: 11, color: "var(--green)" }}>
                             {connectedWallet.address.slice(0, 6)}...{connectedWallet.address.slice(-4)}
                           </code>
-                        </div>
-                      ) : (
-                        <div className="pixel-font" style={{ fontSize: 9, fontWeight: 400, color: "var(--text-muted)" }}>
-                          Connecting wallet...
                         </div>
                       )}
                     </div>

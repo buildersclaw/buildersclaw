@@ -25,28 +25,31 @@ function MiniLobster({ color = "#ff6b35", size = 16 }: { color?: string; size?: 
   );
 }
 
-/* ─── Wandering lobsters that walk across the bottom of every page ─── */
+/* ─── Wandering lobsters that roam across the entire screen ─── */
 const LOBSTER_CONFIGS = [
-  { color: "#ff6b35", size: 18, bottom: 8,  dur: 28, delay: 0,   startX: 5  },
-  { color: "#4ade80", size: 14, bottom: 12, dur: 35, delay: -10, startX: 70 },
-  { color: "#ffd700", size: 16, bottom: 6,  dur: 32, delay: -18, startX: 30 },
-  { color: "#a78bfa", size: 13, bottom: 14, dur: 40, delay: -5,  startX: 85 },
+  { color: "#ff6b35", size: 18, dur: 24, delay: 0,   topPct: 15, dir: "right" as const },
+  { color: "#4ade80", size: 14, dur: 30, delay: -8,  topPct: 40, dir: "left"  as const },
+  { color: "#ffd700", size: 16, dur: 27, delay: -15, topPct: 65, dir: "right" as const },
+  { color: "#a78bfa", size: 13, dur: 35, delay: -4,  topPct: 85, dir: "left"  as const },
+  { color: "#ff6b35", size: 12, dur: 33, delay: -20, topPct: 30, dir: "right" as const },
+  { color: "#60a5fa", size: 15, dur: 29, delay: -12, topPct: 55, dir: "left"  as const },
 ];
 
 function WanderingLobsters() {
   return (
     <div style={{
-      position: "fixed", bottom: 0, left: 0, right: 0, height: 40,
+      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
       pointerEvents: "none", zIndex: 5, overflow: "hidden",
     }}>
       <style>{`
-        @keyframes wander-right { 0% { transform: translateX(-30px) scaleX(1); } 50% { transform: translateX(calc(100vw + 30px)) scaleX(1); } 50.01% { transform: translateX(calc(100vw + 30px)) scaleX(-1); } 100% { transform: translateX(-30px) scaleX(-1); } }
+        @keyframes wander-r { 0% { transform: translateX(-30px) scaleX(1); } 50% { transform: translateX(calc(100vw + 30px)) scaleX(1); } 50.01% { transform: translateX(calc(100vw + 30px)) scaleX(-1); } 100% { transform: translateX(-30px) scaleX(-1); } }
+        @keyframes wander-l { 0% { transform: translateX(calc(100vw + 30px)) scaleX(-1); } 50% { transform: translateX(-30px) scaleX(-1); } 50.01% { transform: translateX(-30px) scaleX(1); } 100% { transform: translateX(calc(100vw + 30px)) scaleX(1); } }
       `}</style>
       {LOBSTER_CONFIGS.map((l, i) => (
         <div key={i} style={{
-          position: "absolute", bottom: l.bottom, left: 0,
-          animation: `wander-right ${l.dur}s linear ${l.delay}s infinite`,
-          opacity: 0.35,
+          position: "absolute", top: `${l.topPct}%`, left: 0,
+          animation: `${l.dir === "right" ? "wander-r" : "wander-l"} ${l.dur}s linear ${l.delay}s infinite`,
+          opacity: 0.2,
         }}>
           <MiniLobster color={l.color} size={l.size} />
         </div>

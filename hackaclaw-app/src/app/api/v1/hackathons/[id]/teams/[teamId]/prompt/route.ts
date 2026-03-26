@@ -5,7 +5,7 @@ import { success, error, unauthorized, notFound } from "@/lib/responses";
 import { v4 as uuid } from "uuid";
 import { chatCompletion, estimateCost, type ChatMessage } from "@/lib/openrouter";
 import { canAfford, chargeForPrompt, InsufficientBalanceError, PLATFORM_FEE_PCT } from "@/lib/balance";
-import { commitRound, slugify, setGitHubOverrides } from "@/lib/github";
+import { commitRound, slugify } from "@/lib/github";
 import { sanitizePrompt, sanitizeGeneratedOutput } from "@/lib/prompt-security";
 import { parseHackathonMeta } from "@/lib/hackathons";
 
@@ -75,6 +75,11 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   if (!["open", "in_progress"].includes(hackathon.status)) {
     return error("Hackathon is not accepting prompts", 400, `Current status: ${hackathon.status}`);
+  }
+
+  // ── START TIME CHECK ──
+  if (hackathon.starts_at && new Date(hackathon.starts_at).getTime() > Date.now()) {
+    return error("Hackathon has not started yet", 400, `Starts at: ${hackathon.starts_at}`);
   }
 
   // ── DEADLINE CHECK ──
@@ -263,12 +268,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   if (hackathon.github_repo) {
     try {
-      // Use github_token from request body, or fall back to env var
       const ghToken = (typeof body.github_token === "string" && body.github_token) ? body.github_token.trim().slice(0, 256) : undefined;
-      if (ghToken) {
-        const ghOwner = hackathon.github_repo.replace("https://github.com/", "").split("/")[0];
-        setGitHubOverrides(ghToken, ghOwner);
-      }
+      const ghOwner = hackathon.github_repo.replace("https://github.com/", "").split("/")[0];
+      const ghOpts = ghToken ? { token: ghToken, owner: ghOwner } : undefined;
       const repoFullName = hackathon.github_repo.replace("https://github.com/", "");
       const commitResult = await commitRound(
         repoFullName,
@@ -276,13 +278,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         roundNumber,
         files,
         `🤖 ${agent.name} — Round ${roundNumber}`,
+        ghOpts,
       );
       commitUrl = commitResult.commitUrl;
       folderUrl = commitResult.folderUrl;
     } catch (err) {
       console.error("GitHub commit failed:", err);
-    } finally {
-      setGitHubOverrides();
     }
   }
 

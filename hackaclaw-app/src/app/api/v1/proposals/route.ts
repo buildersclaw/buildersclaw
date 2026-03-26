@@ -1,6 +1,8 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { authenticateAdminRequest } from "@/lib/auth";
+import { authenticateAdminRequest, hashToken } from "@/lib/auth";
+import { serializeHackathonMeta } from "@/lib/hackathons";
 import { v4 as uuid } from "uuid";
 
 function sanitize(val: unknown, max: number): string | null {
@@ -8,8 +10,17 @@ function sanitize(val: unknown, max: number): string | null {
   return val.trim().slice(0, max) || null;
 }
 
+/** Generate a judge-specific API key */
+function generateJudgeKey(): string {
+  return `judge_${crypto.randomBytes(32).toString("hex")}`;
+}
+
 /**
  * POST /api/v1/proposals — Submit an enterprise proposal (public, no auth).
+ *
+ * If judge_agent="own", generates a judge_xxx key immediately and returns it.
+ * The enterprise saves this key — it will work once the hackathon is approved and created.
+ * The key hash is stored in the proposal so it can be copied to the hackathon on approval.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -22,6 +33,9 @@ export async function POST(req: NextRequest) {
     const judgeAgent = sanitize(body.judge_agent, 50);
     const budget = sanitize(body.budget, 100);
     const timeline = sanitize(body.timeline, 100);
+    const prizeAmount = sanitize(body.prize_amount, 20);
+    const judgingPriorities = sanitize(body.judging_priorities, 2000);
+    const techRequirements = sanitize(body.tech_requirements, 2000);
 
     const hackathonConfig = {
       title: sanitize(body.hackathon_title, 200),
@@ -29,7 +43,9 @@ export async function POST(req: NextRequest) {
       rules: sanitize(body.hackathon_rules, 2000),
       deadline: sanitize(body.hackathon_deadline, 30),
       min_participants: Math.max(2, Math.min(500, Number(body.hackathon_min_participants) || 5)),
-      challenge_type: sanitize(body.challenge_type, 50) || "landing_page",
+      challenge_type: sanitize(body.challenge_type, 50) || "other",
+      contract_address: sanitize(body.contract_address, 128),
+      chain_id: Number.isInteger(Number(body.chain_id)) ? Number(body.chain_id) : null,
     };
 
     if (!hackathonConfig.title || !hackathonConfig.brief || !hackathonConfig.deadline) {
@@ -53,6 +69,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Generate judge key upfront if custom judge selected
+    const isCustomJudge = judgeAgent === "own";
+    let judgeKey: string | null = null;
+    let judgeKeyHash: string | null = null;
+
+    if (isCustomJudge) {
+      judgeKey = generateJudgeKey();
+      judgeKeyHash = hashToken(judgeKey);
+    }
+
     const id = uuid();
     const { error: insertErr } = await supabaseAdmin
       .from("enterprise_proposals")
@@ -65,7 +91,13 @@ export async function POST(req: NextRequest) {
         judge_agent: judgeAgent,
         budget,
         timeline,
-        hackathon_config: hackathonConfig,
+        prize_amount: prizeAmount ? Number(prizeAmount) : null,
+        judging_priorities: judgingPriorities,
+        tech_requirements: techRequirements,
+        hackathon_config: {
+          ...hackathonConfig,
+          ...(judgeKeyHash ? { judge_key_hash: judgeKeyHash } : {}),
+        },
         status: "pending",
         created_at: new Date().toISOString(),
       });
@@ -78,10 +110,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(
-      { success: true, data: { id, message: "Proposal submitted. We'll review it and get back to you." } },
-      { status: 201 },
-    );
+    // Build response
+    const responseData: Record<string, unknown> = {
+      id,
+      message: "Challenge submitted. We'll review it and get back to you.",
+    };
+
+    // If custom judge, return the key — this is the ONLY time it's shown
+    if (judgeKey) {
+      responseData.judge_api_key = judgeKey;
+      responseData.judge_skill_url = "https://hackaclaw.vercel.app/judge-skill.md";
+      responseData.judge_instructions = "Save this judge API key NOW — it will NOT be shown again. It activates when your hackathon is approved. Tell your judge agent to read the judge-skill.md for instructions.";
+    }
+
+    return NextResponse.json({ success: true, data: responseData }, { status: 201 });
   } catch {
     return NextResponse.json(
       { success: false, error: { message: "Invalid request" } },
@@ -115,6 +157,7 @@ export async function GET(req: NextRequest) {
  * Body: { id, status: "approved" | "rejected", notes? }
  *
  * On "approved": auto-creates the hackathon from hackathon_config.
+ * The judge_key_hash from the proposal is copied to the hackathon's judging_criteria.
  */
 export async function PATCH(req: NextRequest) {
   if (!authenticateAdminRequest(req)) {
@@ -133,7 +176,6 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // Fetch the proposal to get hackathon_config
     const { data: proposal } = await supabaseAdmin
       .from("enterprise_proposals")
       .select("*")
@@ -144,6 +186,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: false, error: { message: "Proposal not found" } }, { status: 404 });
     }
 
+    if (proposal.status !== "pending") {
+      return NextResponse.json({ success: false, error: { message: `Proposal already ${proposal.status}` } }, { status: 409 });
+    }
+
     let hackathonId: string | null = null;
     let hackathonUrl: string | null = null;
 
@@ -152,15 +198,45 @@ export async function PATCH(req: NextRequest) {
       const cfg = proposal.hackathon_config as {
         title?: string; brief?: string; rules?: string;
         deadline?: string; min_participants?: number; challenge_type?: string;
+        judge_key_hash?: string;
+        contract_address?: string;
+        chain_id?: number | null;
       };
 
       if (cfg.title && cfg.brief && cfg.deadline) {
-        const endsAt = new Date(cfg.deadline);
-        if (!isNaN(endsAt.getTime()) && endsAt.getTime() > Date.now()) {
-          hackathonId = uuid();
-          const { error: insertErr } = await supabaseAdmin
-            .from("hackathons")
-            .insert({
+        // The deadline from the form is in GMT-3 (Argentina time).
+        // Append -03:00 offset so Date parses it correctly as GMT-3.
+        const deadlineStr = cfg.deadline.includes("T")
+          ? cfg.deadline + (cfg.deadline.includes("+") || cfg.deadline.includes("-", 10) || cfg.deadline.endsWith("Z") ? "" : "-03:00")
+          : cfg.deadline;
+        const endsAt = new Date(deadlineStr);
+        if (isNaN(endsAt.getTime())) {
+          return NextResponse.json(
+            { success: false, error: { message: `Invalid deadline date: "${cfg.deadline}". Cannot create hackathon.` } },
+            { status: 400 },
+          );
+        }
+
+        // Allow past deadlines on approve — admin may want to adjust later
+        hackathonId = uuid();
+
+          const metaObj: Record<string, unknown> = {
+            _format: "hackaclaw-mvp-v1",
+            chain_id: typeof cfg.chain_id === "number" ? cfg.chain_id : null,
+            contract_address: cfg.contract_address || null,
+            criteria_text: cfg.rules || null,
+          };
+          // Store min_participants so the cron can check before opening
+          const minPart = typeof cfg.min_participants === "number" && cfg.min_participants >= 2
+            ? cfg.min_participants : null;
+          if (minPart) metaObj.min_participants = minPart;
+
+          // If deadline is far enough in the future (>5 min), create as scheduled
+          const startsNow = endsAt.getTime() - Date.now() < 5 * 60_000;
+          const hackStatus = startsNow ? "open" : "scheduled";
+          const startsAt = startsNow ? new Date().toISOString() : new Date().toISOString();
+
+          const insertPayload = {
               id: hackathonId,
               title: cfg.title,
               description: `Enterprise hackathon by ${proposal.company}`,
@@ -168,26 +244,30 @@ export async function PATCH(req: NextRequest) {
               rules: cfg.rules || null,
               entry_type: "free",
               entry_fee: 0,
-              prize_pool: 0,
+              prize_pool: Number(proposal.prize_amount) || 0,
               platform_fee_pct: 0.1,
               max_participants: 500,
               team_size_min: 1,
               team_size_max: 1,
               build_time_seconds: 180,
-              challenge_type: cfg.challenge_type || "landing_page",
-              status: "open",
-              created_by: id,
-              starts_at: new Date().toISOString(),
+              challenge_type: cfg.challenge_type || "other",
+              status: hackStatus,
+              created_by: null,
+              starts_at: startsAt,
               ends_at: endsAt.toISOString(),
-            });
+              judging_criteria: metaObj,
+            };
+
+          const { error: insertErr } = await supabaseAdmin
+            .from("hackathons")
+            .insert(insertPayload);
 
           if (insertErr) {
-            console.error("Auto hackathon creation failed:", insertErr);
+            console.error("Auto hackathon creation failed:", JSON.stringify(insertErr));
             hackathonId = null;
           } else {
             hackathonUrl = `/hackathons/${hackathonId}`;
           }
-        }
       }
     }
 
@@ -210,6 +290,9 @@ export async function PATCH(req: NextRequest) {
         id,
         status: hackathonId ? "hackathon_created" : newStatus,
         ...(hackathonId ? { hackathon_id: hackathonId, hackathon_url: hackathonUrl } : {}),
+        ...(hackathonId && proposal.hackathon_config && typeof (proposal.hackathon_config as { contract_address?: string }).contract_address === "string"
+          ? { contract_address: (proposal.hackathon_config as { contract_address?: string }).contract_address }
+          : {}),
       },
     });
   } catch {

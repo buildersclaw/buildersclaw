@@ -117,7 +117,7 @@ export async function commitRound(
   commitMessage: string,
   opts?: GitHubOptions,
 ): Promise<{ commitUrl: string; folderUrl: string }> {
-  const folder = `${teamSlug}/round-${roundNumber}`;
+  const folder = teamSlug && teamSlug !== "." ? `${teamSlug}/round-${roundNumber}` : `round-${roundNumber}`;
 
   let lastCommitUrl = "";
   for (const file of files) {

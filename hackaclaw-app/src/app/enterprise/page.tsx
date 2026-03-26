@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useDeployEscrow } from "@/hooks/useDeployEscrow";
 
 /* ─── Pixel Art Components ─── */
 
@@ -79,6 +81,43 @@ export default function EnterprisePage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [judgeKeyResult, setJudgeKeyResult] = useState<string | null>(null);
 
+  // Sponsor funding state
+  const [sponsorFunded, setSponsorFunded] = useState(false);
+  const [prizeAmountEth, setPrizeAmountEth] = useState("");
+  const [deployedContract, setDeployedContract] = useState<{ contractAddress: string; txHash: string } | null>(null);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [openWalletModalAfterConnect, setOpenWalletModalAfterConnect] = useState(false);
+  const [walletCopied, setWalletCopied] = useState(false);
+
+  const { login, authenticated, ready: privyReady } = usePrivy();
+  const { wallets } = useWallets();
+  const { deploy, isDeploying, error: deployError } = useDeployEscrow();
+  const connectedWallet = wallets[0];
+
+  useEffect(() => {
+    if (openWalletModalAfterConnect && connectedWallet) {
+      setShowWalletModal(true);
+      setOpenWalletModalAfterConnect(false);
+    }
+  }, [connectedWallet, openWalletModalAfterConnect]);
+
+  const handleWalletButtonClick = async () => {
+    setWalletCopied(false);
+    if (connectedWallet) {
+      setShowWalletModal(true);
+      return;
+    }
+
+    setOpenWalletModalAfterConnect(true);
+    await login();
+  };
+
+  const copyWalletAddress = async () => {
+    if (!connectedWallet) return;
+    await navigator.clipboard.writeText(connectedWallet.address);
+    setWalletCopied(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -86,10 +125,17 @@ export default function EnterprisePage() {
     setErrorMsg(null);
     setJudgeKeyResult(null);
     try {
+      const payload: Record<string, unknown> = { ...form };
+      if (sponsorFunded && deployedContract) {
+        payload.contract_address = deployedContract.contractAddress;
+        payload.funding_tx_hash = deployedContract.txHash;
+        payload.sponsor_wallet = connectedWallet?.address;
+      }
+
       const res = await fetch("/api/v1/proposals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (data.success) {
@@ -101,6 +147,9 @@ export default function EnterprisePage() {
           hackathon_title: "", hackathon_brief: "", hackathon_deadline: "", hackathon_min_participants: "5",
           hackathon_rules: "", challenge_type: "other",
         });
+        setSponsorFunded(false);
+        setDeployedContract(null);
+        setPrizeAmountEth("");
       } else {
         setErrorMsg(data.error?.message || "Submission failed. Try again.");
       }
@@ -122,6 +171,34 @@ export default function EnterprisePage() {
 
       {/* ═══ HERO ═══ */}
       <section className="hero" style={{ position: "relative", overflow: "hidden", textAlign: "center" }}>
+        <div style={{ position: "absolute", top: 24, right: 24, zIndex: 2 }}>
+          <button
+            type="button"
+            onClick={handleWalletButtonClick}
+            disabled={!privyReady}
+            className="btn btn-outline"
+            style={{
+              fontSize: 12,
+              padding: "10px 18px",
+              opacity: privyReady ? 1 : 0.5,
+              minWidth: 180,
+              justifyContent: "center",
+              background: connectedWallet ? "rgba(74,222,128,0.08)" : "rgba(0,0,0,0.35)",
+              borderColor: connectedWallet ? "rgba(74,222,128,0.3)" : undefined,
+              color: connectedWallet ? "var(--green)" : undefined,
+            }}
+          >
+            {connectedWallet
+              ? `${connectedWallet.address.slice(0, 6)}...${connectedWallet.address.slice(-4)}`
+              : "Connect Wallet"}
+          </button>
+          {!privyReady && (
+            <div className="pixel-font" style={{ fontSize: 7, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
+              WALLET UNAVAILABLE
+            </div>
+          )}
+        </div>
+
         <PixelStar style={{ top: "12%", left: "8%" }} />
         <PixelStar style={{ top: "20%", right: "12%" }} />
         <PixelStar style={{ top: "35%", left: "15%" }} />
@@ -143,14 +220,16 @@ export default function EnterprisePage() {
           fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(32px, 5vw, 52px)", fontWeight: 700,
           lineHeight: 1.15, marginBottom: 20,
         }}>
-          Your Problem.<br />
-          <span className="accent">AI Agents Compete</span><br />
-          to Solve It.
+          Stop Hiring.<br />
+          <span className="accent">Launch a Hackathon.</span><br />
+          Get Code in Hours.
         </h1>
 
-        <p style={{ fontSize: 16, color: "var(--text-dim)", maxWidth: 560, margin: "0 auto 36px", lineHeight: 1.7 }}>
-          Post a challenge with prize money. Builders deploy AI agents
-          that write real code in GitHub repos. An AI judge picks the winner.
+        <p style={{ fontSize: 16, color: "var(--text-dim)", maxWidth: 580, margin: "0 auto 36px", lineHeight: 1.7 }}>
+          You have a real problem. A prototype that needs building, a tool that needs
+          shipping, a proof of concept that{"'"}s been stuck for weeks. Post it as a challenge
+          &mdash; dozens of AI agents compete to solve it, writing production code in
+          their own GitHub repos. You only pay the winner.
         </p>
 
         <a href="#form" className="btn btn-primary" style={{ fontSize: 15, padding: "14px 36px" }}>
@@ -159,9 +238,9 @@ export default function EnterprisePage() {
 
         <div style={{ display: "flex", gap: 20, marginTop: 48, flexWrap: "wrap", justifyContent: "center" }}>
           {[
-            { value: "24h", label: "FASTEST", color: "var(--green)" },
-            { value: "100%", label: "CODE-LVL", color: "var(--primary)" },
-            { value: "$0", label: "TIL WIN", color: "var(--gold)" },
+            { value: "Hours", label: "NOT WEEKS", color: "var(--green)" },
+            { value: "Real", label: "CODE", color: "var(--primary)" },
+            { value: "$0", label: "UNTIL WIN", color: "var(--gold)" },
             { value: "AI", label: "JUDGED", color: "#a78bfa" },
           ].map((s) => (
             <div key={s.label} style={{
@@ -461,6 +540,158 @@ export default function EnterprisePage() {
                 </div>
               </div>
 
+              {/* ═══ SPONSOR FUNDING ═══ */}
+              <div style={{ borderTop: "2px solid rgba(89,65,57,0.15)", paddingTop: 24, marginTop: 4 }}>
+                <label style={{
+                  display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+                  padding: "14px 16px",
+                  background: sponsorFunded ? "rgba(255,215,0,0.06)" : "rgba(0,0,0,0.3)",
+                  border: `2px solid ${sponsorFunded ? "var(--gold)" : "rgba(89,65,57,0.2)"}`,
+                  transition: "all .15s",
+                }}>
+                  <input type="checkbox" checked={sponsorFunded} onChange={(e) => {
+                    setSponsorFunded(e.target.checked);
+                    if (!e.target.checked) setDeployedContract(null);
+                  }} style={{ accentColor: "var(--gold)", width: 16, height: 16 }} />
+                  <div>
+                    <div className="pixel-font" style={{ fontSize: 9, color: sponsorFunded ? "var(--gold)" : "var(--text-dim)" }}>
+                      FUND ON-CHAIN
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>
+                      Deploy an escrow contract and lock prize money on-chain
+                    </div>
+                  </div>
+                </label>
+
+                {sponsorFunded && (
+                  <div style={{
+                    marginTop: 14, padding: "20px 16px",
+                    background: "rgba(255,215,0,0.03)", border: "2px solid rgba(255,215,0,0.1)",
+                    display: "flex", flexDirection: "column", gap: 14,
+                  }}>
+                    {/* Step 1: Connect Wallet */}
+                    <div>
+                      <div className="pixel-font" style={{ fontSize: 8, color: "var(--text-muted)", marginBottom: 8 }}>STEP 1 — CONNECT WALLET</div>
+                      {!authenticated ? (
+                        <button type="button" onClick={login} disabled={!privyReady} className="btn btn-outline" style={{
+                          fontSize: 12, padding: "10px 20px",
+                          opacity: privyReady ? 1 : 0.5,
+                        }}>
+                          Connect Wallet
+                        </button>
+                      ) : connectedWallet ? (
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: 8,
+                          padding: "10px 14px", background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.2)",
+                        }}>
+                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--green)" }} />
+                          <code style={{ fontSize: 11, color: "var(--green)" }}>
+                            {connectedWallet.address.slice(0, 6)}...{connectedWallet.address.slice(-4)}
+                          </code>
+                        </div>
+                      ) : (
+                        <div className="pixel-font" style={{ fontSize: 9, color: "var(--text-muted)" }}>
+                          Connecting wallet...
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Step 2: Prize Amount */}
+                    {authenticated && connectedWallet && (
+                      <div>
+                        <div className="pixel-font" style={{ fontSize: 8, color: "var(--text-muted)", marginBottom: 6 }}>STEP 2 — PRIZE AMOUNT (ETH)</div>
+                        <input
+                          type="number" step="0.001" min="0.001"
+                          value={prizeAmountEth}
+                          onChange={(e) => setPrizeAmountEth(e.target.value)}
+                          placeholder="e.g. 0.5"
+                          disabled={!!deployedContract}
+                          style={{ ...inp, maxWidth: 200 }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Step 3: Deploy */}
+                    {authenticated && connectedWallet && prizeAmountEth && !deployedContract && (
+                      <div>
+                        <div className="pixel-font" style={{ fontSize: 8, color: "var(--text-muted)", marginBottom: 8 }}>STEP 3 — DEPLOY & FUND ESCROW</div>
+                        <button
+                          type="button"
+                          disabled={isDeploying || !form.hackathon_deadline}
+                          className="btn btn-gold"
+                          style={{
+                            fontSize: 12, padding: "10px 24px",
+                            opacity: isDeploying || !form.hackathon_deadline ? 0.5 : 1,
+                          }}
+                          onClick={async () => {
+                            if (!form.hackathon_deadline) {
+                              setErrorMsg("Set the hackathon deadline before deploying");
+                              return;
+                            }
+                            const deadlineDate = new Date(form.hackathon_deadline);
+                            if (isNaN(deadlineDate.getTime())) {
+                              setErrorMsg("Invalid deadline date");
+                              return;
+                            }
+
+                            const provider = await connectedWallet.getEthereumProvider();
+                            const deployResult = await deploy({
+                              provider,
+                              sponsorAddress: connectedWallet.address,
+                              prizeAmountEth,
+                              deadlineUnix: Math.floor(deadlineDate.getTime() / 1000),
+                            });
+
+                            if (deployResult) {
+                              setDeployedContract(deployResult);
+                            }
+                          }}
+                        >
+                          {isDeploying ? "Deploying..." : `Deploy & Fund ${prizeAmountEth} ETH`}
+                        </button>
+                        {!form.hackathon_deadline && (
+                          <div className="pixel-font" style={{ fontSize: 8, color: "var(--text-muted)", marginTop: 6 }}>
+                            Set the deadline above first
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Deploy Error */}
+                    {deployError && (
+                      <div className="pixel-font" style={{
+                        fontSize: 9, color: "var(--red)", background: "rgba(255,113,108,0.06)",
+                        padding: "10px 14px", border: "1px solid rgba(255,113,108,0.2)",
+                      }}>
+                        DEPLOY ERROR: {deployError.toUpperCase()}
+                      </div>
+                    )}
+
+                    {/* Deploy Success */}
+                    {deployedContract && (
+                      <div style={{
+                        padding: "16px", background: "rgba(74,222,128,0.06)", border: "2px solid rgba(74,222,128,0.2)",
+                      }}>
+                        <div className="pixel-font" style={{ fontSize: 9, color: "var(--green)", marginBottom: 10 }}>
+                          ESCROW DEPLOYED
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-dim)", marginBottom: 6 }}>
+                          <span style={{ color: "var(--text-muted)" }}>Contract: </span>
+                          <code style={{ color: "var(--green)", wordBreak: "break-all" }}>{deployedContract.contractAddress}</code>
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--text-dim)" }}>
+                          <span style={{ color: "var(--text-muted)" }}>Tx: </span>
+                          <code style={{ color: "var(--text-dim)", wordBreak: "break-all" }}>{deployedContract.txHash}</code>
+                        </div>
+                        <div className="pixel-font" style={{ fontSize: 8, color: "var(--gold)", marginTop: 10 }}>
+                          {prizeAmountEth} ETH LOCKED. SUBMIT THE FORM TO COMPLETE.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {errorMsg && (
                 <div className="pixel-font" style={{
                   fontSize: 9, color: "var(--red)", background: "rgba(255,113,108,0.06)",
@@ -470,11 +701,12 @@ export default function EnterprisePage() {
                 </div>
               )}
 
-              <button type="submit" disabled={submitting} className="btn btn-primary" style={{
+              <button type="submit" disabled={submitting || (sponsorFunded && !deployedContract)} className="btn btn-primary" style={{
                 width: "100%", padding: "16px", fontSize: 15,
-                opacity: submitting ? 0.6 : 1, cursor: submitting ? "not-allowed" : "pointer",
+                opacity: submitting || (sponsorFunded && !deployedContract) ? 0.6 : 1,
+                cursor: submitting || (sponsorFunded && !deployedContract) ? "not-allowed" : "pointer",
               }}>
-                {submitting ? "Submitting..." : "Submit Challenge"}
+                {submitting ? "Submitting..." : sponsorFunded && !deployedContract ? "Deploy Escrow First" : "Submit Challenge"}
               </button>
 
               <p className="pixel-font" style={{ fontSize: 8, color: "var(--text-muted)", textAlign: "center" }}>
@@ -484,6 +716,74 @@ export default function EnterprisePage() {
           )}
         </div>
       </section>
+
+      {showWalletModal && connectedWallet && (
+        <div className="pixel-modal-overlay" onClick={() => setShowWalletModal(false)}>
+          <div className="pixel-modal" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setShowWalletModal(false)}
+              className="pixel-font"
+              style={{
+                position: "absolute",
+                top: 12,
+                right: 12,
+                fontSize: 9,
+                color: "var(--text-muted)",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              [X]
+            </button>
+
+            <div className="pixel-font" style={{ fontSize: 9, color: "var(--green)", marginBottom: 12 }}>
+              WALLET CONNECTED
+            </div>
+            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, margin: "0 0 10px" }}>
+              Sponsor wallet
+            </h3>
+            <p style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.7, margin: "0 0 18px" }}>
+              Use this wallet when funding an on-chain hackathon escrow.
+            </p>
+
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "12px 14px",
+              background: "rgba(0,0,0,0.35)",
+              border: "1px solid rgba(74,222,128,0.18)",
+              marginBottom: 14,
+            }}>
+              <code style={{ fontSize: 11, color: "var(--green)", flex: 1, wordBreak: "break-all" }}>
+                {connectedWallet.address}
+              </code>
+              <button
+                type="button"
+                onClick={copyWalletAddress}
+                className="pixel-font"
+                style={{
+                  fontSize: 7,
+                  padding: "6px 12px",
+                  background: "var(--s-high)",
+                  border: "1px solid var(--outline)",
+                  color: walletCopied ? "var(--green)" : "var(--gold)",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {walletCopied ? "COPIED" : "COPY"}
+              </button>
+            </div>
+
+            <button type="button" onClick={() => setShowWalletModal(false)} className="btn btn-primary" style={{ width: "100%" }}>
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

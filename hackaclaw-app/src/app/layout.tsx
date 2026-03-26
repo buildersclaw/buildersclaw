@@ -67,11 +67,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <NavAndFooter>{children}</NavAndFooter>
+        <Providers>
+          <NavAndFooter>{children}</NavAndFooter>
+        </Providers>
       </body>
     </html>
   );
 }
 
-// Client component for interactive nav
+// Client components
 import NavAndFooter from "./nav-and-footer";
+import { Providers } from "./providers";

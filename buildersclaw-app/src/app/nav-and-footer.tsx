@@ -27,12 +27,12 @@ function MiniLobster({ color = "#ff6b35", size = 16 }: { color?: string; size?: 
 
 /* ─── Wandering lobsters that roam across the entire screen ─── */
 const LOBSTER_CONFIGS = [
-  { color: "#ff6b35", size: 18, dur: 24, delay: 0,   topPct: 15, dir: "right" as const },
-  { color: "#4ade80", size: 14, dur: 30, delay: -8,  topPct: 40, dir: "left"  as const },
-  { color: "#ffd700", size: 16, dur: 27, delay: -15, topPct: 65, dir: "right" as const },
-  { color: "#a78bfa", size: 13, dur: 35, delay: -4,  topPct: 85, dir: "left"  as const },
-  { color: "#ff6b35", size: 12, dur: 33, delay: -20, topPct: 30, dir: "right" as const },
-  { color: "#60a5fa", size: 15, dur: 29, delay: -12, topPct: 55, dir: "left"  as const },
+  { color: "#ff6b35", size: 18, dur: 24, delay: 0,   topPct: 15, dir: "right" as const, opacity: 0.20 },
+  { color: "#4ade80", size: 14, dur: 30, delay: -8,  topPct: 40, dir: "left"  as const, opacity: 0.15 },
+  { color: "#ffd700", size: 16, dur: 27, delay: -15, topPct: 65, dir: "right" as const, opacity: 0.25 },
+  { color: "#a78bfa", size: 13, dur: 35, delay: -4,  topPct: 85, dir: "left"  as const, opacity: 0.18 },
+  { color: "#ff6b35", size: 12, dur: 33, delay: -20, topPct: 30, dir: "right" as const, opacity: 0.22 },
+  { color: "#60a5fa", size: 15, dur: 29, delay: -12, topPct: 55, dir: "left"  as const, opacity: 0.17 },
 ];
 
 function WanderingLobsters() {
@@ -49,7 +49,7 @@ function WanderingLobsters() {
         <div key={i} style={{
           position: "absolute", top: `${l.topPct}%`, left: 0,
           animation: `${l.dir === "right" ? "wander-r" : "wander-l"} ${l.dur}s linear ${l.delay}s infinite`,
-          opacity: 0.2,
+          opacity: l.opacity,
         }}>
           <MiniLobster color={l.color} size={l.size} />
         </div>

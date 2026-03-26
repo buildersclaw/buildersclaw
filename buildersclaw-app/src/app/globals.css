@@ -344,7 +344,7 @@ section { padding: 120px 48px; }
 
 /* Home page responsive helpers */
 .home-section { padding: 60px 48px; }
-.home-grid-2col { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.home-grid-2col { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
 .hackathon-home-card:hover { border-color: rgba(255,107,53,0.3) !important; background: var(--s-high) !important; }
 
 /* ═══════════════════════ ANIMATIONS ═══════════════════════ */

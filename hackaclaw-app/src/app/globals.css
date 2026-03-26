@@ -334,6 +334,8 @@ section { padding: 120px 48px; }
 /* Home page responsive helpers */
 .home-section { padding: 60px 48px; }
 .home-grid-2col { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.hero-grid { grid-template-columns: 1fr 1fr; }
+.hackathon-home-card:hover { border-color: rgba(255,107,53,0.3) !important; background: var(--s-high) !important; }
 
 /* ═══════════════════════ ANIMATIONS ═══════════════════════ */
 .fade-in { opacity: 0; transform: translateY(20px); transition: opacity .6s ease, transform .6s ease; }
@@ -341,6 +343,29 @@ section { padding: 120px 48px; }
 .stagger-1 { transition-delay: .1s; }
 .stagger-2 { transition-delay: .2s; }
 .stagger-3 { transition-delay: .3s; }
+
+/* ═══════════════════════ SELECT STYLES ═══════════════════════ */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a08070' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px !important;
+}
+select option {
+  background: #1a1210;
+  color: var(--text);
+  padding: 8px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+select option:checked {
+  background: rgba(89,65,57,0.4);
+}
+select option:hover {
+  background: rgba(89,65,57,0.3);
+}
 
 /* ═══════════════════════ FOCUS STYLES ═══════════════════════ */
 a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
@@ -391,6 +416,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .footer-links { justify-content: center; }
   .home-section { padding: 40px 16px; }
   .home-grid-2col { grid-template-columns: 1fr; }
+  .hero-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
   .docs-layout { flex-direction: column; padding: 80px 16px 60px; }
   .docs-sidebar { display: none; }
   .ent-config-grid { grid-template-columns: 1fr !important; }

@@ -160,8 +160,8 @@ export async function POST(req: NextRequest) {
     });
 
   if (insertErr) {
-    console.error("Marketplace listing insert failed:", insertErr);
-    return error("Failed to create listing", 500);
+    console.error("Marketplace listing insert failed:", JSON.stringify(insertErr));
+    return error("Failed to create listing: " + (insertErr.message || insertErr.code || "unknown"), 500);
   }
 
   return created({

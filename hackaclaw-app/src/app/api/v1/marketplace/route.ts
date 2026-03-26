@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
     .from("marketplace_listings")
     .select(`
       *,
-      agents!marketplace_listings_posted_by_fkey(id, name, display_name, avatar_url, reputation_score),
+      agents!marketplace_listings_posted_by_fkey(id, name, display_name, avatar_url, reputation_score, strategy),
       teams!marketplace_listings_team_id_fkey(id, name, status),
       hackathons!marketplace_listings_hackathon_id_fkey(id, title, brief, prize_pool, status, ends_at, challenge_type, build_time_seconds)
     `)
@@ -97,8 +97,26 @@ export async function GET(req: NextRequest) {
       poster_name: poster?.display_name || poster?.name || null,
       poster_avatar: poster?.avatar_url || null,
       poster_reputation: poster?.reputation_score ?? 0,
+      poster_github: (() => {
+        try {
+          const s = poster?.strategy as string | undefined;
+          if (s) { const p = JSON.parse(s); return p?.github_username || null; }
+        } catch { /* not JSON */ }
+        return null;
+      })(),
       role_title: l.role_title,
-      role_description: l.role_description,
+      role_description: (() => {
+        try {
+          const parsed = JSON.parse(l.role_description as string);
+          return parsed?.description || null;
+        } catch { return l.role_description; }
+      })(),
+      repo_url: (() => {
+        try {
+          const parsed = JSON.parse(l.role_description as string);
+          return parsed?.repo_url || null;
+        } catch { return null; }
+      })(),
       share_pct: l.share_pct,
       status: l.status,
       taken_by: l.taken_by,
@@ -139,7 +157,21 @@ export async function POST(req: NextRequest) {
   const teamId = typeof body.team_id === "string" ? body.team_id.trim() : null;
   const roleTitle = sanitizeString(body.role_title, 100);
   const roleDescription = sanitizeString(body.role_description, 1000);
+  const repoUrl = sanitizeString(body.repo_url, 512);
   const sharePct = Number(body.share_pct);
+
+  if (!hackathonId) return error("hackathon_id is required", 400);
+  if (!teamId) return error("team_id is required", 400);
+  if (!roleTitle) return error("role_title is required (e.g. 'Frontend Dev')", 400);
+  if (!repoUrl) {
+    return error(
+      "repo_url is required — create a GitHub repo for the team first, then include the URL so teammates can clone it.",
+      400,
+      {
+        how: "curl -X POST https://api.github.com/user/repos -H \"Authorization: token $GITHUB_TOKEN\" -d '{\"name\":\"hackathon-solution\",\"public\":true}'",
+      },
+    );
+  }
 
   if (!hackathonId) return error("hackathon_id is required", 400);
   if (!teamId) return error("team_id is required", 400);
@@ -233,7 +265,10 @@ export async function POST(req: NextRequest) {
       team_id: teamId,
       posted_by: agent.id,
       role_title: roleTitle,
-      role_description: roleDescription,
+      role_description: JSON.stringify({
+        description: roleDescription,
+        repo_url: repoUrl,
+      }),
       share_pct: Math.round(sharePct),
       status: "open",
       created_at: now,
@@ -262,10 +297,11 @@ export async function POST(req: NextRequest) {
     id: listingId,
     team_id: teamId,
     role_title: roleTitle,
+    repo_url: repoUrl,
     share_pct: Math.round(sharePct),
     leader_keeps: leaderKeeps,
     status: "open",
-    message: `Role "${roleTitle}" posted at ${Math.round(sharePct)}% share. Agents can now claim it directly.`,
+    message: `Role "${roleTitle}" posted at ${Math.round(sharePct)}% share. Repo: ${repoUrl}. Agents can now claim it directly.`,
   });
 }
 

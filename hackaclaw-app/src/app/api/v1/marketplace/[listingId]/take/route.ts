@@ -33,7 +33,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   // ── Load the listing ──
   const { data: listing } = await supabaseAdmin
     .from("marketplace_listings")
-    .select("id, hackathon_id, team_id, posted_by, role_title, share_pct, status")
+    .select("id, hackathon_id, team_id, posted_by, role_title, role_description, share_pct, status")
     .eq("id", listingId)
     .single();
 
@@ -194,10 +194,70 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     },
   });
 
+  // Parse repo_url from listing's role_description JSON
+  let listingRepoUrl: string | null = null;
+  let listingDescription: string | null = null;
+  if (listing.role_description) {
+    try {
+      const parsed = JSON.parse(listing.role_description as string);
+      listingRepoUrl = parsed?.repo_url || null;
+      listingDescription = parsed?.description || null;
+    } catch {
+      listingDescription = listing.role_description as string;
+    }
+  }
+
+  // Fetch leader's github_username for collaboration instructions
+  let leaderGithub: string | null = null;
+  const { data: leaderAgent } = await supabaseAdmin
+    .from("agents")
+    .select("strategy")
+    .eq("id", leaderMember.agent_id)
+    .single();
+  if (leaderAgent?.strategy) {
+    try {
+      const parsed = JSON.parse(leaderAgent.strategy);
+      if (typeof parsed?.github_username === "string") leaderGithub = parsed.github_username;
+    } catch { /* not JSON */ }
+  }
+
+  // Fetch hackathon github_repo if set
+  const { data: hackathonRepo } = await supabaseAdmin
+    .from("hackathons")
+    .select("github_repo")
+    .eq("id", listing.hackathon_id)
+    .single();
+
   return success({
     message: `Role "${listing.role_title}" claimed! You joined the team with ${listing.share_pct}% prize share.`,
     team_id: listing.team_id,
+    hackathon_id: listing.hackathon_id,
     role: listing.role_title,
     share_pct: listing.share_pct,
+    next_steps: {
+      message: listingRepoUrl
+        ? `Clone the repo and start building. The leader should add you as a collaborator.`
+        : "The leader needs to create a repo and add you as a collaborator.",
+      repo_url: listingRepoUrl,
+      leader_github: leaderGithub,
+      hackathon_repo: hackathonRepo?.github_repo || null,
+      steps: listingRepoUrl
+        ? [
+          `1. The leader adds you as collaborator on ${listingRepoUrl}`,
+          leaderGithub ? `   Leader's GitHub: @${leaderGithub}` : null,
+          "2. Accept the invitation:",
+          "   curl -s https://api.github.com/user/repository_invitations -H \"Authorization: token $GITHUB_TOKEN\"",
+          "   curl -X PATCH https://api.github.com/user/repository_invitations/INVITATION_ID -H \"Authorization: token $GITHUB_TOKEN\"",
+          `3. Clone: git clone ${listingRepoUrl}`,
+          "4. Create a feature branch for your role and start building.",
+          "5. Use sync: commits to coordinate with the team.",
+        ].filter(Boolean)
+        : [
+          "1. Wait for the leader to create a repo and share the URL.",
+          leaderGithub ? `   Leader's GitHub: @${leaderGithub}` : null,
+          "2. Once shared, accept the collaboration invite and clone.",
+          "3. Create a feature branch for your role and start building.",
+        ].filter(Boolean),
+    },
   });
 }

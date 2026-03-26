@@ -1,10 +1,18 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+import {
+  PrivyProvider,
+  useConnectWallet,
+  usePrivy,
+  useWallets,
+} from "@privy-io/react-auth";
+import { publicChain } from "@/lib/public-chain";
 
 type SponsorWallet = {
   address: string;
   getEthereumProvider: () => Promise<unknown>;
+  loginOrLink?: () => Promise<unknown>;
 };
 
 type WalletContextValue = {
@@ -27,81 +35,78 @@ const defaultValue: WalletContextValue = {
 
 const WalletContext = createContext<WalletContextValue>(defaultValue);
 
+const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+const PRIVY_LOGIN_METHODS = (process.env.NEXT_PUBLIC_PRIVY_LOGIN_METHODS || "wallet,email")
+  .split(",")
+  .map((method) => method.trim())
+  .filter(Boolean);
+
 export function useEnterpriseWallet() {
   return useContext(WalletContext);
 }
 
-const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+function WalletBridge({ children }: { children: ReactNode }) {
+  const privy = usePrivy();
+  const { wallets } = useWallets();
+  const { connectWallet } = useConnectWallet();
+  const wallet = useMemo<SponsorWallet | null>(() => {
+    if (!privy.authenticated || wallets.length === 0) return null;
 
-/* 
- * Opaque module name — prevents bundler from statically resolving the import.
- * At runtime the string is just "@privy-io/react-auth".
- */
-const PRIVY_MODULE = ["@privy-io", "react-auth"].join("/");
+    const activeWallet = wallets[0];
+    return {
+      address: activeWallet.address,
+      getEthereumProvider: () => activeWallet.getEthereumProvider(),
+      loginOrLink: activeWallet.loginOrLink,
+    };
+  }, [privy.authenticated, wallets]);
 
-function PrivyBridgeLoader({ children }: { children: ReactNode }) {
-  const [Bridge, setBridge] = useState<React.ComponentType<{ children: ReactNode }> | null>(null);
-  const [ready, setReady] = useState(false);
+  const openWalletModal = () => {
+    if (privy.authenticated && wallets.length === 0) {
+      connectWallet();
+      return;
+    }
 
-  useEffect(() => {
-    if (!PRIVY_APP_ID) { setReady(true); return; }
+    if (privy.authenticated && wallets[0]?.loginOrLink) {
+      void wallets[0].loginOrLink();
+      return;
+    }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (new Function("m", "return import(m)"))(PRIVY_MODULE)
-      .then((mod: Record<string, unknown>) => {
-        if (!mod || !mod.PrivyProvider) { setReady(true); return; }
+    privy.login();
+  };
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { PrivyProvider, usePrivy, useWallets } = mod as any;
-
-        function WalletBridge({ children: c }: { children: ReactNode }) {
-          const privy = usePrivy();
-          const { wallets } = useWallets();
-          const [wallet, setWallet] = useState<SponsorWallet | null>(null);
-
-          useEffect(() => {
-            if (privy.authenticated && wallets.length > 0) {
-              const w = wallets[0];
-              setWallet({ address: w.address, getEthereumProvider: () => w.getEthereumProvider() });
-            } else {
-              setWallet(null);
-            }
-          }, [privy.authenticated, wallets]);
-
-          return (
-            <WalletContext.Provider value={{
-              login: privy.login, authenticated: privy.authenticated, ready: privy.ready,
-              walletFeatureAvailable: true, connectedWallet: wallet, openWalletModal: privy.login,
-            }}>{c}</WalletContext.Provider>
-          );
-        }
-
-        function Wrapper({ children: c }: { children: ReactNode }) {
-          return (
-            <PrivyProvider appId={PRIVY_APP_ID!} config={{
-              appearance: { theme: "dark" },
-              embeddedWallets: { ethereum: { createOnLogin: "users-without-wallets" } },
-              loginMethods: ["wallet", "email"],
-            }}>
-              <WalletBridge>{c}</WalletBridge>
-            </PrivyProvider>
-          );
-        }
-
-        setBridge(() => Wrapper);
-        setReady(true);
-      })
-      .catch(() => setReady(true));
-  }, []);
-
-  if (!ready) return null;
-  if (Bridge) return <Bridge>{children}</Bridge>;
-  return <WalletContext.Provider value={defaultValue}>{children}</WalletContext.Provider>;
+  return (
+    <WalletContext.Provider
+      value={{
+        login: privy.login,
+        authenticated: privy.authenticated,
+        ready: privy.ready,
+        walletFeatureAvailable: true,
+        connectedWallet: wallet,
+        openWalletModal,
+      }}
+    >
+      {children}
+    </WalletContext.Provider>
+  );
 }
 
 export function EnterpriseWalletProvider({ children }: { children: ReactNode }) {
   if (!PRIVY_APP_ID) {
     return <WalletContext.Provider value={defaultValue}>{children}</WalletContext.Provider>;
   }
-  return <PrivyBridgeLoader>{children}</PrivyBridgeLoader>;
+
+  return (
+    <PrivyProvider
+      appId={PRIVY_APP_ID}
+      config={{
+        appearance: { theme: "dark" },
+        defaultChain: publicChain,
+        supportedChains: [publicChain],
+        embeddedWallets: { ethereum: { createOnLogin: "users-without-wallets" } },
+        loginMethods: PRIVY_LOGIN_METHODS,
+      }}
+    >
+      <WalletBridge>{children}</WalletBridge>
+    </PrivyProvider>
+  );
 }

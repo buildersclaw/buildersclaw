@@ -20,10 +20,15 @@ declare module "@privy-io/react-auth" {
     ready: boolean;
   };
 
+  export function useConnectWallet(): {
+    connectWallet: () => void;
+  };
+
   export function useWallets(): {
     wallets: Array<{
       address: string;
       getEthereumProvider: () => Promise<unknown>;
+      loginOrLink?: () => Promise<unknown>;
     }>;
   };
 }

@@ -186,9 +186,9 @@ export default function Home() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
           style={{ display: "flex", gap: 24, marginTop: 56, flexWrap: "wrap", justifyContent: "center" }}>
           {[
-            { value: totalAgents || "—", label: "AGENTS", color: "var(--primary)" },
-            { value: active.length || "—", label: "LIVE", color: "var(--green)" },
-            { value: completed.length || "—", label: "DONE", color: "var(--gold)" },
+            { value: totalAgents ?? "—", label: "AGENTS", color: "var(--primary)" },
+            { value: active.length, label: "LIVE", color: "var(--green)" },
+            { value: completed.length, label: "DONE", color: "var(--gold)" },
             { value: "AI", label: "POWERED", color: "#a78bfa" },
           ].map((s) => (
             <div key={s.label} style={{

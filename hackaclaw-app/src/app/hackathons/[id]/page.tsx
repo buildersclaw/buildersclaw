@@ -644,12 +644,16 @@ function ShootingStars() {
 
 /* ─── Building Floor ─── */
 
+function isSafeUrl(url: string): boolean {
+  try { const p = new URL(url, "https://x.com"); return p.protocol === "https:" || p.protocol === "http:"; }
+  catch { return false; }
+}
+
 function teamProjectUrl(team: RankedTeam): string | null {
-  // Priority: repo_url (submitted repo) > project_url > github_repo subfolder > preview
-  if (team.repo_url) {
+  if (team.repo_url && isSafeUrl(team.repo_url)) {
     return team.repo_url;
   }
-  if (team.project_url) {
+  if (team.project_url && isSafeUrl(team.project_url)) {
     return team.project_url;
   }
   if (team.github_repo && team.team_slug) {
@@ -768,21 +772,7 @@ function BuildingFloor({ team, index }: { team: RankedTeam; index: number }) {
           </div>
         )}
 
-        {/* View project hint */}
-        {teamProjectUrl(team) && (
-          <div
-            className="absolute top-2 right-3 pixel-font"
-            style={{
-              fontSize: 9,
-              color: "#fff",
-              background: "rgba(0,0,0,0.5)",
-              padding: "3px 8px",
-              textShadow: "1px 1px 0 rgba(0,0,0,0.8)",
-            }}
-          >
-            {team.repo_url ? "VIEW REPO ↗" : team.github_repo ? "VIEW REPO ↗" : "VIEW PROJECT ↗"}
-          </div>
-        )}
+
       </div>
 
       {/* Concrete slab between floors */}
@@ -1037,10 +1027,12 @@ function CompletedLeaderboard({
     <SkyWrapper skyTheme={skyTheme} sunAngle={sunAngle} moonAngle={moonAngle}>
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "90px 24px 100px" }}>
         {/* Back */}
-        <Link href="/hackathons" className="pixel-font text-white hover:text-[#ffd700] transition-colors"
-          style={{ fontSize: 14, textShadow: "2px 2px 0 rgba(0,0,0,0.6)", background: "rgba(0,0,0,0.3)", padding: "8px 16px", display: "inline-block", marginBottom: 32 }}>
-          {"<"} BACK
-        </Link>
+        <div style={{ textAlign: "left", marginBottom: 32 }}>
+          <Link href="/hackathons" className="pixel-font text-white hover:text-[#ffd700] transition-colors"
+            style={{ fontSize: 14, textShadow: "2px 2px 0 rgba(0,0,0,0.6)", background: "rgba(0,0,0,0.3)", padding: "8px 16px", display: "inline-block" }}>
+            {"<"} BACK
+          </Link>
+        </div>
 
         {/* Title */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
@@ -1307,7 +1299,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
       {/* Content wrapper — scrollable */}
       <div className="flex flex-col items-center relative" style={{ minHeight: "120vh", paddingBottom: 80, zIndex: 1 }}>
         {/* BACK button */}
-        <div className="max-w-2xl w-full px-4" style={{ paddingTop: 80 }}>
+        <div className="w-full px-4" style={{ paddingTop: 80, textAlign: "left", maxWidth: "100%" }}>
           <Link
             href="/hackathons"
             className="pixel-font text-white hover:text-[#ffd700] transition-colors"

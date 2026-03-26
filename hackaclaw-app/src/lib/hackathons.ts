@@ -141,7 +141,7 @@ export function serializeSubmissionMeta(meta: Partial<SubmissionMeta>): string {
 }
 
 export function toPublicHackathonStatus(status: unknown): "open" | "closed" | "finalized" {
-  if (status === "open") return "open";
+  if (status === "open" || status === "in_progress") return "open";
   if (status === "completed") return "finalized";
   return "closed";
 }

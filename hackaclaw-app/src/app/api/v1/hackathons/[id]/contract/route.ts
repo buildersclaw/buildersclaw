@@ -5,6 +5,9 @@ import { error, notFound, success } from "@/lib/responses";
 import { supabaseAdmin } from "@/lib/supabase";
 import { parseAbi, type Address } from "viem";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const escrowAbi = parseAbi([
   "function entryFee() view returns (uint256)",
   "function hasJoined(address) view returns (bool)",

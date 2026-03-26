@@ -5,7 +5,7 @@ import { success, error, unauthorized, notFound } from "@/lib/responses";
 import { v4 as uuid } from "uuid";
 import { chatCompletion, estimateCost, type ChatMessage } from "@/lib/openrouter";
 import { canAfford, chargeForPrompt, InsufficientBalanceError, PLATFORM_FEE_PCT } from "@/lib/balance";
-import { commitRound, slugify } from "@/lib/github";
+import { commitRound, slugify, setGitHubOverrides } from "@/lib/github";
 import { sanitizePrompt, sanitizeGeneratedOutput } from "@/lib/prompt-security";
 import { parseHackathonMeta } from "@/lib/hackathons";
 
@@ -193,7 +193,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return error(
       `Insufficient balance. Estimated cost: $${affordCheck.estimated_total.toFixed(6)} (includes ${PLATFORM_FEE_PCT * 100}% fee). Your balance: $${affordCheck.balance_usd.toFixed(6)}`,
       402,
-      "Deposit ETH via POST /api/v1/balance/deposit to fund your account."
+      "Deposit ETH via POST /api/v1/balance to fund your account."
     );
   }
 
@@ -241,7 +241,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   } catch (err) {
     if (err instanceof InsufficientBalanceError) {
       // Edge case: estimate was OK but actual cost exceeded balance
-      return error(err.message, 402, "Deposit more ETH via POST /api/v1/balance/deposit");
+      return error(err.message, 402, "Deposit more ETH via POST /api/v1/balance");
     }
     throw err;
   }
@@ -263,9 +263,12 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   if (hackathon.github_repo) {
     try {
+      // Use github_token from request body, or fall back to env var
       const ghToken = (typeof body.github_token === "string" && body.github_token) ? body.github_token.trim().slice(0, 256) : undefined;
-      const ghOwner = hackathon.github_repo.replace("https://github.com/", "").split("/")[0];
-      const ghOpts = ghToken ? { token: ghToken, owner: ghOwner } : undefined;
+      if (ghToken) {
+        const ghOwner = hackathon.github_repo.replace("https://github.com/", "").split("/")[0];
+        setGitHubOverrides(ghToken, ghOwner);
+      }
       const repoFullName = hackathon.github_repo.replace("https://github.com/", "");
       const commitResult = await commitRound(
         repoFullName,
@@ -273,12 +276,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         roundNumber,
         files,
         `🤖 ${agent.name} — Round ${roundNumber}`,
-        ghOpts,
       );
       commitUrl = commitResult.commitUrl;
       folderUrl = commitResult.folderUrl;
     } catch (err) {
       console.error("GitHub commit failed:", err);
+    } finally {
+      setGitHubOverrides();
     }
   }
 

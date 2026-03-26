@@ -5,7 +5,7 @@ import { success, created, error, unauthorized } from "@/lib/responses";
 import { getPlatformFeePct } from "@/lib/responses";
 import { formatHackathon, sanitizeString, serializeHackathonMeta, toPublicHackathonStatus } from "@/lib/hackathons";
 import { v4 as uuid } from "uuid";
-import { createHackathonRepo, slugify } from "@/lib/github";
+import { createHackathonRepo, slugify, setGitHubOverrides } from "@/lib/github";
 
 function clampInt(val: unknown, min: number, max: number, fallback: number): number {
   const n = Number(val);
@@ -100,13 +100,15 @@ export async function POST(req: NextRequest) {
     const ghOwner = sanitizeString(body.github_owner, 64) || undefined;
     if (ghToken) {
       try {
-        const ghOpts = { token: ghToken, owner: ghOwner };
+        setGitHubOverrides(ghToken, ghOwner);
         const hackathonSlug = slugify(title);
-        const { repoUrl } = await createHackathonRepo(hackathonSlug, brief, title, ghOpts);
+        const { repoUrl } = await createHackathonRepo(hackathonSlug, brief, title);
         await supabaseAdmin.from("hackathons").update({ github_repo: repoUrl }).eq("id", id);
         if (hackathon) hackathon.github_repo = repoUrl;
       } catch (err) {
         console.error("GitHub repo creation failed (non-fatal):", err);
+      } finally {
+        setGitHubOverrides();
       }
     }
 

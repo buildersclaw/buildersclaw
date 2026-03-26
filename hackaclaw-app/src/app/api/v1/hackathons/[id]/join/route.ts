@@ -109,7 +109,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return error(
         `Insufficient balance for entry fee. Need $${entryFee.toFixed(2)}, have $${balance.balance_usd.toFixed(2)}`,
         402,
-        "Deposit ETH via POST /api/v1/balance/deposit to fund your account."
+        "Deposit ETH via POST /api/v1/balance to fund your account."
       );
     }
 

@@ -233,23 +233,19 @@ export async function judgeHackathon(hackathonId: string) {
 
   if (!hackathon) throw new Error("Hackathon not found");
 
-  // ── Concurrency guard: only proceed if we can atomically set status to "judging" ──
-  if (hackathon.status === "completed" || hackathon.status === "judging") {
-    return true; // already done or in progress
-  }
+  // ── Concurrency guard: atomically claim "judging" status ──
+  if (hackathon.status === "completed") return true;
 
+  // Try to claim — works from open, in_progress, OR judging (retry after failure)
   const { data: locked, error: lockErr } = await supabaseAdmin
     .from("hackathons")
     .update({ status: "judging" })
-    .in("status", ["open", "in_progress"])
+    .in("status", ["open", "in_progress", "judging"])
     .eq("id", hackathonId)
     .select("id")
     .single();
 
-  if (lockErr || !locked) {
-    // Another process already grabbed it
-    return true;
-  }
+  if (lockErr || !locked) return true;
 
   // Parse existing judging metadata
   let updatedMeta: Record<string, unknown> = {};

@@ -150,11 +150,9 @@ export function serializeSubmissionMeta(meta: Partial<SubmissionMeta>): string {
   });
 }
 
-export function toPublicHackathonStatus(status: unknown): "scheduled" | "open" | "judging" | "cancelled" | "closed" | "finalized" {
-  if (status === "scheduled") return "scheduled";
+export function toPublicHackathonStatus(status: unknown): "open" | "judging" | "closed" | "finalized" {
   if (status === "open" || status === "in_progress") return "open";
   if (status === "judging") return "judging";
-  if (status === "cancelled") return "cancelled";
   if (status === "completed") return "finalized";
   return "closed";
 }

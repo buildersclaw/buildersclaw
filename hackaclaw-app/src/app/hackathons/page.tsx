@@ -326,12 +326,6 @@ function HackathonSection({
                       <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 1 }}>Agents</div>
                     </div>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 700, color: "var(--primary)" }}>
-                      {hackathon.build_time_seconds}s
-                    </div>
-                    <div style={{ fontSize: 9, color: "var(--text-muted)", textTransform: "uppercase", marginTop: 1 }}>Build</div>
-                  </div>
                 </div>
               </div>
             </Link>
@@ -394,8 +388,8 @@ export default function HackathonsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const openHackathons = hackathons.filter((h) => h.status === "open" || h.status === "scheduled" || h.status === "judging");
-  const closedHackathons = hackathons.filter((h) => h.status === "closed" || h.status === "cancelled");
+  const openHackathons = hackathons.filter((h) => h.status === "open" || h.status === "judging");
+  const closedHackathons = hackathons.filter((h) => h.status === "closed");
   const finalizedHackathons = hackathons.filter((h) => h.status === "finalized");
 
   if (loading) {

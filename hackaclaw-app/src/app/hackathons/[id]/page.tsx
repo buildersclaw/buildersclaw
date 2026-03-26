@@ -880,7 +880,6 @@ function HackathonBadge({
                     color: hackathon.status === "finalized" ? "#ffd700"
                       : hackathon.status === "open" ? "#00ffaa"
                       : hackathon.status === "judging" ? "#ffa500"
-                      : hackathon.status === "scheduled" ? "#87ceeb"
                       : "#87ceeb",
                   }}>
                     {hackathon.status.toUpperCase().replace("_", " ")}
@@ -1167,15 +1166,15 @@ function CompletedLeaderboard({
 
   return (
     <SkyWrapper skyTheme={skyTheme} sunAngle={sunAngle} moonAngle={moonAngle}>
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "90px 24px 100px" }}>
-        {/* Back */}
-        <div style={{ textAlign: "left", marginBottom: 32 }}>
-          <Link href="/hackathons" className="pixel-font text-white hover:text-[#ffd700] transition-colors"
-            style={{ fontSize: 14, textShadow: "2px 2px 0 rgba(0,0,0,0.6)", background: "rgba(0,0,0,0.3)", padding: "8px 16px", display: "inline-block" }}>
-            {"<"} BACK
-          </Link>
-        </div>
+      {/* Back — full width, left aligned */}
+      <div className="w-full px-4" style={{ paddingTop: 80, textAlign: "left", maxWidth: "100%" }}>
+        <Link href="/hackathons" className="pixel-font text-white hover:text-[#ffd700] transition-colors"
+          style={{ fontSize: 14, textShadow: "2px 2px 0 rgba(0,0,0,0.6)", background: "rgba(0,0,0,0.3)", padding: "8px 16px", display: "inline-block" }}>
+          {"<"} BACK
+        </Link>
+      </div>
 
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 24px 100px" }}>
         {/* Title */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <div style={{ fontSize: 56, marginBottom: 8 }}>🏆</div>
@@ -1374,102 +1373,6 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
   /* ─── COMPLETED → LEADERBOARD ─── */
   if (hackathon.status === "finalized") {
     return <CompletedLeaderboard teams={teams} hackathon={hackathon} skyTheme={skyTheme} sunAngle={sunAngle} moonAngle={moonAngle} />;
-  }
-
-  /* ─── CANCELLED ─── */
-  if (hackathon.status === "cancelled") {
-    return (
-      <SkyWrapper skyTheme={skyTheme} sunAngle={sunAngle} moonAngle={moonAngle}>
-        <div style={{ maxWidth: 640, margin: "0 auto", padding: "90px 24px 100px" }}>
-          <div style={{ textAlign: "left", marginBottom: 32 }}>
-            <Link href="/hackathons" className="pixel-font text-white hover:text-[#ffd700] transition-colors"
-              style={{ fontSize: 14, textShadow: "2px 2px 0 rgba(0,0,0,0.6)", background: "rgba(0,0,0,0.3)", padding: "8px 16px", display: "inline-block" }}>
-              {"<"} BACK
-            </Link>
-          </div>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <div style={{ fontSize: 56, marginBottom: 8 }}>🚫</div>
-            <h1 className="pixel-font text-white" style={{ fontSize: 16, textShadow: "2px 2px 0 rgba(0,0,0,0.5)", marginBottom: 6 }}>
-              {hackathon.title}
-            </h1>
-            <p className="pixel-font" style={{ fontSize: 10, color: "#ff4444" }}>HACKATHON CANCELLED</p>
-          </div>
-          <div style={{ background: "rgba(0,0,0,0.55)", border: "3px solid #ff4444", padding: "32px 24px", textAlign: "center" }}>
-            <div className="pixel-font" style={{ fontSize: 11, color: "#ff4444", marginBottom: 12 }}>NOT ENOUGH PARTICIPANTS</div>
-            <div className="pixel-font" style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", lineHeight: 1.8 }}>
-              {teams.length} TEAM{teams.length !== 1 ? "S" : ""} REGISTERED
-              <br />
-              THE MINIMUM WAS NOT REACHED BEFORE THE DEADLINE
-            </div>
-          </div>
-        </div>
-      </SkyWrapper>
-    );
-  }
-
-  /* ─── SCHEDULED → WAITING FOR START ─── */
-  if (hackathon.status === "scheduled") {
-    return (
-      <SkyWrapper skyTheme={skyTheme} sunAngle={sunAngle} moonAngle={moonAngle}>
-        <div style={{ maxWidth: 640, margin: "0 auto", padding: "90px 24px 100px" }}>
-          <div style={{ textAlign: "left", marginBottom: 32 }}>
-            <Link href="/hackathons" className="pixel-font text-white hover:text-[#ffd700] transition-colors"
-              style={{ fontSize: 14, textShadow: "2px 2px 0 rgba(0,0,0,0.6)", background: "rgba(0,0,0,0.3)", padding: "8px 16px", display: "inline-block" }}>
-              {"<"} BACK
-            </Link>
-          </div>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <div style={{ fontSize: 56, marginBottom: 8 }}>⏳</div>
-            <h1 className="pixel-font text-white" style={{ fontSize: 16, textShadow: "2px 2px 0 rgba(0,0,0,0.5)", marginBottom: 6 }}>
-              {hackathon.title}
-            </h1>
-            <p className="pixel-font" style={{ fontSize: 10, color: "#87ceeb" }}>REGISTRATION OPEN</p>
-          </div>
-
-          {/* Countdown to deadline */}
-          {hackathon.ends_at && (
-            <div style={{ background: "rgba(0,0,0,0.55)", border: "3px solid #87ceeb", padding: "24px", textAlign: "center", marginBottom: 24 }}>
-              <div className="pixel-font" style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", marginBottom: 8 }}>STARTS WHEN DEADLINE ARRIVES</div>
-              <CountdownTimer endsAt={hackathon.ends_at} onExpired={handleDeadlineExpired} />
-            </div>
-          )}
-
-          {/* Registration stats */}
-          <div style={{ background: "rgba(0,0,0,0.45)", padding: "24px", textAlign: "center", marginBottom: 24 }}>
-            <div className="pixel-font" style={{ fontSize: 28, color: "#00ffaa", textShadow: "2px 2px 0 rgba(0,0,0,0.8)" }}>
-              {teams.length}
-            </div>
-            <div className="pixel-font" style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>
-              TEAM{teams.length !== 1 ? "S" : ""} REGISTERED
-            </div>
-            {totalAgents > 0 && (
-              <div className="pixel-font" style={{ fontSize: 8, color: "rgba(255,255,255,0.3)", marginTop: 4 }}>
-                {totalAgents} AGENT{totalAgents !== 1 ? "S" : ""}
-              </div>
-            )}
-          </div>
-
-          {/* Brief */}
-          {hackathon.brief && (
-            <div style={{ background: "rgba(0,0,0,0.35)", padding: "20px 24px" }}>
-              <div className="pixel-font" style={{ fontSize: 9, color: "#87ceeb", marginBottom: 8 }}>CHALLENGE BRIEF</div>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, fontFamily: "Inter, sans-serif" }}>
-                {hackathon.brief}
-              </p>
-            </div>
-          )}
-
-          {/* Info */}
-          <div className="pixel-font" style={{ fontSize: 8, color: "rgba(255,255,255,0.3)", textAlign: "center", marginTop: 24, lineHeight: 1.8 }}>
-            AGENTS CAN JOIN NOW
-            <br />
-            WHEN THE TIMER HITS ZERO, THE HACKATHON STARTS
-            <br />
-            IF NOT ENOUGH PARTICIPANTS, IT WILL BE CANCELLED
-          </div>
-        </div>
-      </SkyWrapper>
-    );
   }
 
   /* ─── ACTIVE → PIXEL BUILDING ─── */

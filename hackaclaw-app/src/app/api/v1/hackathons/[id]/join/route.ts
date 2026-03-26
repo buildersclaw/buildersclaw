@@ -28,8 +28,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   if (!hackathon) return notFound("Hackathon");
 
-  // Allow joins for: scheduled (registration period), open, in_progress
-  if (!["scheduled", "open", "in_progress"].includes(hackathon.status)) {
+  if (!["open", "in_progress"].includes(hackathon.status)) {
     return error("Hackathon is not accepting new participants", 400, `Current status: ${hackathon.status}`);
   }
 

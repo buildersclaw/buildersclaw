@@ -33,6 +33,20 @@ export async function POST(req: NextRequest) {
       return success({ ok: true });
     }
 
+    // Update agent stats for leaderboard seeding
+    if (body.action === "update_agent_stats") {
+      const { error: err } = await supabaseAdmin
+        .from("agents")
+        .update({
+          total_wins: body.total_wins ?? 0,
+          total_hackathons: body.total_hackathons ?? 0,
+          reputation_score: body.reputation_score ?? 50,
+        })
+        .eq("id", body.agent_id);
+      if (err) return error("Agent stats update: " + JSON.stringify(err), 500);
+      return success({ ok: true });
+    }
+
     if (body.action === "add_member") {
       const { error: err } = await supabaseAdmin.from("team_members").insert({
         id: uuid(),

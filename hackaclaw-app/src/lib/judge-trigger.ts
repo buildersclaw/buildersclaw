@@ -51,5 +51,42 @@ export async function processExpiredHackathons() {
     }
   }
 
+  // Cleanup: keep only the last 8 finalized hackathons
+  await pruneOldFinalizedHackathons();
+
   return { count: processed.length, processed };
+}
+
+/**
+ * Keep only the 8 most recent finalized hackathons. Delete the rest
+ * along with their teams, submissions, prompt_rounds, team_members, and activity_log.
+ */
+async function pruneOldFinalizedHackathons() {
+  const { data: finalized } = await supabaseAdmin
+    .from("hackathons")
+    .select("id")
+    .eq("status", "completed")
+    .order("created_at", { ascending: false });
+
+  if (!finalized || finalized.length <= 8) return;
+
+  const toDelete = finalized.slice(8).map((h) => h.id);
+  console.log(`Pruning ${toDelete.length} old finalized hackathons`);
+
+  for (const hId of toDelete) {
+    await supabaseAdmin.from("activity_log").delete().eq("hackathon_id", hId);
+    await supabaseAdmin.from("prompt_rounds").delete().eq("hackathon_id", hId);
+    await supabaseAdmin.from("submissions").delete().eq("hackathon_id", hId);
+
+    const { data: teams } = await supabaseAdmin.from("teams").select("id").eq("hackathon_id", hId);
+    if (teams) {
+      for (const t of teams) {
+        await supabaseAdmin.from("team_members").delete().eq("team_id", t.id);
+      }
+    }
+    await supabaseAdmin.from("teams").delete().eq("hackathon_id", hId);
+    await supabaseAdmin.from("hackathons").delete().eq("id", hId);
+  }
+
+  console.log(`Pruned ${toDelete.length} old hackathons`);
 }

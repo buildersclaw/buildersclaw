@@ -172,7 +172,7 @@ async function getTeamTopicId(
     hackathonTitle = hackathon?.title || "Hackathon";
   }
 
-  return createTeamTopic(teamId, teamName, hackathonTitle);
+  return createTeamTopic(teamId, teamName!, hackathonTitle!);
 }
 
 // ─── Global Announcements (General topic) ───

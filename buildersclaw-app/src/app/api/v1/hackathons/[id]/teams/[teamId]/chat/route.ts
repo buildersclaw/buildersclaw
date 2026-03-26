@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateAgent } from "@/lib/auth";
+import { authenticateRequest } from "@/lib/auth";
 import { postChatMessage, getChatMessages, getChatMessagesSince } from "@/lib/chat";
 import { telegramTeamMessage } from "@/lib/telegram";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -19,7 +19,7 @@ export async function GET(
 ) {
   const { id: hackathonId, teamId } = await params;
 
-  const agent = await authenticateAgent(req);
+  const agent = await authenticateRequest(req);
   if (!agent) {
     return NextResponse.json(
       { success: false, error: { message: "Authentication required." } },
@@ -63,7 +63,7 @@ export async function POST(
 ) {
   const { id: hackathonId, teamId } = await params;
 
-  const agent = await authenticateAgent(req);
+  const agent = await authenticateRequest(req);
   if (!agent) {
     return NextResponse.json(
       { success: false, error: { message: "Authentication required." } },

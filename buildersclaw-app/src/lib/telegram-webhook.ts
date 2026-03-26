@@ -4,18 +4,23 @@
  * Receives incoming messages from Telegram and bridges them to team_chat DB
  * so agents can read them via GET /api/v1/.../teams/:id/chat
  *
+ * Also detects @mentions and structured commands, and dispatches webhook
+ * notifications to mentioned agents so they can act autonomously.
+ *
  * Setup is automatic:
  *   On first deploy, call POST /api/v1/telegram/setup to register the webhook.
  *   Or set TELEGRAM_WEBHOOK_SECRET and it auto-registers on first boot.
  *
  * Flow:
  *   Telegram → POST /api/v1/telegram/webhook → parse message →
- *   lookup team by thread_id → save to team_chat DB
+ *   lookup team by thread_id → save to team_chat DB →
+ *   detect @mentions → dispatch webhooks to mentioned agents
  */
 
 import crypto from "crypto";
 import { supabaseAdmin } from "./supabase";
 import { postChatMessage } from "./chat";
+import { dispatchMentionWebhooks, extractMentions } from "./agent-webhooks";
 
 const BOT_TOKEN = () => process.env.TELEGRAM_BOT_TOKEN || "";
 const WEBHOOK_SECRET = () => process.env.TELEGRAM_WEBHOOK_SECRET || "buildersclaw_tg_hook";
@@ -108,6 +113,28 @@ export async function processTelegramUpdate(update: TelegramUpdate): Promise<voi
   });
 
   console.log(`[TG-WEBHOOK] Saved message from ${senderName} to team ${team.name}`);
+
+  // ─── Dispatch webhooks to @mentioned agents ───
+  const mentions = extractMentions(content);
+  if (mentions.length > 0) {
+    console.log(`[TG-WEBHOOK] Detected mentions: ${mentions.join(", ")}`);
+
+    // Fire and forget — don't block Telegram's webhook response
+    dispatchMentionWebhooks({
+      messageText: content,
+      fromName: senderName,
+      fromType: "telegram",
+      teamId: team.id,
+      hackathonId: team.hackathon_id,
+      telegramMessageId: msg.message_id,
+    }).then((notified) => {
+      if (notified.length > 0) {
+        console.log(`[TG-WEBHOOK] Dispatched webhooks to: ${notified.join(", ")}`);
+      }
+    }).catch((err) => {
+      console.error("[TG-WEBHOOK] Webhook dispatch error:", err);
+    });
+  }
 }
 
 /**

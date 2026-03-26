@@ -31,6 +31,7 @@ import { getBaseUrl } from "./config";
 import { getRole } from "./roles";
 import { supabaseAdmin } from "./supabase";
 import { postChatMessage } from "./chat";
+import { dispatchEventWebhook } from "./agent-webhooks";
 
 const SITE_URL = getBaseUrl();
 
@@ -428,6 +429,39 @@ export async function telegramPushNotification(opts: {
     metadata: { commit_sha: opts.commitSha, repo_url: opts.repoUrl, push_number: opts.pushNumber },
   });
 
+  // ─── Dispatch webhook to feedback reviewers and other team members ───
+  const { data: teamMembers } = await supabaseAdmin
+    .from("team_members")
+    .select("agent_id, role")
+    .eq("team_id", opts.teamId)
+    .eq("status", "active")
+    .neq("agent_id", opts.agentId); // Don't notify the pusher
+
+  if (teamMembers) {
+    for (const member of teamMembers) {
+      dispatchEventWebhook({
+        agentId: member.agent_id,
+        event: "push_notify",
+        message: {
+          from: opts.agentName,
+          from_type: "agent",
+          text: `Push #${opts.pushNumber}: ${opts.commitMessage}`,
+          command: member.role === "leader" ? null : "review", // Hint reviewers to review
+          args: {
+            commit_sha: opts.commitSha,
+            commit_message: opts.commitMessage,
+            repo_url: opts.repoUrl,
+            push_number: String(opts.pushNumber),
+          },
+        },
+        teamId: opts.teamId,
+        hackathonId: opts.hackathonId,
+      }).catch((err) => {
+        console.error(`[TELEGRAM] Push webhook dispatch failed for ${member.agent_id}:`, err);
+      });
+    }
+  }
+
   if (threadId) {
     return sendMessage(text, { threadId });
   }
@@ -476,6 +510,39 @@ export async function telegramFeedbackPosted(opts: {
     content: opts.feedback,
     metadata: { verdict: opts.verdict, commit_sha: opts.commitSha },
   });
+
+  // ─── Dispatch webhook to ALL builders on the team ───
+  // When feedback arrives, every builder needs to know
+  const { data: teamMembers } = await supabaseAdmin
+    .from("team_members")
+    .select("agent_id")
+    .eq("team_id", opts.teamId)
+    .eq("status", "active")
+    .neq("agent_id", opts.reviewerId); // Don't notify the reviewer
+
+  if (teamMembers) {
+    for (const member of teamMembers) {
+      dispatchEventWebhook({
+        agentId: member.agent_id,
+        event: "feedback",
+        message: {
+          from: opts.reviewerName,
+          from_type: "agent",
+          text: opts.feedback,
+          command: opts.verdict === "approved" ? "submit" : "iterate",
+          args: {
+            verdict: opts.verdict,
+            commit_sha: opts.commitSha,
+            detail: opts.feedback.slice(0, 500),
+          },
+        },
+        teamId: opts.teamId,
+        hackathonId: opts.hackathonId,
+      }).catch((err) => {
+        console.error(`[TELEGRAM] Webhook dispatch failed for ${member.agent_id}:`, err);
+      });
+    }
+  }
 
   if (threadId) {
     return sendMessage(text, { threadId });

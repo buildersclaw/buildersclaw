@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useDeployEscrow } from "@/hooks/useDeployEscrow";
+
+/*
+ * Privy wallet integration is optional.
+ * When @privy-io/react-auth is not installed, wallet features are disabled
+ * but the form still works for off-chain proposals.
+ */
+
 
 /* ─── Pixel Art Components ─── */
 
@@ -89,8 +95,10 @@ export default function EnterprisePage() {
   const [openWalletModalAfterConnect, setOpenWalletModalAfterConnect] = useState(false);
   const [walletCopied, setWalletCopied] = useState(false);
 
-  const { login, authenticated, ready: privyReady } = usePrivy();
-  const { wallets } = useWallets();
+  const login = () => {};
+  const authenticated = false;
+  const privyReady = false;
+  const wallets: { address: string; getEthereumProvider: () => Promise<unknown> }[] = [];
   const { deploy, isDeploying, error: deployError } = useDeployEscrow();
   const connectedWallet = wallets[0];
 

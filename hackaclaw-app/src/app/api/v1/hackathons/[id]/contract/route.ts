@@ -13,11 +13,7 @@ const escrowAbi = parseAbi([
   "function entryFee() view returns (uint256)",
   "function hasJoined(address) view returns (bool)",
   "function finalized() view returns (bool)",
-  "function getWinners() view returns (address[])",
-  "function getWinnerShare(address) view returns (uint256)",
-  "function winnerCount() view returns (uint256)",
-  "function hasClaimed(address) view returns (bool)",
-  "function totalPrizeAtFinalize() view returns (uint256)",
+  "function winner() view returns (address)",
   "function sponsor() view returns (address)",
   "function prizePool() view returns (uint256)",
 ]);
@@ -54,28 +50,21 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   const publicClient = getPublicChainClient();
   let status;
   try {
-    const [finalized, winnersArr, winnerCountVal, sponsorAddr, prizePoolWei, entryFeeWei, totalPrizeWei] = await Promise.all([
+    const [finalized, winner, sponsorAddr, prizePoolWei, entryFeeWei] = await Promise.all([
       publicClient.readContract({ address: contractAddress, abi: escrowAbi, functionName: "finalized" }),
-      publicClient.readContract({ address: contractAddress, abi: escrowAbi, functionName: "getWinners" }),
-      publicClient.readContract({ address: contractAddress, abi: escrowAbi, functionName: "winnerCount" }),
+      publicClient.readContract({ address: contractAddress, abi: escrowAbi, functionName: "winner" }),
       publicClient.readContract({ address: contractAddress, abi: escrowAbi, functionName: "sponsor" }),
       publicClient.readContract({ address: contractAddress, abi: escrowAbi, functionName: "prizePool" }),
       publicClient.readContract({ address: contractAddress, abi: escrowAbi, functionName: "entryFee" }),
-      publicClient.readContract({ address: contractAddress, abi: escrowAbi, functionName: "totalPrizeAtFinalize" }),
     ]);
 
-    const winners = (winnersArr as string[]).filter(
-      (w) => w !== "0x0000000000000000000000000000000000000000",
-    );
+    const winnerAddr = winner as string;
     const sponsorAddress = sponsorAddr as string;
-
     status = {
       finalized: finalized as boolean,
-      winners,
-      winner_count: Number(winnerCountVal),
+      winner: winnerAddr === "0x0000000000000000000000000000000000000000" ? null : winnerAddr,
       sponsor: sponsorAddress === "0x0000000000000000000000000000000000000000" ? null : sponsorAddress,
       prize_pool_wei: (prizePoolWei as bigint).toString(),
-      total_prize_at_finalize_wei: (totalPrizeWei as bigint).toString(),
       entry_fee_wei: (entryFeeWei as bigint).toString(),
     };
   } catch {
@@ -90,14 +79,9 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     abi: {
       join: "function join() payable",
       claim: "function claim()",
-      finalize: "function finalize(address[] _winners, uint256[] _sharesBps)",
       hasJoined: "function hasJoined(address) view returns (bool)",
       finalized: "function finalized() view returns (bool)",
-      getWinners: "function getWinners() view returns (address[])",
-      getWinnerShare: "function getWinnerShare(address) view returns (uint256)",
-      winnerCount: "function winnerCount() view returns (uint256)",
-      hasClaimed: "function hasClaimed(address) view returns (bool)",
-      totalPrizeAtFinalize: "function totalPrizeAtFinalize() view returns (uint256)",
+      winner: "function winner() view returns (address)",
       sponsor: "function sponsor() view returns (address)",
       prizePool: "function prizePool() view returns (uint256)",
       entryFee: "function entryFee() view returns (uint256)",

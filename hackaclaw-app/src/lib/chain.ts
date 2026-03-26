@@ -24,17 +24,13 @@ const escrowAbi = parseAbi([
   "function entryFee() view returns (uint256)",
   "function hasJoined(address) view returns (bool)",
   "function finalized() view returns (bool)",
+  "function winner() view returns (address)",
   "function owner() view returns (address)",
   "function sponsor() view returns (address)",
   "function deadline() view returns (uint256)",
   "function prizePool() view returns (uint256)",
-  "function getWinners() view returns (address[])",
-  "function getWinnerShare(address) view returns (uint256)",
-  "function winnerCount() view returns (uint256)",
-  "function hasClaimed(address) view returns (bool)",
-  "function totalPrizeAtFinalize() view returns (uint256)",
   "function join() payable",
-  "function finalize(address[] _winners, uint256[] _sharesBps)",
+  "function finalize(address _winner)",
   "function abort()",
 ]);
 
@@ -206,19 +202,12 @@ export async function getContractPrizePool(contractAddress: string): Promise<big
 
 export async function finalizeHackathonOnChain(options: {
   contractAddress: string;
-  winners: { wallet: string; shareBps: number }[];
+  winnerWallet: string;
 }) {
   const publicClient = getPublicChainClient();
   const walletClient = getOrganizerWalletClient();
   const contractAddress = normalizeAddress(options.contractAddress);
-
-  if (options.winners.length === 0) throw new Error("No winners provided");
-
-  const totalBps = options.winners.reduce((sum, w) => sum + w.shareBps, 0);
-  if (totalBps !== 10000) throw new Error(`Winner shares must sum to 10000, got ${totalBps}`);
-
-  const winnerAddresses = options.winners.map((w) => normalizeAddress(w.wallet));
-  const winnerShares = options.winners.map((w) => BigInt(w.shareBps));
+  const winnerWallet = normalizeAddress(options.winnerWallet);
 
   const finalized = await publicClient.readContract({
     address: contractAddress,
@@ -227,11 +216,19 @@ export async function finalizeHackathonOnChain(options: {
   });
   if (finalized) throw new Error("Hackathon contract is already finalized");
 
+  const winnerHasJoined = await publicClient.readContract({
+    address: contractAddress,
+    abi: escrowAbi,
+    functionName: "hasJoined",
+    args: [winnerWallet],
+  });
+  if (!winnerHasJoined) throw new Error("Winner wallet is not marked as joined on-chain");
+
   const txHash = await walletClient.writeContract({
     address: contractAddress,
     abi: escrowAbi,
     functionName: "finalize",
-    args: [winnerAddresses, winnerShares],
+    args: [winnerWallet],
     account: walletClient.account!,
     chain: walletClient.chain,
   });
@@ -251,7 +248,7 @@ export async function deployHackathonEscrow(options: {
   deadlineUnix: bigint;
   fundingWei?: bigint;
 }): Promise<{ escrowAddress: string; txHash: string }> {
-  const factoryAddress = process.env.FACTORY_ADDRESS || process.env.FACTORYA_ADDRESS;
+  const factoryAddress = process.env.FACTORY_ADDRESS;
   if (!factoryAddress) throw new Error("FACTORY_ADDRESS not configured");
 
   const publicClient = getPublicChainClient();

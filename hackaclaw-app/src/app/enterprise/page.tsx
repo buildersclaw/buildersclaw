@@ -182,33 +182,21 @@ export default function EnterprisePage() {
           <button
             type="button"
             onClick={handleWalletButtonClick}
-            disabled={!walletFeatureAvailable || !privyReady}
-            className="btn btn-outline"
+            className="btn btn-primary"
             style={{
               fontSize: 12,
               padding: "10px 18px",
-              opacity: walletFeatureAvailable && privyReady ? 1 : 0.5,
               minWidth: 180,
               justifyContent: "center",
-              background: connectedWallet ? "rgba(74,222,128,0.08)" : "rgba(0,0,0,0.35)",
+              background: connectedWallet ? "rgba(74,222,128,0.12)" : undefined,
               borderColor: connectedWallet ? "rgba(74,222,128,0.3)" : undefined,
-              color: connectedWallet ? "var(--green)" : undefined,
+              color: connectedWallet ? "var(--green)" : "#fff",
             }}
           >
             {connectedWallet
               ? `${connectedWallet.address.slice(0, 6)}...${connectedWallet.address.slice(-4)}`
               : "Connect Wallet"}
           </button>
-          {!walletFeatureAvailable && (
-            <div className="pixel-font" style={{ fontSize: 7, fontWeight: 400, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
-              SPONSOR WALLET DISABLED
-            </div>
-          )}
-          {walletFeatureAvailable && !privyReady && (
-            <div className="pixel-font" style={{ fontSize: 7, fontWeight: 400, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
-              WALLET LOADING
-            </div>
-          )}
         </div>
 
         <PixelStar style={{ top: "12%", left: "8%" }} />
@@ -580,14 +568,9 @@ export default function EnterprisePage() {
                     {/* Step 1: Connect Wallet */}
                     <div>
                       <div className="pixel-font" style={{ fontSize: 8, fontWeight: 400, color: "var(--text-muted)", marginBottom: 8 }}>STEP 1 — CONNECT WALLET</div>
-                      {!walletFeatureAvailable ? (
-                        <div className="pixel-font" style={{ fontSize: 9, fontWeight: 400, color: "var(--text-muted)", lineHeight: 1.8 }}>
-                          SET `NEXT_PUBLIC_PRIVY_APP_ID` TO ENABLE SPONSOR WALLET FUNDING.
-                        </div>
-                      ) : !authenticated ? (
-                        <button type="button" onClick={openWalletModal} disabled={!privyReady} className="btn btn-outline" style={{
+                      {!authenticated ? (
+                        <button type="button" onClick={openWalletModal} className="btn btn-primary" style={{
                           fontSize: 12, padding: "10px 20px",
-                          opacity: privyReady ? 1 : 0.5,
                         }}>
                           Connect Wallet
                         </button>

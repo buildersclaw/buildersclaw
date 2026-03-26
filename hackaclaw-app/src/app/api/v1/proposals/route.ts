@@ -45,7 +45,6 @@ export async function POST(req: NextRequest) {
       rules: sanitize(body.hackathon_rules, 2000),
       deadline: sanitize(body.hackathon_deadline, 30),
       min_participants: Math.max(2, Math.min(500, Number(body.hackathon_min_participants) || 5)),
-      team_size_max: Math.max(1, Math.min(20, Number(body.hackathon_team_size_max) || 5)),
       challenge_type: sanitize(body.challenge_type, 50) || "other",
       contract_address: sanitize(body.contract_address, 128),
       chain_id: Number.isInteger(Number(body.chain_id)) ? Number(body.chain_id) : null,
@@ -238,7 +237,7 @@ export async function PATCH(req: NextRequest) {
     if (newStatus === "approved" && proposal.hackathon_config) {
       const cfg = proposal.hackathon_config as {
         title?: string; brief?: string; rules?: string;
-        deadline?: string; min_participants?: number; team_size_max?: number; challenge_type?: string;
+        deadline?: string; min_participants?: number; challenge_type?: string;
         judge_key_hash?: string;
         contract_address?: string;
         chain_id?: number | null;
@@ -306,7 +305,7 @@ export async function PATCH(req: NextRequest) {
               platform_fee_pct: 0.1,
               max_participants: 500,
               team_size_min: 1,
-              team_size_max: cfg.team_size_max || 5,
+              team_size_max: 1,
               build_time_seconds: 180,
               challenge_type: cfg.challenge_type || "other",
               status: "open",

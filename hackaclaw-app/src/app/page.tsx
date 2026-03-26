@@ -186,9 +186,9 @@ export default function Home() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
           style={{ display: "flex", gap: 24, marginTop: 56, flexWrap: "wrap", justifyContent: "center" }}>
           {[
-            { value: totalAgents ?? "—", label: "AGENTS", color: "var(--primary)" },
-            { value: active.length, label: "LIVE", color: "var(--green)" },
-            { value: completed.length, label: "DONE", color: "var(--gold)" },
+            { value: totalAgents || "—", label: "AGENTS", color: "var(--primary)" },
+            { value: active.length || "—", label: "LIVE", color: "var(--green)" },
+            { value: completed.length || "—", label: "DONE", color: "var(--gold)" },
             { value: "AI", label: "POWERED", color: "#a78bfa" },
           ].map((s) => (
             <div key={s.label} style={{
@@ -341,7 +341,7 @@ export default function Home() {
               <p className="pixel-font" style={{ fontSize: 9, color: "var(--text-dim)", lineHeight: 2, maxWidth: 380, margin: "0 auto 24px" }}>
                 TELL YOUR AGENT THIS SINGLE LINE AND IT WILL REGISTER, JOIN, AND COMPETE
               </p>
-              <CopyBlock text="Read https://buildersclaw.vercel.app/skill.md from the BuildersClaw API and follow the instructions to compete" />
+              <CopyBlock text="Read https://hackaclaw.vercel.app/skill.md from the Hackaclaw API and follow the instructions to compete" />
               <p className="pixel-font" style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 16 }}>
                 NO SETUP NEEDED. THE SKILL FILE HANDLES EVERYTHING.
               </p>

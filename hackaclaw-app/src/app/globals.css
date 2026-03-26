@@ -342,13 +342,6 @@ section { padding: 120px 48px; }
 .stagger-2 { transition-delay: .2s; }
 .stagger-3 { transition-delay: .3s; }
 
-/* ═══════════════════════ FOCUS STYLES ═══════════════════════ */
-a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
-[role="link"]:focus-visible, [role="button"]:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
 /* ═══════════════════════ RESPONSIVE ═══════════════════════ */
 .ent-config-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
@@ -394,7 +387,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .docs-layout { flex-direction: column; padding: 80px 16px 60px; }
   .docs-sidebar { display: none; }
   .ent-config-grid { grid-template-columns: 1fr !important; }
-  .ent-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }
 
 /* === ARENA TOWER === */
@@ -507,7 +499,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .building-column::-webkit-scrollbar-thumb { background: var(--outline); border-radius: 3px; }
 
 .roof {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 107, 53, 0.05));
+  background: llinear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 107, 53, 0.05));
   border: 1px solid rgba(255, 215, 0, 0.15);
   border-radius: 12px 12px 0 0;
   padding: 24px;
@@ -552,7 +544,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .floor {
-  background: var(--s-mid);
+  background: var(--surface-mid);
   border-left: 3px solid transparent;
   margin-bottom: 2px;
   padding: 20px 24px;
@@ -573,12 +565,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .floor:hover {
-  background: var(--s-high);
+  background: var(--surface-high);
 }
 
 .floor.active {
   border-left-color: var(--primary);
-  background: var(--s-high);
+  background: var(--surface-high);
 }
 
 .floor.status-building { border-left-color: var(--primary); }
@@ -670,7 +662,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .status-building .floor-progress-fill {
-  background: linear-gradient(90deg, var(--p-dark), var(--primary));
+  background: linear-gradient(90deg, var(--primary-dark), var(--primary));
 }
 
 .status-deploying .floor-progress-fill {
@@ -829,7 +821,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .ground-floor {
-  background: linear-gradient(135deg, var(--s-mid), var(--s-low));
+  background: linear-gradient(135deg, var(--surface-mid), var(--surface-low));
   border-radius: 0 0 12px 12px;
   padding: 20px 24px;
   display: flex;
@@ -938,7 +930,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .arena-metric-card {
-  background: var(--s-mid);
+  background: var(--surface-mid);
   padding: 12px;
   border-radius: 8px;
 }
@@ -970,7 +962,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background: var(--s-low);
+  background: var(--surface-low);
 }
 
 .arena-terminal-dot {
@@ -1004,7 +996,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .log-time { color: var(--text-muted); }
-.log-action { color: var(--p-dim); }
+.log-action { color: var(--primary-dim); }
 .log-success { color: var(--green); }
 .log-warn { color: var(--gold); }
 
@@ -1053,7 +1045,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .activity-text strong {
-  color: var(--p-dim);
+  color: var(--primary-dim);
   font-weight: 600;
 }
 
@@ -1130,7 +1122,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background: var(--s-high);
+  background: var(--surface-high);
   border: 1px solid rgba(255, 107, 53, 0.2);
   border-radius: 10px;
   padding: 14px 24px;
@@ -1148,7 +1140,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 .arena-toast-icon { font-size: 20px; }
 .arena-toast-text { font-size: 13px; color: var(--text); }
-.arena-toast-text strong { color: var(--p-dim); }
+.arena-toast-text strong { color: var(--primary-dim); }
 /* ═══════════════════════════════════════════
    PIXEL ART BUILDING SYSTEM
    ═══════════════════════════════════════════ */

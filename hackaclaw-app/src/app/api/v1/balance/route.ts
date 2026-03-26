@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
   let platformWallet: string | null = null;
   try {
     const walletClient = getOrganizerWalletClient();
-    platformWallet = walletClient.account.address;
+    platformWallet = walletClient.account?.address ?? null;
   } catch {
     // RPC not configured — wallet won't be available
   }

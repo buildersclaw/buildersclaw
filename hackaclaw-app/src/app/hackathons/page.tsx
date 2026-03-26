@@ -105,15 +105,16 @@ function MiniLobster({ color, size = 16 }: { color: string; size?: number }) {
   );
 }
 
-function TeamStrip({ teams }: { teams: TeamPreview[] }) {
+function TeamStrip({ teams, status }: { teams: TeamPreview[]; status?: string }) {
   if (teams.length === 0) {
+    const isFinished = status === "finalized" || status === "closed";
     return (
       <div style={{
         height: 48, display: "flex", alignItems: "center", justifyContent: "center",
         background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px dashed rgba(89,65,57,0.2)",
       }}>
         <span style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "'JetBrains Mono', monospace" }}>
-          Waiting for teams...
+          {isFinished ? "No teams participated" : "Waiting for teams..."}
         </span>
       </div>
     );
@@ -296,7 +297,7 @@ function HackathonSection({
 
                 {/* Teams strip — fixed area */}
                 <div style={{ flex: 1, marginBottom: 0 }}>
-                  <TeamStrip teams={teams} />
+                  <TeamStrip teams={teams} status={hackathon.status} />
                 </div>
 
                 {/* Stats row */}

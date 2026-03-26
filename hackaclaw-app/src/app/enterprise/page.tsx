@@ -2,12 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useDeployEscrow } from "@/hooks/useDeployEscrow";
-
-/*
- * Privy wallet integration is optional.
- * When @privy-io/react-auth is not installed, wallet features are disabled
- * but the form still works for off-chain proposals.
- */
+import { publicChainId } from "@/lib/public-chain";
+import { useEnterpriseWallet } from "./enterprise-wallet-provider";
 
 
 /* ─── Pixel Art Components ─── */
@@ -95,12 +91,14 @@ export default function EnterprisePage() {
   const [openWalletModalAfterConnect, setOpenWalletModalAfterConnect] = useState(false);
   const [walletCopied, setWalletCopied] = useState(false);
 
-  const login = () => {};
-  const authenticated = false;
-  const privyReady = false;
-  const wallets: { address: string; getEthereumProvider: () => Promise<unknown> }[] = [];
+  const {
+    walletFeatureAvailable,
+    ready: privyReady,
+    authenticated,
+    connectedWallet,
+    openWalletModal,
+  } = useEnterpriseWallet();
   const { deploy, isDeploying, error: deployError } = useDeployEscrow();
-  const connectedWallet = wallets[0];
 
   useEffect(() => {
     if (openWalletModalAfterConnect && connectedWallet) {
@@ -109,7 +107,7 @@ export default function EnterprisePage() {
     }
   }, [connectedWallet, openWalletModalAfterConnect]);
 
-  const handleWalletButtonClick = async () => {
+  const handleWalletButtonClick = () => {
     setWalletCopied(false);
     if (connectedWallet) {
       setShowWalletModal(true);
@@ -117,7 +115,7 @@ export default function EnterprisePage() {
     }
 
     setOpenWalletModalAfterConnect(true);
-    await login();
+    openWalletModal();
   };
 
   const copyWalletAddress = async () => {
@@ -138,6 +136,7 @@ export default function EnterprisePage() {
         payload.contract_address = deployedContract.contractAddress;
         payload.funding_tx_hash = deployedContract.txHash;
         payload.sponsor_wallet = connectedWallet?.address;
+        payload.chain_id = publicChainId;
       }
 
       const res = await fetch("/api/v1/proposals", {
@@ -183,12 +182,12 @@ export default function EnterprisePage() {
           <button
             type="button"
             onClick={handleWalletButtonClick}
-            disabled={!privyReady}
+            disabled={!walletFeatureAvailable || !privyReady}
             className="btn btn-outline"
             style={{
               fontSize: 12,
               padding: "10px 18px",
-              opacity: privyReady ? 1 : 0.5,
+              opacity: walletFeatureAvailable && privyReady ? 1 : 0.5,
               minWidth: 180,
               justifyContent: "center",
               background: connectedWallet ? "rgba(74,222,128,0.08)" : "rgba(0,0,0,0.35)",
@@ -200,9 +199,14 @@ export default function EnterprisePage() {
               ? `${connectedWallet.address.slice(0, 6)}...${connectedWallet.address.slice(-4)}`
               : "Connect Wallet"}
           </button>
-          {!privyReady && (
+          {!walletFeatureAvailable && (
             <div className="pixel-font" style={{ fontSize: 7, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
-              WALLET UNAVAILABLE
+              SPONSOR WALLET DISABLED
+            </div>
+          )}
+          {walletFeatureAvailable && !privyReady && (
+            <div className="pixel-font" style={{ fontSize: 7, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
+              WALLET LOADING
             </div>
           )}
         </div>
@@ -576,8 +580,12 @@ export default function EnterprisePage() {
                     {/* Step 1: Connect Wallet */}
                     <div>
                       <div className="pixel-font" style={{ fontSize: 8, color: "var(--text-muted)", marginBottom: 8 }}>STEP 1 — CONNECT WALLET</div>
-                      {!authenticated ? (
-                        <button type="button" onClick={login} disabled={!privyReady} className="btn btn-outline" style={{
+                      {!walletFeatureAvailable ? (
+                        <div className="pixel-font" style={{ fontSize: 9, color: "var(--text-muted)", lineHeight: 1.8 }}>
+                          SET `NEXT_PUBLIC_PRIVY_APP_ID` TO ENABLE SPONSOR WALLET FUNDING.
+                        </div>
+                      ) : !authenticated ? (
+                        <button type="button" onClick={openWalletModal} disabled={!privyReady} className="btn btn-outline" style={{
                           fontSize: 12, padding: "10px 20px",
                           opacity: privyReady ? 1 : 0.5,
                         }}>

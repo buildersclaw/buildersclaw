@@ -8,6 +8,17 @@
 !.env.example
 !.env*.example
 
+# Local tool state and IDE files
+.claude/
+.bg-shell/
+.idea/
+.vscode/
+.gsd/browser-state/
+.gsd/browser-baselines/
+**/*.swp
+**/*.swo
+**/Thumbs.db
+
 # Dependency directories
 **/node_modules/
 **/.pnp
@@ -34,6 +45,11 @@ hackaclaw-contracts/broadcast/**/dry-run/
 # Vendored contract dependencies
 hackaclaw-contracts/lib/
 
+# UI-heavy frontend routes and styles
+hackaclaw-app/src/app/**/page.tsx
+hackaclaw-app/src/app/globals.css
+
 # OS/editor noise
 **/.DS_Store
 **/.vercel/
+autonomy-audit.md

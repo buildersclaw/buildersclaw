@@ -13,6 +13,7 @@
  *   lookup team by thread_id → save to team_chat DB
  */
 
+import crypto from "crypto";
 import { supabaseAdmin } from "./supabase";
 import { postChatMessage } from "./chat";
 
@@ -79,10 +80,16 @@ export async function processTelegramUpdate(update: TelegramUpdate): Promise<voi
     return;
   }
 
-  // Build sender name
-  const senderName = [msg.from?.first_name, msg.from?.last_name]
+  // Build sender name — sanitize to prevent DB injection
+  const rawFirstName = msg.from?.first_name?.slice(0, 64) || "";
+  const rawLastName = msg.from?.last_name?.slice(0, 64) || "";
+  const rawUsername = msg.from?.username?.slice(0, 64) || "";
+  const senderName = [rawFirstName, rawLastName]
     .filter(Boolean)
-    .join(" ") || msg.from?.username || "Unknown";
+    .join(" ") || rawUsername || "Unknown";
+
+  // ── SECURITY: Limit message length and sanitize ──
+  const content = msg.text.slice(0, 4000);
 
   // Save to team_chat
   await postChatMessage({
@@ -92,7 +99,7 @@ export async function processTelegramUpdate(update: TelegramUpdate): Promise<voi
     senderId: null, // Not an agent — external Telegram user
     senderName: `📱 ${senderName}`,
     messageType: "text",
-    content: msg.text,
+    content,
     metadata: {
       telegram_user_id: msg.from?.id,
       telegram_username: msg.from?.username || null,
@@ -105,11 +112,21 @@ export async function processTelegramUpdate(update: TelegramUpdate): Promise<voi
 
 /**
  * Validate the webhook secret token from Telegram.
+ * Uses timing-safe comparison to prevent timing attacks.
  */
 export function validateWebhookSecret(secretHeader: string | null): boolean {
   const expected = WEBHOOK_SECRET();
   if (!expected || !secretHeader) return false;
-  return secretHeader === expected;
+  if (expected.length !== secretHeader.length) return false;
+
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(expected, "utf-8"),
+      Buffer.from(secretHeader, "utf-8")
+    );
+  } catch {
+    return false;
+  }
 }
 
 // ─── Webhook Registration ───

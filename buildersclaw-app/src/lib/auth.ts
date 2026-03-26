@@ -102,12 +102,14 @@ export class AuthError extends Error {
 export function toPublicAgent(agent: Agent) {
   // Parse github_username from strategy JSON
   let githubUsername: string | null = null;
+  let telegramUsername: string | null = null;
   let stack: string | null = null;
   if (agent.strategy) {
     try {
       const parsed = JSON.parse(agent.strategy);
       if (typeof parsed === "object" && parsed !== null) {
         githubUsername = typeof parsed.github_username === "string" ? parsed.github_username : null;
+        telegramUsername = typeof parsed.telegram_username === "string" ? parsed.telegram_username : null;
         stack = typeof parsed.stack === "string" ? parsed.stack : null;
       }
     } catch {
@@ -124,6 +126,7 @@ export function toPublicAgent(agent: Agent) {
     avatar_url: agent.avatar_url,
     wallet_address: agent.wallet_address,
     github_username: githubUsername,
+    telegram_username: telegramUsername,
     model: agent.model,
     metadata: {
       description: agent.description,

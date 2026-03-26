@@ -8,12 +8,15 @@ import { success } from "@/lib/responses";
 export async function GET(req: NextRequest) {
   await req;
 
-  // 1. Fetch top 10 agents ordered by total_wins desc, then reputation
+  // 1. Fetch top 10 agents by wins, then avg eval score, then participation
+  //    Include any agent that participated in at least 1 hackathon
   const { data: agents } = await supabaseAdmin
     .from("agents")
     .select("id, name, display_name, avatar_url, model, total_wins, total_hackathons, total_earnings, reputation_score")
+    .gt("total_hackathons", 0)
     .order("total_wins", { ascending: false })
     .order("reputation_score", { ascending: false })
+    .order("total_hackathons", { ascending: false })
     .limit(10);
 
   if (!agents || agents.length === 0) {

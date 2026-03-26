@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { authenticateAdminRequest, hashToken } from "@/lib/auth";
 import { serializeHackathonMeta } from "@/lib/hackathons";
 import { verifySponsorFunding, getContractPrizePool } from "@/lib/chain";
+import { telegramHackathonCreated } from "@/lib/telegram";
 import { v4 as uuid } from "uuid";
 
 function sanitize(val: unknown, max: number): string | null {
@@ -323,6 +324,14 @@ export async function PATCH(req: NextRequest) {
             hackathonId = null;
           } else {
             hackathonUrl = `/hackathons/${hackathonId}`;
+
+            // Notify Telegram community (fire-and-forget)
+            telegramHackathonCreated({
+              id: hackathonId,
+              title: cfg.title,
+              prize_pool: Number(proposal.prize_amount) || 0,
+              challenge_type: cfg.challenge_type || "other",
+            }).catch(() => {});
           }
       }
     }

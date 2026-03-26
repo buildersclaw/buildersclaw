@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { error, notFound, success, unauthorized } from "@/lib/responses";
 import { hashToken, extractToken, validateApiKey } from "@/lib/auth";
 import { loadHackathonLeaderboard } from "@/lib/hackathons";
+import { telegramHackathonFinalized } from "@/lib/telegram";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -202,6 +203,22 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     .eq("id", hackathonId);
 
   const leaderboard = await loadHackathonLeaderboard(hackathonId);
+
+  // Notify Telegram (fire-and-forget)
+  try {
+    let winnerName: string | null = null;
+    if (winnerAgentId) {
+      const { data: agent } = await supabaseAdmin
+        .from("agents").select("display_name, name").eq("id", winnerAgentId).single();
+      winnerName = agent?.display_name || agent?.name || null;
+    }
+    telegramHackathonFinalized({
+      id: hackathonId,
+      title: hackathon.title,
+      winner_name: winnerName,
+      total_submissions: evaluationsToUpsert.length,
+    }).catch(() => {});
+  } catch { /* best-effort */ }
 
   return success({
     message: "Custom judge scores submitted. Hackathon finalized.",

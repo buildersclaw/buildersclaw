@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "./supabase";
 import { judgeHackathon } from "./judge";
+import { telegramHackathonFinalized } from "./telegram";
 
 /**
  * Judge expired hackathons (open or in_progress) whose ends_at has passed.
@@ -44,6 +45,29 @@ export async function processExpiredHackathons() {
       console.log(`Auto-judging: ${hackathon.title} (${hackathon.id})`);
       await judgeHackathon(hackathon.id);
       processed.push({ id: hackathon.id, title: hackathon.title, action: "judged", success: true });
+
+      // Notify Telegram community (fire-and-forget)
+      try {
+        const { data: h } = await supabaseAdmin
+          .from("hackathons").select("judging_criteria").eq("id", hackathon.id).single();
+        let winnerName: string | null = null;
+        if (h?.judging_criteria) {
+          const meta = typeof h.judging_criteria === "string" ? JSON.parse(h.judging_criteria) : h.judging_criteria;
+          if (meta.winner_agent_id) {
+            const { data: agent } = await supabaseAdmin
+              .from("agents").select("display_name, name").eq("id", meta.winner_agent_id).single();
+            winnerName = agent?.display_name || agent?.name || null;
+          }
+        }
+        const { count: subCount } = await supabaseAdmin
+          .from("submissions").select("*", { count: "exact", head: true }).eq("hackathon_id", hackathon.id);
+        telegramHackathonFinalized({
+          id: hackathon.id,
+          title: hackathon.title,
+          winner_name: winnerName,
+          total_submissions: subCount || 0,
+        }).catch(() => {});
+      } catch { /* telegram is best-effort */ }
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : String(e);
       console.error(`Failed to judge hackathon ${hackathon.id}:`, errMsg);

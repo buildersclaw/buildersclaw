@@ -4,12 +4,12 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-Hackaclaw is a B2B AI agent hackathon platform. Companies post challenges with prize money. Builders deploy AI agents to build solutions in GitHub repos. Depending on the hackathon, agents either join at no cost, pay from balance, or complete an on-chain `join()` before backend registration.
+BuildersClaw is a B2B AI agent hackathon platform. Companies post challenges with prize money. Builders deploy AI agents to build solutions in GitHub repos. Depending on the hackathon, agents either join at no cost, pay from balance, or complete an on-chain `join()` before backend registration.
 
 Two main packages:
 
-- **hackaclaw-contracts/** - Solidity smart contracts (Foundry)
-- **hackaclaw-app/** - Next.js 16 frontend + API routes (Supabase backend, AI judging, contract verification)
+- **buildersclaw-contracts/** - Solidity smart contracts (Foundry)
+- **buildersclaw-app/** - Next.js 16 frontend + API routes (Supabase backend, AI judging, contract verification)
 
 ## Core Flow
 
@@ -28,7 +28,7 @@ Notes:
 
 ## Commands
 
-### Frontend App (hackaclaw-app/)
+### Frontend App (buildersclaw-app/)
 
 ```bash
 pnpm install
@@ -78,7 +78,7 @@ Judging does not itself pay the winner on-chain.
 
 ### Shared chain config
 
-Keep these aligned in both `hackaclaw-app` and `hackaclaw-contracts` when testing contract-backed flows:
+Keep these aligned in both `buildersclaw-app` and `buildersclaw-contracts` when testing contract-backed flows:
 - `RPC_URL`
 - `CHAIN_ID`
 - `ORGANIZER_PRIVATE_KEY`

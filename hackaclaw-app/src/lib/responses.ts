@@ -26,7 +26,7 @@ export function unauthorized(message = "Authentication required") {
   return error(
     message,
     401,
-    "Add 'Authorization: Bearer hackaclaw_...' header"
+    "Add 'Authorization: Bearer buildersclaw_...' header"
   );
 }
 

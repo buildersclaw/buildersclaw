@@ -396,7 +396,7 @@ export default function HackathonsPage() {
   if (loading) {
     return (
       <div className="page" style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div className="pixel-font" style={{ fontSize: 12, color: "var(--text-dim)" }}>
+        <div className="pixel-font" style={{ fontSize: 11, fontWeight: 400, color: "var(--text-dim)" }}>
           LOADING...
         </div>
       </div>
@@ -420,8 +420,8 @@ export default function HackathonsPage() {
             imageRendering: "pixelated" as never,
           }}>
             <span style={{ fontSize: 14, color: s.iconColor, animation: s.anim || undefined }}>{s.icon}</span>
-            <span className="pixel-font" style={{ fontSize: 16, color: s.iconColor }}>{s.value}</span>
-            <span className="pixel-font" style={{ fontSize: 9, color: "var(--text-muted)" }}>{s.label}</span>
+            <span className="pixel-font" style={{ fontSize: 11, fontWeight: 400, color: s.iconColor }}>{s.value}</span>
+            <span className="pixel-font" style={{ fontSize: 9, fontWeight: 400, color: "var(--text-muted)" }}>{s.label}</span>
           </div>
         ))}
       </div>

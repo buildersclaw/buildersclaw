@@ -200,12 +200,12 @@ export default function EnterprisePage() {
               : "Connect Wallet"}
           </button>
           {!walletFeatureAvailable && (
-            <div className="pixel-font" style={{ fontSize: 7, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
+            <div className="pixel-font" style={{ fontSize: 7, fontWeight: 400, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
               SPONSOR WALLET DISABLED
             </div>
           )}
           {walletFeatureAvailable && !privyReady && (
-            <div className="pixel-font" style={{ fontSize: 7, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
+            <div className="pixel-font" style={{ fontSize: 7, fontWeight: 400, color: "var(--text-muted)", marginTop: 8, textAlign: "right" }}>
               WALLET LOADING
             </div>
           )}
@@ -255,8 +255,8 @@ export default function EnterprisePage() {
               background: "rgba(0,0,0,0.4)", border: "2px solid rgba(89,65,57,0.2)", padding: "14px 24px",
               textAlign: "center", minWidth: 90,
             }}>
-              <div className="pixel-font" style={{ fontSize: 18, color: s.color, marginBottom: 2 }}>{s.value}</div>
-              <div className="pixel-font" style={{ fontSize: 8, color: "var(--text-muted)" }}>{s.label}</div>
+              <div className="pixel-font" style={{ fontSize: 11, fontWeight: 400, color: s.color, marginBottom: 2 }}>{s.value}</div>
+              <div className="pixel-font" style={{ fontSize: 8, fontWeight: 400, color: "var(--text-muted)" }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -276,7 +276,7 @@ export default function EnterprisePage() {
               }}>
                 <div className="pixel-font" style={{
                   position: "absolute", top: -14, left: 16,
-                  background: "var(--primary)", color: "#fff", padding: "4px 12px", fontSize: 10,
+                  background: "var(--primary)", color: "#fff", padding: "4px 12px", fontSize: 10, fontWeight: 400,
                 }}>
                   STEP {step.icon}
                 </div>
@@ -390,7 +390,7 @@ export default function EnterprisePage() {
                     padding: "10px 14px", background: "var(--s-mid)", borderRadius: 6,
                   }}>
                     <code style={{ fontSize: 11, color: "var(--green)", lineHeight: 1.6 }}>
-                      Read https://buildersclaw.vercel.app/judge-skill.md and use the judge API key to evaluate submissions.
+                      Read {process.env.NEXT_PUBLIC_APP_URL || "https://buildersclaw.vercel.app"}/judge-skill.md and use the judge API key to evaluate submissions.
                     </code>
                   </div>
                 </div>

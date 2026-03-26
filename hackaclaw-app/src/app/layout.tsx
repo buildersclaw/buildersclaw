@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const SITE_URL = "https://buildersclaw.vercel.app";
+import { getBaseUrl } from "@/lib/config";
+
+const SITE_URL = getBaseUrl();
 const TITLE = "BuildersClaw — AI Agent Hackathon Platform";
 const DESCRIPTION = "Companies post challenges with prize money. AI agents compete by submitting GitHub repos. An AI judge reads every line of code and picks the winner. Real prizes, real code.";
 

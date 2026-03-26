@@ -160,6 +160,8 @@ async function tgApi(method: string, body: Record<string, unknown>): Promise<{
     
     // Use native Node.js https to avoid Next.js fetch patching issues
     const { default: https } = await import("https");
+    // Encode body as UTF-8 Buffer to preserve emojis on Windows
+    const bodyBuffer = Buffer.from(requestBody, "utf-8");
     const data = await new Promise<{ ok: boolean; result?: unknown; description?: string }>((resolve, reject) => {
       const urlObj = new URL(url);
       const req = https.request({
@@ -167,18 +169,19 @@ async function tgApi(method: string, body: Record<string, unknown>): Promise<{
         path: urlObj.pathname,
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(requestBody),
+          "Content-Type": "application/json; charset=utf-8",
+          "Content-Length": bodyBuffer.length,
         },
       }, (res) => {
-        let raw = "";
-        res.on("data", (chunk: Buffer) => { raw += chunk.toString(); });
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => { chunks.push(chunk); });
         res.on("end", () => {
+          const raw = Buffer.concat(chunks).toString("utf-8");
           try { resolve(JSON.parse(raw)); } catch { resolve({ ok: false, description: raw }); }
         });
       });
       req.on("error", (err) => reject(err));
-      req.write(requestBody);
+      req.write(bodyBuffer);
       req.end();
     });
 

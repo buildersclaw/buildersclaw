@@ -50,7 +50,7 @@ autonomy-audit.md
 .mcp.json
 
 # Non-project directories (external repos / experiments)
-api/
+/api/
 auth/
 clawhub/
 genlayer-project-boilerplate/

@@ -18,6 +18,7 @@ import {
   validateSharePct,
   validateRoleType,
 } from "@/lib/validation";
+import { getMarketplaceReputationScore } from "@/lib/erc8004";
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -71,7 +72,7 @@ export async function GET(req: NextRequest) {
     .from("marketplace_listings")
     .select(`
       *,
-      agents!marketplace_listings_posted_by_fkey(id, name, display_name, avatar_url, reputation_score, strategy),
+      agents!marketplace_listings_posted_by_fkey(id, name, display_name, avatar_url, reputation_score, marketplace_reputation_score, strategy, identity_registry, identity_agent_id, identity_chain_id, identity_agent_uri, identity_wallet, identity_owner_wallet, identity_source, identity_link_status, identity_verified_at),
       teams!marketplace_listings_team_id_fkey(id, name, status),
       hackathons!marketplace_listings_hackathon_id_fkey(id, title, brief, prize_pool, status, ends_at, challenge_type, build_time_seconds)
     `)
@@ -86,6 +87,32 @@ export async function GET(req: NextRequest) {
     console.error("Marketplace GET failed:", queryErr);
     return error("Failed to fetch listings", 500);
   }
+
+  const posterIds = Array.from(new Set(
+    (listings || [])
+      .map((listing: Record<string, unknown>) => listing.posted_by)
+      .filter((postedBy): postedBy is string => typeof postedBy === "string"),
+  ));
+
+  type ReputationSnapshotRow = {
+    agent_id: string;
+    trusted_feedback_count: number | null;
+    trusted_summary_value: string | null;
+    trusted_summary_decimals: number | null;
+    raw_feedback_count: number | null;
+    last_synced_at: string | null;
+  };
+
+  const { data: reputationSnapshots } = posterIds.length > 0
+    ? await supabaseAdmin
+      .from("agent_reputation_snapshots")
+      .select("agent_id, trusted_feedback_count, trusted_summary_value, trusted_summary_decimals, raw_feedback_count, last_synced_at")
+      .in("agent_id", posterIds)
+    : { data: [] as ReputationSnapshotRow[] };
+
+  const reputationSnapshotMap = new Map<string, ReputationSnapshotRow>(
+    (reputationSnapshots || []).map((snapshot) => [snapshot.agent_id, snapshot as ReputationSnapshotRow])
+  );
 
   // Flatten the joined data for a clean response
   const flat = (listings || []).map((l: Record<string, unknown>) => {
@@ -109,7 +136,30 @@ export async function GET(req: NextRequest) {
       posted_by: l.posted_by,
       poster_name: poster?.display_name || poster?.name || null,
       poster_avatar: poster?.avatar_url || null,
-      poster_reputation: poster?.reputation_score ?? 0,
+      poster_reputation: getMarketplaceReputationScore(poster || {}),
+      poster_identity: {
+        linked: !!poster?.identity_registry && !!poster?.identity_agent_id,
+        agent_registry: poster?.identity_registry || null,
+        agent_id: poster?.identity_agent_id || null,
+        chain_id: poster?.identity_chain_id || null,
+        agent_uri: poster?.identity_agent_uri || null,
+        wallet: poster?.identity_wallet || null,
+        owner_wallet: poster?.identity_owner_wallet || null,
+        source: poster?.identity_source || null,
+        link_status: poster?.identity_link_status || null,
+        verified_at: poster?.identity_verified_at || null,
+      },
+      poster_external_reputation: (() => {
+        const snapshot = reputationSnapshotMap.get(l.posted_by as string);
+        if (!snapshot) return null;
+        return {
+          trusted_feedback_count: snapshot.trusted_feedback_count ?? 0,
+          trusted_summary_value: snapshot.trusted_summary_value ?? null,
+          trusted_summary_decimals: snapshot.trusted_summary_decimals ?? null,
+          raw_feedback_count: snapshot.raw_feedback_count ?? 0,
+          last_synced_at: snapshot.last_synced_at ?? null,
+        };
+      })(),
       poster_github: (() => {
         try {
           const s = poster?.strategy as string | undefined;

@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { supabaseAdmin } from "./supabase";
 import type { Agent } from "./types";
 import { NextRequest } from "next/server";
+import { getAgentIdentity, getMarketplaceReputationScore } from "./erc8004";
 
 const TOKEN_PREFIX = "buildersclaw_";
 const LEGACY_TOKEN_PREFIX = "hackaclaw_";
@@ -136,6 +137,8 @@ export function toPublicAgent(agent: Agent) {
     total_hackathons: agent.total_hackathons,
     total_wins: agent.total_wins,
     reputation_score: agent.reputation_score,
+    marketplace_reputation_score: getMarketplaceReputationScore(agent),
+    identity: getAgentIdentity(agent),
     status: agent.status,
     created_at: agent.created_at,
   };

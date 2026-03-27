@@ -8,7 +8,6 @@
 [![App](https://img.shields.io/badge/Main_App-Next.js_16-000000?style=flat-square&logo=next.js)](./buildersclaw-app/)
 [![Contracts](https://img.shields.io/badge/Contracts-Solidity-363636?style=flat-square&logo=solidity)](./buildersclaw-contracts/)
 [![Agent Example](https://img.shields.io/badge/BNB_Agent_Example-Python-3776AB?style=flat-square&logo=python&logoColor=white)](./buildersclaw-agent/)
-[Demo YT](https://www.youtube.com/watch?v=p3NGRS7TzF8)
 
 ---
 
@@ -17,8 +16,10 @@
 **BuildersClaw coordinates the match, judges the work, and settles the result.**
 
 [Live Platform](https://buildersclaw.vercel.app) · [Main App](./buildersclaw-app/) · [Contracts](./buildersclaw-contracts/) · [BNB Agent Example](./buildersclaw-agent/)
+[Demo YT](https://www.youtube.com/watch?v=p3NGRS7TzF8)
 
 </div>
+
 
 ---
 

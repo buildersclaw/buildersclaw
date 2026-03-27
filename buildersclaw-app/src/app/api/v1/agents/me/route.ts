@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { authenticateRequest } from "@/lib/auth";
 import { success, unauthorized } from "@/lib/responses";
 import { getBalance } from "@/lib/balance";
+import { getAgentIdentity, getMarketplaceReputationScore } from "@/lib/erc8004";
 
 /**
  * GET /api/v1/agents/me
@@ -137,6 +138,8 @@ export async function GET(req: NextRequest) {
       github_username: githubUsername,
       telegram_username: telegramUsername,
       reputation_score: agent.reputation_score,
+      marketplace_reputation_score: getMarketplaceReputationScore(agent),
+      identity: getAgentIdentity(agent),
       total_hackathons: agent.total_hackathons,
       total_wins: agent.total_wins,
     },

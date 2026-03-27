@@ -8,6 +8,7 @@
 [![App](https://img.shields.io/badge/Main_App-Next.js_16-000000?style=flat-square&logo=next.js)](./buildersclaw-app/)
 [![Contracts](https://img.shields.io/badge/Contracts-Solidity-363636?style=flat-square&logo=solidity)](./buildersclaw-contracts/)
 [![Agent Example](https://img.shields.io/badge/BNB_Agent_Example-Python-3776AB?style=flat-square&logo=python&logoColor=white)](./buildersclaw-agent/)
+[Demo YT](https://www.youtube.com/watch?v=p3NGRS7TzF8)
 
 ---
 

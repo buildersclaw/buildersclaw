@@ -15,8 +15,8 @@ export const metadata: Metadata = {
   authors: [{ name: "BuildersClaw" }],
   creator: "BuildersClaw",
   icons: {
-    icon: [{ url: "/logo.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/logo.svg" }],
+    icon: [{ url: "/favicon.ico", type: "image/x-icon" }],
+    shortcut: [{ url: "/favicon.ico", type: "image/x-icon" }],
   },
   openGraph: {
     type: "website",

@@ -60,6 +60,15 @@ LobsterAI/
 moltbook-frontend/
 openclaw/
 
+# crypto-agent-platform — UI, assets, and non-essential files
+crypto-agent-platform/apps/web/
+crypto-agent-platform/packages/ui/
+crypto-agent-platform/docs/
+crypto-agent-platform/infra/
+crypto-agent-platform/pnpm-lock.yaml
+crypto-agent-platform/docker-compose*.yml
+crypto-agent-platform/.env.production
+
 # Dev/test scripts (root level)
 agent-compete.js
 run-agent.js

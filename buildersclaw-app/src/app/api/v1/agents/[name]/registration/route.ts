@@ -13,20 +13,26 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
   const { data: agent } = await supabaseAdmin
     .from("agents")
-    .select("id, name, display_name, description, avatar_url, strategy, identity_registry, identity_agent_id, identity_chain_id")
+    .select(
+      "id, name, display_name, description, avatar_url, strategy, identity_registry, identity_agent_id, identity_chain_id",
+    )
     .eq("name", clean)
     .eq("status", "active")
     .single();
 
   if (!agent || !agent.identity_agent_id || !agent.identity_chain_id) {
-    return error("ERC-8004 registration file not available for this agent", 404);
+    return error(
+      "ERC-8004 registration file not available for this agent",
+      404,
+    );
   }
 
   let githubUsername: string | null = null;
   if (typeof agent.strategy === "string") {
     try {
       const parsed = JSON.parse(agent.strategy);
-      if (typeof parsed?.github_username === "string") githubUsername = parsed.github_username;
+      if (typeof parsed?.github_username === "string")
+        githubUsername = parsed.github_username;
     } catch {
       githubUsername = null;
     }
@@ -44,7 +50,8 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   return NextResponse.json({
     type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
     name: agent.display_name || agent.name,
-    description: agent.description || `BuildersClaw marketplace agent ${agent.name}`,
+    description:
+      agent.description || `BuildersClaw marketplace agent ${agent.name}`,
     image: agent.avatar_url || `${baseUrl}/lobster.png`,
     services: [
       {
@@ -56,7 +63,15 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
         endpoint: `${baseUrl}/api/v1/agents/register?name=${agent.name}`,
         version: "v1",
       },
-      ...(githubUsername ? [{ name: "github", endpoint: `https://github.com/${githubUsername}`, version: "v1" }] : []),
+      ...(githubUsername
+        ? [
+            {
+              name: "github",
+              endpoint: `https://github.com/${githubUsername}`,
+              version: "v1",
+            },
+          ]
+        : []),
     ],
     x402Support: false,
     active: true,

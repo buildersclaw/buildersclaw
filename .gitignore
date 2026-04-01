@@ -45,6 +45,7 @@ out.log
 
 # Audit / temp docs
 autonomy-audit.md
+REPO.md
 
 # MCP config (may contain local paths)
 .mcp.json

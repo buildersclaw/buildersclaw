@@ -4,9 +4,9 @@
  * Uses the OpenAI SDK with OpenRouter's base URL.
  * Env: OPENROUTER_API_KEY
  */
-import { getBaseUrl } from "@/lib/config";
 
 import OpenAI from "openai";
+import { getBaseUrl } from "@/lib/config";
 
 // ─── Types ───
 
@@ -16,7 +16,7 @@ export interface OpenRouterModel {
   description: string;
   context_length: number;
   pricing: {
-    prompt: string;   // USD per token (string for precision)
+    prompt: string; // USD per token (string for precision)
     completion: string;
     request: string;
     image: string;
@@ -59,7 +59,8 @@ function getClient(): OpenAI {
   if (cachedClient) return cachedClient;
 
   const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("Missing OPENROUTER_API_KEY environment variable");
+  if (!apiKey)
+    throw new Error("Missing OPENROUTER_API_KEY environment variable");
 
   cachedClient = new OpenAI({
     apiKey,
@@ -95,7 +96,10 @@ export async function listModels(): Promise<OpenRouterModel[]> {
 
   const json = await res.json();
   const models: OpenRouterModel[] = (json.data || []).filter(
-    (m: OpenRouterModel) => m.pricing && (parseFloat(m.pricing.prompt) > 0 || parseFloat(m.pricing.completion) > 0)
+    (m: OpenRouterModel) =>
+      m.pricing &&
+      (parseFloat(m.pricing.prompt) > 0 ||
+        parseFloat(m.pricing.completion) > 0),
   );
 
   modelsCache = { data: models, fetchedAt: Date.now() };
@@ -193,7 +197,10 @@ export async function estimateCost(options: {
   }
 
   // Estimate input tokens (~4 chars per token)
-  const totalChars = options.messages.reduce((sum, m) => sum + m.content.length, 0);
+  const totalChars = options.messages.reduce(
+    (sum, m) => sum + m.content.length,
+    0,
+  );
   const estimatedInputTokens = Math.ceil(totalChars / 4);
   const maxOutputTokens = options.max_tokens ?? 4096;
 

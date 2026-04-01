@@ -34,7 +34,11 @@ const ALLOWED_ORIGINS = [
 
 // In development, allow localhost
 if (process.env.NODE_ENV !== "production") {
-  ALLOWED_ORIGINS.push("http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000");
+  ALLOWED_ORIGINS.push(
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+  );
 }
 
 /** Max request body size: 1MB for most routes, 256KB for chat */
@@ -46,11 +50,17 @@ const MAX_CHAT_BODY_SIZE = 256 * 1024;
  * NOTE: In Vercel Edge, this is per-isolate. For production, use Vercel KV or Upstash Redis.
  * This still provides meaningful protection against single-origin bursts.
  */
-const globalRateLimits = new Map<string, { count: number; windowStart: number }>();
+const globalRateLimits = new Map<
+  string,
+  { count: number; windowStart: number }
+>();
 const GLOBAL_RATE_LIMIT = 300; // requests per window
 const GLOBAL_RATE_WINDOW_MS = 60_000; // 1 minute
 
-function checkGlobalRateLimit(ip: string): { allowed: boolean; remaining: number } {
+function checkGlobalRateLimit(ip: string): {
+  allowed: boolean;
+  remaining: number;
+} {
   const now = Date.now();
   const entry = globalRateLimits.get(ip);
 
@@ -99,27 +109,33 @@ function applySecurityHeaders(response: NextResponse, isApi: boolean): void {
   if (process.env.NODE_ENV === "production") {
     response.headers.set(
       "Strict-Transport-Security",
-      "max-age=31536000; includeSubDomains; preload"
+      "max-age=31536000; includeSubDomains; preload",
     );
   }
 
   // Permissions Policy — disable dangerous features
   response.headers.set(
     "Permissions-Policy",
-    "camera=(), microphone=(), geolocation=(), payment=()"
+    "camera=(), microphone=(), geolocation=(), payment=()",
   );
 
   // API responses: never cache (sensitive data)
   // Pages: let Next.js handle caching normally for performance
   if (isApi) {
-    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    response.headers.set(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, private",
+    );
     response.headers.set("Pragma", "no-cache");
   }
 }
 
 // ─── CORS ───
 
-function handleCors(request: NextRequest, response: NextResponse): NextResponse {
+function handleCors(
+  request: NextRequest,
+  response: NextResponse,
+): NextResponse {
   const origin = request.headers.get("origin");
 
   // API routes need proper CORS
@@ -139,14 +155,23 @@ function handleCors(request: NextRequest, response: NextResponse): NextResponse 
       response.headers.set("Access-Control-Allow-Origin", "*");
     } else {
       // Unknown browser origin — reject
-      return new NextResponse(JSON.stringify({ error: "CORS: Origin not allowed" }), {
-        status: 403,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new NextResponse(
+        JSON.stringify({ error: "CORS: Origin not allowed" }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
-    response.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-    response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Seed-Secret, X-Telegram-Bot-Api-Secret-Token");
+    response.headers.set(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    );
+    response.headers.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-Seed-Secret, X-Telegram-Bot-Api-Secret-Token",
+    );
     response.headers.set("Access-Control-Max-Age", "86400");
     response.headers.set("Access-Control-Allow-Credentials", "true");
   }
@@ -184,7 +209,7 @@ export async function middleware(request: NextRequest) {
             retry_after_seconds: 60,
           },
         },
-        { status: 429 }
+        { status: 429 },
       );
       response.headers.set("Retry-After", "60");
       applySecurityHeaders(response, true);
@@ -195,7 +220,9 @@ export async function middleware(request: NextRequest) {
     const contentLength = request.headers.get("content-length");
     if (contentLength) {
       const size = parseInt(contentLength, 10);
-      const maxSize = pathname.includes("/chat") ? MAX_CHAT_BODY_SIZE : MAX_BODY_SIZE_BYTES;
+      const maxSize = pathname.includes("/chat")
+        ? MAX_CHAT_BODY_SIZE
+        : MAX_BODY_SIZE_BYTES;
 
       if (!isNaN(size) && size > maxSize) {
         const response = NextResponse.json(
@@ -205,7 +232,7 @@ export async function middleware(request: NextRequest) {
               message: `Request body too large. Maximum: ${Math.round(maxSize / 1024)}KB`,
             },
           },
-          { status: 413 }
+          { status: 413 },
         );
         applySecurityHeaders(response, true);
         return response;
@@ -218,7 +245,11 @@ export async function middleware(request: NextRequest) {
 
       // Telegram webhook sends application/json always
       // Allow missing content-type for simple requests
-      if (contentType && !contentType.includes("application/json") && !contentType.includes("multipart/form-data")) {
+      if (
+        contentType &&
+        !contentType.includes("application/json") &&
+        !contentType.includes("multipart/form-data")
+      ) {
         const response = NextResponse.json(
           {
             success: false,
@@ -226,7 +257,7 @@ export async function middleware(request: NextRequest) {
               message: "Unsupported Content-Type. Use application/json.",
             },
           },
-          { status: 415 }
+          { status: 415 },
         );
         applySecurityHeaders(response, true);
         return response;
@@ -236,8 +267,14 @@ export async function middleware(request: NextRequest) {
     // ── Block suspicious user-agents ──
     const ua = request.headers.get("user-agent") || "";
     const suspiciousPatterns = [
-      /sqlmap/i, /nikto/i, /nessus/i, /masscan/i,
-      /zgrab/i, /nuclei/i, /dirbuster/i, /gobuster/i,
+      /sqlmap/i,
+      /nikto/i,
+      /nessus/i,
+      /masscan/i,
+      /zgrab/i,
+      /nuclei/i,
+      /dirbuster/i,
+      /gobuster/i,
     ];
 
     if (suspiciousPatterns.some((p) => p.test(ua))) {

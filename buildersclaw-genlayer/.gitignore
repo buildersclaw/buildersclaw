@@ -10,6 +10,7 @@
 *.sw?
 .env
 node_modules
+.venv/
 # Python bytecode
 __pycache__/
 *.pyc
@@ -22,4 +23,3 @@ __pycache__/
 /frontend/package-lock.json
 *.compiled.js
 package-lock.json
-

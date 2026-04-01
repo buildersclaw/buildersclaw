@@ -17,8 +17,31 @@ This project includes the boilerplate code for a GenLayer use case implementatio
 - A production-ready Next.js 15 frontend with TypeScript, TanStack Query, and Radix UI
 
 ## 🛠️ Requirements
+- Python 3.12 support for contracts and tests
+- Node.js 18+ for the GenLayer CLI and frontend
 - A running GenLayer Studio (Install from [Docs](https://docs.genlayer.com/developers/intelligent-contracts/tooling-setup#using-the-genlayer-studio) or work with the hosted version of [GenLayer Studio](https://studio.genlayer.com/)). If you are working locally, this repository code does not need to be located in the same directory as the Genlayer Studio.
 - [GenLayer CLI](https://github.com/genlayerlabs/genlayer-cli) globally installed. To install or update the GenLayer CLI run `npm install -g genlayer`
+- Optional: [uv](https://docs.astral.sh/uv/) for Python environment management
+
+## 🐍 Python Environment
+
+Use either a standard virtual environment or `uv` for the contract and test environment. The frontend and GenLayer CLI remain Node-based.
+
+**Using `venv` + `pip`:**
+
+```shell
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+**Using `uv` (optional):**
+
+```shell
+uv sync
+```
+
+The optional `uv` workflow uses `.python-version` and `pyproject.toml` for the contract/test environment.
 
 ## 🚀 Steps to run this example
 
@@ -53,10 +76,27 @@ This project includes the boilerplate code for a GenLayer use case implementatio
    For more information on the code see [GenLayerJS](https://github.com/yeagerai/genlayer-js).
    
 ### 5. Test contracts
-1. Install the Python packages listed in the `requirements.txt` file in a virtual environment.
+1. Install Python dependencies for contracts and tests using either workflow:
+   ```shell
+   python3.12 -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+   or:
+
+   ```shell
+   uv sync
+   ```
 2. Make sure your GenLayer Studio is running. Then execute the following command in your terminal:
    ```shell
    gltest
+   ```
+
+   or with `uv`:
+
+   ```shell
+   uv run gltest
    ```
 
 ## ⚽ How the Football Bets Contract Works

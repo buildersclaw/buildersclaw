@@ -332,6 +332,8 @@ genlayer network info
 | Dato | Valor |
 |------|-------|
 | **Rama** | `feature/hackathon-bradbury-judge` |
+| **Contract Address** | `0xcdcc9a730d3a7210072d46d889ca0bb4ec0051c5` |
+| **Deploy TX** | `0xc0d40db6b56c323e468efdb21931ede607cafa9110c67c9281a2017402efcc8a` |
 | **Testnet RPC** | `https://rpc-bradbury.genlayer.com` |
 | **Chain ID** | `4221` |
 | **Faucet** | `https://testnet-faucet.genlayer.foundation/` |

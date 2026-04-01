@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { error } from "@/lib/responses";
 import { formatAgentRegistry } from "@/lib/erc8004";
+import { getBaseUrl } from "@/lib/config";
 
 type RouteParams = { params: Promise<{ name: string }> };
 
@@ -31,8 +32,14 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     }
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://buildersclaw.vercel.app";
-  const agentRegistry = agent.identity_registry || formatAgentRegistry(agent.identity_chain_id, process.env.IDENTITY_REGISTRY || "0x0000000000000000000000000000000000000000");
+  const baseUrl = getBaseUrl();
+  const agentRegistry =
+    agent.identity_registry ||
+    formatAgentRegistry(
+      agent.identity_chain_id,
+      process.env.IDENTITY_REGISTRY ||
+        "0x0000000000000000000000000000000000000000",
+    );
 
   return NextResponse.json({
     type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",

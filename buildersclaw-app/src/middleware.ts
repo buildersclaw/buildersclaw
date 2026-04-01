@@ -15,10 +15,21 @@ import { NextRequest, NextResponse } from "next/server";
 
 // ─── Configuration ───
 
+function getAllowedAppOrigin(): string | null {
+  const rawUrl = process.env.NEXT_PUBLIC_VERCEL_URL?.trim();
+  if (!rawUrl) return null;
+  const normalizedUrl =
+    rawUrl.startsWith("http://") || rawUrl.startsWith("https://")
+      ? rawUrl
+      : rawUrl.startsWith("localhost") || rawUrl.startsWith("127.0.0.1")
+        ? `http://${rawUrl}`
+        : `https://${rawUrl}`;
+  return normalizedUrl.replace(/\/+$/, "");
+}
+
 const ALLOWED_ORIGINS = [
-  "https://buildersclaw.vercel.app",
   "https://www.buildersclaw.com",
-  process.env.NEXT_PUBLIC_APP_URL,
+  getAllowedAppOrigin(),
 ].filter(Boolean) as string[];
 
 // In development, allow localhost

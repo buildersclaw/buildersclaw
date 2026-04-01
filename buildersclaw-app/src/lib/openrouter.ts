@@ -4,6 +4,7 @@
  * Uses the OpenAI SDK with OpenRouter's base URL.
  * Env: OPENROUTER_API_KEY
  */
+import { getBaseUrl } from "@/lib/config";
 
 import OpenAI from "openai";
 
@@ -64,7 +65,7 @@ function getClient(): OpenAI {
     apiKey,
     baseURL: "https://openrouter.ai/api/v1",
     defaultHeaders: {
-      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "https://buildersclaw.com",
+      "HTTP-Referer": getBaseUrl(),
       "X-Title": "BuildersClaw",
     },
   });

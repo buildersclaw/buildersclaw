@@ -1,15 +1,22 @@
 /**
  * App configuration — centralizes base URL and feature flags.
  *
- * Base URL is resolved from NEXT_PUBLIC_APP_URL env var.
+ * Base URL is resolved from NEXT_PUBLIC_VERCEL_URL.
  * In dev: http://localhost:3000
- * In prod: set NEXT_PUBLIC_APP_URL to your deployment URL.
+ * In prod: set NEXT_PUBLIC_VERCEL_URL to your deployment hostname or URL.
  */
 
 /** Get the public-facing base URL (no trailing slash) */
 export function getBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
+  const rawUrl = process.env.NEXT_PUBLIC_VERCEL_URL?.trim();
+  if (rawUrl) {
+    const normalizedUrl =
+      rawUrl.startsWith("http://") || rawUrl.startsWith("https://")
+        ? rawUrl
+        : rawUrl.startsWith("localhost") || rawUrl.startsWith("127.0.0.1")
+          ? `http://${rawUrl}`
+          : `https://${rawUrl}`;
+    return normalizedUrl.replace(/\/+$/, "");
   }
   // Fallback for dev
   return "http://localhost:3000";

@@ -70,7 +70,13 @@ export interface TransactionGuide {
 export function getChainSetupGuide(): ChainSetupGuide {
   const chainId = process.env.CHAIN_ID ? Number(process.env.CHAIN_ID) : null;
   const rpcUrl = process.env.RPC_URL || null;
-  const chainName = process.env.CHAIN_NAME || (chainId === 84532 ? "Base Sepolia" : chainId === 43113 ? "Avalanche Fuji" : "buildersclaw");
+  const chainName =
+    process.env.CHAIN_NAME ||
+    (chainId === 84532
+      ? "Base Sepolia"
+      : chainId === 43113
+        ? "Avalanche Fuji"
+        : "buildersclaw");
 
   return {
     overview:
@@ -98,7 +104,7 @@ export function getChainSetupGuide(): ChainSetupGuide {
           "For production agents, use Foundry's encrypted keystore instead of a raw env var:",
         commands: [
           "cast wallet import myagent --interactive   # prompts for key + password",
-          '# Then use --account myagent instead of --private-key',
+          "# Then use --account myagent instead of --private-key",
         ],
       },
     },
@@ -116,7 +122,8 @@ export function getChainSetupGuide(): ChainSetupGuide {
     },
 
     verify_setup: {
-      description: "After setup, verify your wallet has funds on the correct chain:",
+      description:
+        "After setup, verify your wallet has funds on the correct chain:",
       check_balance: rpcUrl
         ? `cast balance YOUR_ADDRESS --rpc-url ${rpcUrl}`
         : "cast balance YOUR_ADDRESS --rpc-url $RPC_URL",
@@ -164,10 +171,7 @@ export function getJoinTransactionGuide(opts: {
   hackathonId: string;
 }): TransactionGuide {
   const rpc = opts.rpcUrl || "$RPC_URL";
-  const entryFeeDisplay =
-    opts.entryFeeUnits === "0"
-      ? "0"
-      : opts.entryFeeUnits;
+  const entryFeeDisplay = opts.entryFeeUnits === "0" ? "0" : opts.entryFeeUnits;
 
   return {
     action: "join",
@@ -190,7 +194,7 @@ export function getJoinTransactionGuide(opts: {
       `  --rpc-url ${rpc}`,
       ``,
       `# 4. Notify the backend with the tx hash`,
-      `curl -X POST https://buildersclaw.vercel.app/api/v1/hackathons/${opts.hackathonId}/join \\`,
+      `curl -X POST https://buildersclaw.xyz/api/v1/hackathons/${opts.hackathonId}/join \\`,
       `  -H "Authorization: Bearer YOUR_API_KEY" \\`,
       `  -H "Content-Type: application/json" \\`,
       `  -d '{"wallet_address":"0xYourWallet","tx_hash":"0xYourJoinTxHash"}'`,
@@ -216,8 +220,7 @@ export function getDepositTransactionGuide(opts: {
 
   return {
     action: "deposit",
-    description:
-      `Send ${symbol} to the platform wallet, then submit the tx_hash to credit your BuildersClaw balance.`,
+    description: `Send ${symbol} to the platform wallet, then submit the tx_hash to credit your BuildersClaw balance.`,
     prerequisite_check: `cast balance $(cast wallet address --private-key $PRIVATE_KEY) --rpc-url ${rpc}`,
     cast_command: `cast send ${token} "transfer(address,uint256)" ${wallet} ${amountUnits} --private-key $PRIVATE_KEY --rpc-url ${rpc}`,
     then: `POST /api/v1/balance with {"tx_hash":"0xYourDepositTxHash"}`,
@@ -231,7 +234,7 @@ export function getDepositTransactionGuide(opts: {
       `  --rpc-url ${rpc}`,
       ``,
       `# 3. Submit the tx hash to credit your balance`,
-      `curl -X POST https://buildersclaw.vercel.app/api/v1/balance \\`,
+      `curl -X POST https://buildersclaw.xyz/api/v1/balance \\`,
       `  -H "Authorization: Bearer YOUR_API_KEY" \\`,
       `  -H "Content-Type: application/json" \\`,
       `  -d '{"tx_hash":"0xYourDepositTxHash"}'`,
@@ -290,11 +293,9 @@ export function checkAgentChainReadiness(agent: {
   if (!hasWallet) {
     missing.push("wallet_address");
     instructions.push(
-      "Register a wallet address: PATCH /api/v1/agents/register with {\"wallet_address\":\"0xYourAddress\"}"
+      'Register a wallet address: PATCH /api/v1/agents/register with {"wallet_address":"0xYourAddress"}',
     );
-    instructions.push(
-      "Generate one with: cast wallet new"
-    );
+    instructions.push("Generate one with: cast wallet new");
   }
 
   return {

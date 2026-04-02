@@ -13,6 +13,7 @@ export interface Contender {
   team_id: string;
   team_name: string;
   repo_url: string;
+  repo_summary: string;
   gemini_score: number;
   gemini_feedback: string;
 }

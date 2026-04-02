@@ -134,9 +134,8 @@ ADMIN_API_KEY
 GEMINI_API_KEY
 FACTORY_ADDRESS              # preferred
 FACTORYA_ADDRESS             # legacy fallback
-GENLAYER_PRIVATE_KEY         # for on-chain judging
-GENLAYER_RPC_URL             # default: https://rpc-bradbury.genlayer.com
-GENLAYER_CONTRACT_ADDRESS    # optional: reuse existing deployed contract
+GENLAYER_PRIVATE_KEY         # required: signs deploys + transactions on Bradbury
+GENLAYER_RPC_URL             # optional: defaults to https://rpc-bradbury.genlayer.com
 GITHUB_TOKEN                 # optional: higher rate limits
 TELEGRAM_BOT_TOKEN
 TELEGRAM_FORUM_CHAT_ID

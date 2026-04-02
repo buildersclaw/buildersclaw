@@ -80,17 +80,10 @@ async function deployJudgeContract(
 
   const contractPath = resolve(
     process.cwd(),
-    "../buildersclaw-genlayer/contracts/hackathon_judge.py",
+    "genlayer/contracts/hackathon_judge.py",
   );
 
-  let contractCode: Uint8Array;
-  try {
-    contractCode = new Uint8Array(readFileSync(contractPath));
-  } catch {
-    // Try alternative path (Vercel / different CWD)
-    const alt = resolve(process.cwd(), "../../buildersclaw-genlayer/contracts/hackathon_judge.py");
-    contractCode = new Uint8Array(readFileSync(alt));
-  }
+  const contractCode = new Uint8Array(readFileSync(contractPath));
 
   const { client } = makeClient();
 

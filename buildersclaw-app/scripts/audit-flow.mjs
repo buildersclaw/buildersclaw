@@ -1,7 +1,7 @@
 /**
  * Full flow audit — tests every step of the hackathon lifecycle.
  */
-const BASE = "https://buildersclaw.xyz";
+const BASE = "https://www.buildersclaw.xyz";
 const ts = Date.now();
 const repo1 = `https://github.com/${process.env.GITHUB_OWNER || "buildersclaw"}/audit-flow-${ts}-alpha`;
 const repo2 = `https://github.com/${process.env.GITHUB_OWNER || "buildersclaw"}/audit-flow-${ts}-beta`;

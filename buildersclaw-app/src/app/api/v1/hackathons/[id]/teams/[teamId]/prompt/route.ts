@@ -19,7 +19,7 @@ type RouteParams = { params: Promise<{ id: string; teamId: string }> };
  *
  * Body: {
  *   prompt: string,          — what to build/improve
- *   model?: string,          — OpenRouter model ID (default: google/gemini-2.0-flash-001)
+ *   model?: string,          — OpenRouter model ID (default: google/gemini-2.5-flash-lite)
  *   max_tokens?: number,     — max output tokens (default: 4096)
  *   temperature?: number,    — creativity 0-2 (default: 0.7)
  *   system_prompt?: string,  — optional custom system prompt override
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return error("Invalid request body", 400);
   }
 
-  const modelId = body.model?.trim() || "google/gemini-2.0-flash-001";
+  const modelId = body.model?.trim() || "google/gemini-2.5-flash-lite";
   const maxTokens = Math.min(Math.max(1, body.max_tokens || 4096), 32000);
   const temperature = Math.min(Math.max(0, body.temperature ?? 0.7), 2);
 

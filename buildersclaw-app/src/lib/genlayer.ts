@@ -88,14 +88,34 @@ async function makeClient() {
 // ─── Contract interaction helpers ───
 
 type GenLayerReceipt = Record<string, unknown>;
+const STATUS_RANK: Record<string, number> = {
+  PENDING: 0,
+  PROPOSING: 1,
+  COMMITTING: 2,
+  REVEALING: 3,
+  ACCEPTED: 4,
+  FINALIZED: 5,
+  UNDETERMINED: 6,
+  CANCELED: 7,
+};
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function statusNameOf(receipt: GenLayerReceipt): string | undefined {
+  const raw =
+    (receipt.status_name as string | undefined)
+    ?? (receipt.statusName as string | undefined)
+    ?? (typeof receipt.status === "string" ? receipt.status : undefined);
+
+  return raw?.toUpperCase();
+}
 
 function isAcceptedReceipt(receipt: GenLayerReceipt): boolean {
   const statusRaw = receipt.status;
   const statusNum = statusRaw !== undefined ? Number(statusRaw) : undefined;
-  const statusName =
-    (receipt.status_name as string | undefined)
-    ?? (receipt.statusName as string | undefined)
-    ?? (typeof statusRaw === "string" ? statusRaw : undefined);
+  const statusName = statusNameOf(receipt);
 
   return statusNum === 5 || statusNum === 7
     || statusName === "ACCEPTED"
@@ -114,13 +134,37 @@ async function waitForReceipt(
   client: Awaited<ReturnType<typeof makeClient>>["client"],
   txHash: string,
   status: TransactionStatus = TransactionStatus.FINALIZED,
-  retries = 200,
+  retries = 240,
+  intervalMs = 5000,
 ) {
-  return client.waitForTransactionReceipt({
-    hash:    txHash as TransactionHash,
-    status,
-    retries,
-  });
+  const targetStatus = String(status).toUpperCase();
+  const targetRank = STATUS_RANK[targetStatus];
+
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    try {
+      const tx = await client.getTransaction({ hash: txHash as TransactionHash }) as GenLayerReceipt;
+      const currentStatus = statusNameOf(tx);
+
+      if (currentStatus === "CANCELED" || currentStatus === "UNDETERMINED") {
+        throw new Error(`[GenLayer] Transaction ${txHash} entered terminal status ${currentStatus}`);
+      }
+
+      if (currentStatus) {
+        const currentRank = STATUS_RANK[currentStatus];
+        if (currentRank !== undefined && targetRank !== undefined && currentRank >= targetRank) {
+          return tx;
+        }
+      }
+    } catch (err) {
+      if (attempt === retries - 1) {
+        throw err;
+      }
+    }
+
+    await sleep(intervalMs);
+  }
+
+  throw new Error(`[GenLayer] Timed out waiting for transaction ${txHash} to reach ${targetStatus}`);
 }
 
 /**
@@ -151,7 +195,7 @@ async function deployJudgeContract(
     args: [hackathonId, title, brief],
   });
 
-  const receipt = await waitForReceipt(client, deployTx as string, TransactionStatus.FINALIZED, 300);
+  const receipt = await waitForReceipt(client, deployTx as string, TransactionStatus.ACCEPTED, 240, 5000);
   const r = receipt as GenLayerReceipt;
   assertAcceptedReceipt("Deploy", r);
 
@@ -179,7 +223,7 @@ async function callWrite(
   contractAddress: string,
   functionName: string,
   args: string[],
-  status: TransactionStatus = TransactionStatus.FINALIZED,
+  status: TransactionStatus = TransactionStatus.ACCEPTED,
 ) {
   const { client } = await makeClient();
 
@@ -190,7 +234,7 @@ async function callWrite(
     value:        BigInt(0),
   });
 
-  const receipt = await waitForReceipt(client, txHash as string, status, 300);
+  const receipt = await waitForReceipt(client, txHash as string, status, 240, 5000);
   const r2 = receipt as GenLayerReceipt;
   assertAcceptedReceipt(`${functionName}()`, r2);
   console.log(`[GenLayer] ${functionName}() accepted. Status: ${r2.status_name ?? r2.statusName ?? r2.status}`);
@@ -274,7 +318,7 @@ export async function runGenLayerJudging(
   })));
 
   console.log(`[GenLayer] Submitting ${topContenders.length} contenders...`);
-  const submit = await callWrite(contractAddress, "submit_contenders", [contendersPayload], TransactionStatus.FINALIZED);
+  const submit = await callWrite(contractAddress, "submit_contenders", [contendersPayload], TransactionStatus.ACCEPTED);
 
   // 3. Finalize — triggers LLM consensus among 5 validators
   console.log(`[GenLayer] Triggering finalize() — 5 validators will run LLM consensus...`);

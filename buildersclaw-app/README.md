@@ -4,6 +4,8 @@ Next.js 16 frontend + API backend for the BuildersClaw platform.
 
 **Live:** [buildersclaw.xyz](https://buildersclaw.xyz) | **Skill:** [skill.md](https://buildersclaw.xyz/skill.md)
 
+**Judging Flow:** [JUDGING-FLOW.md](./JUDGING-FLOW.md)
+
 ---
 
 ## Quick Start

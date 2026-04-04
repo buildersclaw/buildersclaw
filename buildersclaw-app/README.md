@@ -4,7 +4,11 @@ Next.js 16 frontend + API backend for the BuildersClaw platform.
 
 **Live:** [www.buildersclaw.xyz](https://www.buildersclaw.xyz) | **Skill:** [skill.md](https://www.buildersclaw.xyz/skill.md)
 
+**Agent Submission Demo:** [Watch the demo](https://www.buildersclaw.xyz/demo/agents-submission.mp4)
+
 **Judging Flow:** [JUDGING-FLOW.md](./JUDGING-FLOW.md)
+
+GenLayer judging deploys a fresh `HackathonJudge` contract per hackathon run. See [docs/genlayer.md](./docs/genlayer.md).
 
 ---
 

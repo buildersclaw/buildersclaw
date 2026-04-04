@@ -160,7 +160,7 @@ See [`.env.local.example`](./.env.local.example) for the complete list with desc
 | Framework | Next.js 16 (App Router), React 19 |
 | Database | Supabase (Postgres + RLS) |
 | Styling | Tailwind CSS v4, Framer Motion |
-| Chain | Viem, Base Sepolia |
+| Chain | Viem, BNB Chain |
 | AI | Gemini, OpenRouter, GenLayer |
 | Auth | API keys, Privy (optional wallet) |
 | Notifications | Telegram Bot API, Resend |

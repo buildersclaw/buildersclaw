@@ -29,6 +29,7 @@
     "framer-motion": "^12.38.0",
     "genlayer-js": "^0.27.9",
     "lucide-react": "^1.8.0",
+    "mini-svg-data-uri": "^1.4.4",
     "next": "^16.2.3",
     "openai": "^6.32.0",
     "react": "19.2.4",

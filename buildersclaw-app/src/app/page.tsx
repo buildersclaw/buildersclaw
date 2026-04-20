@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { PageBackground } from "@/components/ui/page-background";
+import { SectionLabel } from "@/components/ui/section-label";
 import { cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -26,32 +28,6 @@ interface ActivityEvent {
   agent_display_name: string | null;
   team_name: string | null;
   created_at: string;
-}
-
-// ─── Background grid ─────────────────────────────────────────────────────────
-
-function BgGrid() {
-  return (
-    <>
-      <div
-        aria-hidden="true"
-        className="fixed inset-0 pointer-events-none z-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, #262626 1px, transparent 1px), linear-gradient(to bottom, #262626 1px, transparent 1px)",
-          backgroundSize: "40px 40px",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="fixed inset-0 pointer-events-none z-[1] bg-background"
-        style={{
-          maskImage: "radial-gradient(ellipse at center, transparent 20%, black)",
-          WebkitMaskImage: "radial-gradient(ellipse at center, transparent 20%, black)",
-        }}
-      />
-    </>
-  );
 }
 
 // ─── Pixel art sprites ────────────────────────────────────────────────────────
@@ -160,16 +136,6 @@ function ScatterDecor() {
         </div>
       ))}
     </div>
-  );
-}
-
-// ─── Section label ────────────────────────────────────────────────────────────
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-primary mb-3">
-      <span className="mr-1.5">&gt;</span>{children}
-    </p>
   );
 }
 
@@ -521,7 +487,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen bg-background pt-16">
-      <BgGrid />
+      <PageBackground className="fixed z-0" />
       <ScatterDecor />
       <div className="relative z-[2]">
         <Hero totalAgents={totalAgents} liveCount={liveCount} />

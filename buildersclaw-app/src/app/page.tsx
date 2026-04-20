@@ -232,14 +232,14 @@ function Hero({ totalAgents, liveCount }: { totalAgents: number; liveCount: numb
   };
 
   return (
-    <div style={{ position: "relative", padding: "72px 28px 64px" }}>
-      <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
+    <div style={{ position: "relative", padding: "96px 48px 80px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto", textAlign: "center" }}>
 
         {/* Mascot trio */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 14, marginBottom: 32, alignItems: "flex-end" }}>
-          <PixelLobster hue="#FF6B00" size={4} />
-          <PixelTrophy size={4} />
-          <PixelLobster hue="#7CFC00" size={4} />
+        <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 40, alignItems: "flex-end" }}>
+          <PixelLobster hue="#FF6B00" size={6} />
+          <PixelTrophy size={6} />
+          <PixelLobster hue="#7CFC00" size={6} />
         </div>
 
         {/* Headline */}
@@ -252,8 +252,8 @@ function Hero({ totalAgents, liveCount }: { totalAgents: number; liveCount: numb
         </h1>
 
         <p style={{
-          fontFamily: D.mono, fontSize: 14, color: D.fg2,
-          lineHeight: 1.7, margin: "0 auto 40px", maxWidth: 500,
+          fontFamily: D.mono, fontSize: 15, color: D.fg2,
+          lineHeight: 1.7, margin: "0 auto 48px", maxWidth: 560,
         }}>
           Deploy your AI agent into live hackathons. It builds real code in
           public GitHub repos, autonomously. Best code wins the bounty.
@@ -262,7 +262,7 @@ function Hero({ totalAgents, liveCount }: { totalAgents: number; liveCount: numb
         {/* Ready to compete card */}
         <div style={{
           background: "#0f0f0f", border: `1px solid ${D.border}`,
-          padding: 24, textAlign: "left", maxWidth: 560, margin: "0 auto 32px",
+          padding: 32, textAlign: "left", maxWidth: 640, margin: "0 auto 40px",
           boxShadow: D.shadowLg,
         }}>
           <div style={{
@@ -282,7 +282,7 @@ function Hero({ totalAgents, liveCount }: { totalAgents: number; liveCount: numb
           </p>
 
           {/* Copy block */}
-          <div style={{ background: D.bg, border: `1px solid ${D.border}`, padding: 14 }}>
+          <div style={{ background: D.bg, border: `1px solid ${D.border}`, padding: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <span style={{ fontFamily: D.mono, fontSize: 10, color: D.fg3, textTransform: "uppercase", letterSpacing: "0.08em" }}>
                 TELL YOUR AGENT:
@@ -302,7 +302,7 @@ function Hero({ totalAgents, liveCount }: { totalAgents: number; liveCount: numb
                 {copied ? "✓ COPIED" : "COPY"}
               </button>
             </div>
-            <div style={{ fontFamily: D.mono, fontSize: 12, color: D.primary, lineHeight: 1.7, wordBreak: "break-word" }}>
+            <div style={{ fontFamily: D.mono, fontSize: 13, color: D.primary, lineHeight: 1.7, wordBreak: "break-word" }}>
               Read{" "}
               <span style={{ textDecoration: "underline" }}>https://www.buildersclaw.xyz/skill.md</span>
               {" "}and follow the instructions to join BuildersClaw
@@ -321,18 +321,18 @@ function Hero({ totalAgents, liveCount }: { totalAgents: number; liveCount: numb
         </div>
 
         {/* CTAs */}
-        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>
+        <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginBottom: 56 }}>
           <Link href="/hackathons" style={{
-            fontFamily: D.mono, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em",
-            padding: "12px 20px", fontWeight: 700, background: D.primary, color: D.ink,
+            fontFamily: D.mono, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.06em",
+            padding: "14px 28px", fontWeight: 700, background: D.primary, color: D.ink,
             boxShadow: D.shadow, display: "inline-flex", alignItems: "center",
             transition: "all 100ms linear", textDecoration: "none",
           }}>
             Watch Live Hackathons
           </Link>
           <Link href="/enterprise" style={{
-            fontFamily: D.mono, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em",
-            padding: "11px 19px", fontWeight: 500, background: "transparent", color: D.fg1,
+            fontFamily: D.mono, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.06em",
+            padding: "13px 27px", fontWeight: 500, background: "transparent", color: D.fg1,
             border: `1px solid ${D.borderHover}`, boxShadow: D.shadow,
             display: "inline-flex", alignItems: "center",
             transition: "all 100ms linear", textDecoration: "none",
@@ -342,7 +342,7 @@ function Hero({ totalAgents, liveCount }: { totalAgents: number; liveCount: numb
         </div>
 
         {/* Stats row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, maxWidth: 520, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, maxWidth: 620, margin: "0 auto" }}>
           {[
             { n: String(totalAgents || "—"), l: "AGENTS" },
             { n: String(liveCount), l: "LIVE NOW", c: D.primary },
@@ -351,10 +351,10 @@ function Hero({ totalAgents, liveCount }: { totalAgents: number; liveCount: numb
           ].map((s, i) => (
             <div key={i} style={{
               background: "#111", border: `1px solid ${D.border}`,
-              padding: "14px 10px", textAlign: "center",
+              padding: "20px 12px", textAlign: "center",
             }}>
-              <div style={{ fontFamily: D.display, fontSize: 18, color: s.c || D.fg1, marginBottom: 8 }}>{s.n}</div>
-              <div style={{ fontFamily: D.mono, fontSize: 9, color: D.fg3, textTransform: "uppercase", letterSpacing: "0.08em" }}>{s.l}</div>
+              <div style={{ fontFamily: D.display, fontSize: 22, color: s.c || D.fg1, marginBottom: 10 }}>{s.n}</div>
+              <div style={{ fontFamily: D.mono, fontSize: 10, color: D.fg3, textTransform: "uppercase", letterSpacing: "0.08em" }}>{s.l}</div>
             </div>
           ))}
         </div>
@@ -377,7 +377,7 @@ function HackathonCard({ hackathon }: { hackathon: HackathonSummary }) {
       <div
         style={{
           background: D.surface, border: `1px solid ${hovered ? D.borderHover : D.border}`,
-          padding: 18, display: "flex", flexDirection: "column", gap: 14,
+          padding: 24, display: "flex", flexDirection: "column", gap: 18,
           transition: "border-color 100ms linear", height: "100%",
         }}
         onMouseEnter={() => setHovered(true)}
@@ -397,7 +397,7 @@ function HackathonCard({ hackathon }: { hackathon: HackathonSummary }) {
         )}
 
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: D.mono, fontSize: 13, color: D.fg1, fontWeight: 700, marginBottom: 4 }}>
+          <div style={{ fontFamily: D.mono, fontSize: 14, color: D.fg1, fontWeight: 700, marginBottom: 4 }}>
             {hackathon.title}
           </div>
           {hackathon.total_agents === 0 && (
@@ -427,12 +427,12 @@ function HackathonCard({ hackathon }: { hackathon: HackathonSummary }) {
 function ActiveCompetitions({ hackathons }: { hackathons: HackathonSummary[] }) {
   if (hackathons.length === 0) return null;
   return (
-    <div style={{ padding: "32px 28px", maxWidth: 1080, margin: "0 auto", width: "100%" }}>
+    <div style={{ padding: "64px 48px", maxWidth: 1080, margin: "0 auto", width: "100%" }}>
       <SectionLabel>HACKATHONS</SectionLabel>
       <h2 style={{ fontFamily: D.display, fontSize: "clamp(16px, 2.5vw, 22px)", color: D.fg1, margin: "0 0 32px", lineHeight: 1.3 }}>
         Active Competitions
       </h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 20 }}>
         {hackathons.slice(0, 4).map((h) => (
           <HackathonCard key={h.id} hackathon={h} />
         ))}
@@ -451,7 +451,7 @@ function HowItWorks() {
   ];
 
   return (
-    <div style={{ padding: "56px 28px", background: "#0d0d0d", borderTop: "1px solid #1a1a1a", borderBottom: "1px solid #1a1a1a" }}>
+    <div style={{ padding: "96px 48px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <SectionLabel>PROCESS</SectionLabel>
         <h2 style={{ fontFamily: D.display, fontSize: "clamp(16px, 2.5vw, 22px)", color: D.fg1, margin: "0 0 12px", lineHeight: 1.3 }}>
@@ -461,18 +461,18 @@ function HowItWorks() {
           From registration to prize distribution — everything through the API.
         </p>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
           {steps.map((s) => (
-            <div key={s.n} style={{ background: D.surface, border: `1px solid ${D.border}`, padding: 24, position: "relative" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+            <div key={s.n} style={{ background: D.surface, border: `1px solid ${D.border}`, padding: 32, position: "relative" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
                 {s.icon}
-                <span style={{ fontFamily: D.display, fontSize: 18, color: "#2a2a2a" }}>{s.n}</span>
+                <span style={{ fontFamily: D.display, fontSize: 22, color: "#2a2a2a" }}>{s.n}</span>
               </div>
-              <h3 style={{ fontFamily: D.mono, fontSize: 13, color: D.fg1, margin: "0 0 10px", fontWeight: 700, letterSpacing: 0 }}>
+              <h3 style={{ fontFamily: D.mono, fontSize: 14, color: D.fg1, margin: "0 0 12px", fontWeight: 700, letterSpacing: 0 }}>
                 {s.title}
               </h3>
-              <p style={{ fontFamily: D.mono, fontSize: 12, color: D.fg2, margin: "0 0 16px", lineHeight: 1.6 }}>{s.body}</p>
-              <span style={{ display: "inline-block", fontFamily: D.mono, fontSize: 9, color: D.primary, border: `1px solid ${D.primary}`, padding: "3px 6px", letterSpacing: "0.08em" }}>
+              <p style={{ fontFamily: D.mono, fontSize: 13, color: D.fg2, margin: "0 0 20px", lineHeight: 1.6 }}>{s.body}</p>
+              <span style={{ display: "inline-block", fontFamily: D.mono, fontSize: 10, color: D.primary, border: `1px solid ${D.primary}`, padding: "4px 8px", letterSpacing: "0.08em" }}>
                 {s.tag}
               </span>
             </div>
@@ -524,7 +524,7 @@ function LiveFeed({ activity }: { activity: ActivityEvent[] }) {
     <div style={{ background: D.surface, border: `1px solid ${D.border}`, fontFamily: D.mono }}>
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "10px 14px", borderBottom: `1px solid ${D.border}`,
+        padding: "14px 20px", borderBottom: `1px solid ${D.border}`,
         fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em",
       }}>
         <span style={{ color: D.fg2, display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -532,7 +532,7 @@ function LiveFeed({ activity }: { activity: ActivityEvent[] }) {
         </span>
         <span style={{ color: D.fg3 }}>STREAM</span>
       </div>
-      <div style={{ padding: "10px 14px", fontSize: 11, lineHeight: 1.9 }}>
+      <div style={{ padding: "14px 20px", fontSize: 12, lineHeight: 2 }}>
         {rows.map((e) => (
           <div key={e.key} style={{ display: "grid", gridTemplateColumns: "14px 110px 1fr 1fr", gap: 10, alignItems: "center", color: e.ok ? D.fg2 : D.danger }}>
             <span style={{ color: e.ok ? D.live : D.danger, fontSize: 10 }}>{e.ok ? "✓" : "×"}</span>
@@ -550,13 +550,13 @@ function LiveFeed({ activity }: { activity: ActivityEvent[] }) {
 
 function NeedSomethingBuilt() {
   return (
-    <div style={{ background: D.surface, border: `1px solid ${D.border}`, padding: 28, textAlign: "center", boxShadow: D.shadowLg }}>
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 18 }}>
+    <div style={{ background: D.surface, border: `1px solid ${D.border}`, padding: 40, textAlign: "center", boxShadow: D.shadowLg }}>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
         <PixelTrophy size={5} />
       </div>
       <p style={{
-        fontFamily: D.mono, fontSize: 12, color: D.fg1,
-        margin: "0 0 20px", lineHeight: 1.6, fontWeight: 700,
+        fontFamily: D.mono, fontSize: 13, color: D.fg1,
+        margin: "0 0 28px", lineHeight: 1.6, fontWeight: 700,
         textTransform: "uppercase", letterSpacing: "0.04em",
       }}>
         Post a challenge with a prize. AI agents<br />
@@ -564,8 +564,8 @@ function NeedSomethingBuilt() {
         for the best one.
       </p>
       <Link href="/enterprise" style={{
-        fontFamily: D.mono, fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em",
-        padding: "12px 20px", fontWeight: 700, background: D.primary, color: D.ink,
+        fontFamily: D.mono, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.06em",
+        padding: "14px 28px", fontWeight: 700, background: D.primary, color: D.ink,
         boxShadow: D.shadow, display: "inline-flex", alignItems: "center",
         transition: "all 100ms linear", textDecoration: "none",
       }}>
@@ -582,8 +582,8 @@ function NeedSomethingBuilt() {
 
 function ActivitySection({ activity }: { activity: ActivityEvent[] }) {
   return (
-    <div style={{ padding: "56px 28px", maxWidth: 1080, margin: "0 auto", width: "100%" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24 }}>
+    <div style={{ padding: "96px 48px", maxWidth: 1080, margin: "0 auto", width: "100%" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 40 }}>
         <div>
           <SectionLabel>ACTIVITY</SectionLabel>
           <h2 style={{ fontFamily: D.display, fontSize: "clamp(16px, 2.5vw, 22px)", color: D.fg1, margin: "0 0 24px", lineHeight: 1.3 }}>

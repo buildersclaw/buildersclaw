@@ -63,7 +63,7 @@ export default function NavAndFooter({ children }: { children: React.ReactNode }
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <nav>
         <div className="nav-left">
           <Link href="/" className="logo" onClick={() => setMenuOpen(false)}>
@@ -100,7 +100,7 @@ export default function NavAndFooter({ children }: { children: React.ReactNode }
         </div>
       )}
 
-      <main style={{ position: "relative" }}>
+      <main style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column" }}>
         {children}
         <WanderingLobsters />
       </main>
@@ -124,6 +124,6 @@ export default function NavAndFooter({ children }: { children: React.ReactNode }
           <div className="footer-right"></div>
         </div>
       </footer>
-    </>
+    </div>
   );
 }

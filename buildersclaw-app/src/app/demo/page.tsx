@@ -3,12 +3,20 @@
 import { useState } from "react";
 import Link from "next/link";
 
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageShell } from "@/components/ui/page-shell";
+import { SectionHeader } from "@/components/ui/section-header";
+import { cn } from "@/lib/utils";
+
 type DemoEntry = {
   slug: "bnb" | "hedera" | "rootstock";
   title: string;
   network: string;
   summary: string;
   accent: string;
+  accentClassName: string;
   videoSrc: string;
   fileName: string;
 };
@@ -20,6 +28,7 @@ const DEMOS: DemoEntry[] = [
     network: "BNB Chain",
     summary: "Preview the BNB build flow and hosted experience in one place.",
     accent: "#f0b90b",
+    accentClassName: "text-[#f0b90b] border-[#f0b90b]/40 bg-[#f0b90b]/10",
     videoSrc: "/demo/bnb.mp4",
     fileName: "public/demo/bnb.mp4",
   },
@@ -29,6 +38,7 @@ const DEMOS: DemoEntry[] = [
     network: "Hedera",
     summary: "Show the Hedera-specific walkthrough without changing the route structure.",
     accent: "#7c3aed",
+    accentClassName: "text-[#a78bfa] border-[#7c3aed]/40 bg-[#7c3aed]/10",
     videoSrc: "/demo/hedera.mp4",
     fileName: "public/demo/hedera.mp4",
   },
@@ -38,6 +48,7 @@ const DEMOS: DemoEntry[] = [
     network: "Rootstock",
     summary: "Keep the Rootstock submission easy to review from the same public hub.",
     accent: "#00d084",
+    accentClassName: "text-[#4ade80] border-[#00d084]/40 bg-[#00d084]/10",
     videoSrc: "/demo/rootstock.mp4",
     fileName: "public/demo/rootstock.mp4",
   },
@@ -47,207 +58,171 @@ function DemoCard({ demo }: { demo: DemoEntry }) {
   const [hasError, setHasError] = useState(false);
 
   return (
-    <article
-      style={{
-        background: "linear-gradient(180deg, rgba(19,19,19,0.96), rgba(19,19,19,0.88))",
-        border: "1px solid rgba(89,65,57,0.24)",
-        borderRadius: 20,
-        overflow: "hidden",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.28)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          padding: "20px 22px 16px",
-          borderBottom: "1px solid rgba(89,65,57,0.16)",
-        }}
-      >
-        <div>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 10,
-              padding: "6px 10px",
-              borderRadius: 999,
-              border: `1px solid ${demo.accent}44`,
-              color: demo.accent,
-              background: `${demo.accent}12`,
-              fontSize: 11,
-              fontFamily: "'Press Start 2P', monospace",
-            }}
-          >
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: demo.accent,
-                boxShadow: `0 0 12px ${demo.accent}`,
-              }}
-            />
-            {demo.network}
-          </div>
-          <h2
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: 28,
-              lineHeight: 1.1,
-              marginBottom: 10,
-            }}
-          >
-            {demo.title}
-          </h2>
-          <p style={{ color: "var(--text-dim)", lineHeight: 1.65, maxWidth: 560 }}>{demo.summary}</p>
-        </div>
-
-        <div
-          style={{
-            flexShrink: 0,
-            minWidth: 112,
-            padding: "12px 14px",
-            borderRadius: 14,
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(89,65,57,0.16)",
-          }}
-        >
-          <div style={{ color: "var(--text-muted)", fontSize: 10, textTransform: "uppercase", marginBottom: 4 }}>
-            Route
-          </div>
-          <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>/demo#{demo.slug}</div>
-        </div>
-      </div>
-
-      <div id={demo.slug} style={{ padding: 22 }}>
-        <div
-          style={{
-            position: "relative",
-            borderRadius: 18,
-            overflow: "hidden",
-            border: "1px solid rgba(89,65,57,0.2)",
-            background:
-              "radial-gradient(circle at top, rgba(255,107,53,0.14), rgba(0,0,0,0.72) 58%), linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))",
-          }}
-        >
-          {!hasError ? (
-            <video
-              controls
-              playsInline
-              preload="metadata"
-              style={{ display: "block", width: "100%", aspectRatio: "16 / 9", background: "#050505" }}
-              onError={() => setHasError(true)}
-            >
-              <source src={demo.videoSrc} type="video/mp4" />
-            </video>
-          ) : (
-            <div
-              style={{
-                aspectRatio: "16 / 9",
-                display: "grid",
-                placeItems: "center",
-                padding: 32,
-                textAlign: "center",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontFamily: "'Press Start 2P', monospace",
-                    fontSize: 12,
-                    color: demo.accent,
-                    marginBottom: 16,
-                  }}
-                >
-                  VIDEO MISSING
-                </div>
-                <p style={{ color: "var(--text-dim)", marginBottom: 10 }}>
-                  Add <code>{demo.fileName}</code> to enable this preview.
-                </p>
-                <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Expected public URL: {demo.videoSrc}</p>
-              </div>
+    <Card variant="inset" padding="none" className="overflow-hidden">
+      <CardHeader className="gap-5 border-b border-border/70 px-5 py-5 sm:px-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="panel" className={cn("gap-2 border px-3 py-1.5", demo.accentClassName)}>
+                <span
+                  aria-hidden="true"
+                  className="size-2 rounded-full"
+                  style={{ backgroundColor: demo.accent, boxShadow: `0 0 12px ${demo.accent}` }}
+                />
+                {demo.network}
+              </Badge>
+              <Badge variant="muted" className="px-3 py-1.5 text-[9px] tracking-[0.1em] text-fg3">
+                Public Review Feed
+              </Badge>
             </div>
-          )}
-        </div>
+            <div className="space-y-2">
+              <CardTitle className="text-[22px] leading-[1.45] sm:text-[28px]">{demo.title}</CardTitle>
+              <CardDescription className="max-w-[56ch] text-[13px] leading-[1.8] sm:text-[14px]">
+                {demo.summary}
+              </CardDescription>
+            </div>
+          </div>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            marginTop: 14,
-            flexWrap: "wrap",
-            color: "var(--text-muted)",
-            fontSize: 12,
-          }}
-        >
-          <span>Source file: <code>{demo.fileName}</code></span>
-          <a href={demo.videoSrc} target="_blank" rel="noreferrer" style={{ color: demo.accent }}>
-            Open raw video
-          </a>
+          <div className="min-w-[140px] border border-border bg-black/20 px-4 py-3 shadow-[2px_2px_0_#000]">
+            <div className="mb-1 font-mono text-[9px] uppercase tracking-[0.1em] text-fg3">Anchor</div>
+            <div className="font-mono text-[12px] text-foreground">/demo#{demo.slug}</div>
+          </div>
         </div>
-      </div>
-    </article>
+      </CardHeader>
+
+      <CardContent className="px-5 py-5 sm:px-6 sm:py-6">
+        <div id={demo.slug} className="space-y-4 scroll-mt-28">
+          <div
+            className="relative overflow-hidden border border-border bg-black/60"
+            style={{
+              background:
+                "radial-gradient(circle at top, rgba(255,107,53,0.14), rgba(0,0,0,0.72) 58%), linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))",
+            }}
+          >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-px"
+              style={{ background: `linear-gradient(90deg, transparent, ${demo.accent}, transparent)` }}
+            />
+            {!hasError ? (
+              <video
+                controls
+                playsInline
+                preload="metadata"
+                className="block aspect-video w-full bg-[#050505]"
+                onError={() => setHasError(true)}
+              >
+                <source src={demo.videoSrc} type="video/mp4" />
+              </video>
+            ) : (
+              <div className="grid aspect-video place-items-center px-6 py-10 text-center">
+                <div className="max-w-md space-y-4">
+                  <p className="font-display text-[12px] leading-[1.8]" style={{ color: demo.accent }}>
+                    Video Missing
+                  </p>
+                  <p className="font-mono text-[13px] leading-[1.8] text-fg2">
+                    Add <code>{demo.fileName}</code> to enable this preview.
+                  </p>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-fg3">
+                    Expected public URL: {demo.videoSrc}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+
+      <CardFooter className="flex flex-col items-start justify-between gap-3 border-t border-dashed border-border/80 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
+        <span>
+          Source file: <code>{demo.fileName}</code>
+        </span>
+        <a
+          href={demo.videoSrc}
+          target="_blank"
+          rel="noreferrer"
+          className="font-mono text-[11px] font-bold uppercase tracking-[0.08em] transition-colors hover:text-foreground"
+          style={{ color: demo.accent }}
+        >
+          Open raw video
+        </a>
+      </CardFooter>
+    </Card>
   );
 }
 
 export default function DemoPage() {
   return (
-    <main
-      style={{
-        marginTop: 64,
-        minHeight: "100vh",
-        padding: "48px 48px 80px",
-        background:
-          "radial-gradient(circle at top, rgba(255,107,53,0.08), transparent 32%), radial-gradient(circle at 80% 20%, rgba(255,215,0,0.08), transparent 24%)",
-      }}
-    >
-      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
-        <section style={{ padding: "32px 0 40px" }}>
-          <div className="section-label">Demo Router</div>
-          <h1
-            style={{
-              fontFamily: "'Press Start 2P', monospace",
-              fontSize: "clamp(24px, 3.2vw, 42px)",
-              lineHeight: 1.35,
-              marginBottom: 18,
-              maxWidth: 880,
-            }}
-          >
-            One public route for all three chain demos.
-          </h1>
-          <p style={{ maxWidth: 760, color: "var(--text-dim)", fontSize: 17, lineHeight: 1.7, marginBottom: 28 }}>
-            Judges can open <code>/demo</code> and preview the BNB, Hedera, and Rootstock recordings from a single page.
-            Each player reads directly from <code>public/demo/*.mp4</code>.
-          </p>
+    <PageShell>
+      <section className="space-y-10 py-6 sm:space-y-12 sm:py-8">
+        <div className="space-y-7">
+          <SectionHeader
+            eyebrow="Demo Router"
+            title={<>One public route for all three chain demos.</>}
+            description={
+              <>
+                Judges can open <code>/demo</code> and preview the BNB, Hedera, and Rootstock recordings from a single page.
+                Each player reads directly from <code>public/demo/*.mp4</code>.
+              </>
+            }
+          />
 
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <Link href="/hackathons" className="btn btn-primary">
+          <div className="flex flex-wrap gap-3">
+            <Link href="/hackathons" className={cn(buttonVariants({ variant: "default" }))}>
               Back to hackathons
             </Link>
-            <a href="#bnb" className="btn btn-outline">BNB</a>
-            <a href="#hedera" className="btn btn-outline">Hedera</a>
-            <a href="#rootstock" className="btn btn-outline">Rootstock</a>
-          </div>
-        </section>
-
-        <section style={{ padding: 0 }}>
-          <div
-            style={{
-              display: "grid",
-              gap: 24,
-            }}
-          >
             {DEMOS.map((demo) => (
-              <DemoCard key={demo.slug} demo={demo} />
+              <a
+                key={demo.slug}
+                href={`#${demo.slug}`}
+                className={cn(buttonVariants({ variant: "panel", size: "sm" }))}
+              >
+                {demo.network}
+              </a>
             ))}
           </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            {DEMOS.map((demo) => (
+              <Card key={demo.slug} variant="terminal" padding="compact" className="gap-3 bg-surface/70">
+                <div className="flex items-center justify-between gap-3">
+                  <Badge variant="muted" className="px-2.5 py-1 text-[9px] text-fg3">
+                    {demo.slug.toUpperCase()}
+                  </Badge>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.08em]" style={{ color: demo.accent }}>
+                    Live file
+                  </span>
+                </div>
+                <div className="space-y-1.5">
+                  <h2 className="font-display text-[12px] leading-[1.6] text-foreground">{demo.network}</h2>
+                  <p className="font-mono text-[12px] leading-[1.7] text-fg2">{demo.fileName}</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        <section className="grid gap-6">
+          {DEMOS.map((demo) => (
+            <DemoCard key={demo.slug} demo={demo} />
+          ))}
         </section>
-      </div>
-    </main>
+
+        <section>
+          <Card variant="terminal" className="items-start gap-5 text-left sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-2">
+              <Badge variant="gold" className="px-3 py-1.5">Submission Ready</Badge>
+              <p className="max-w-[58ch] font-mono text-[13px] leading-[1.8] text-fg2">
+                This page is now the reference slice for the adapted shadcn layer: shared shell, section header,
+                cards, badges, and button variants, while keeping the BuildersClaw pixel-terminal voice intact.
+              </p>
+            </div>
+            <Link href="/hackathons" className={cn(buttonVariants({ variant: "gold", size: "sm" }))}>
+              Review Hackathons
+            </Link>
+          </Card>
+        </section>
+      </section>
+    </PageShell>
   );
 }

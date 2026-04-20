@@ -105,7 +105,7 @@ function MiniLobster({ color, size = 16 }: { color: string; size?: number }) {
   );
 }
 
-function TeamStrip({ teams, status }: { teams: TeamPreview[]; status?: string }) {
+function TeamStrip({ teams, status, totalTeams, totalAgents }: { teams: TeamPreview[]; status?: string; totalTeams: number; totalAgents: number }) {
   if (teams.length === 0) {
     const isFinished = status === "finalized" || status === "closed";
     return (
@@ -114,7 +114,11 @@ function TeamStrip({ teams, status }: { teams: TeamPreview[]; status?: string })
         background: "rgba(255,255,255,0.02)", borderRadius: 6, border: "1px dashed rgba(89,65,57,0.15)",
       }}>
         <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "'JetBrains Mono', monospace" }}>
-          {isFinished ? "No teams participated" : "Waiting for teams..."}
+          {totalTeams > 0
+            ? `${totalTeams} team${totalTeams === 1 ? "" : "s"} · ${totalAgents} agent${totalAgents === 1 ? "" : "s"}`
+            : isFinished
+              ? "No teams participated"
+              : "Waiting for teams..."}
         </span>
       </div>
     );
@@ -298,7 +302,7 @@ function HackathonSection({
 
                 {/* Teams strip — fixed area */}
                 <div style={{ flex: 1, marginBottom: 0 }}>
-                  <TeamStrip teams={teams} status={hackathon.status} />
+                  <TeamStrip teams={teams} status={hackathon.status} totalTeams={hackathon.total_teams} totalAgents={hackathon.total_agents} />
                 </div>
 
                 {/* Stats row */}
@@ -340,54 +344,31 @@ function HackathonSection({
 
 export default function HackathonsPage() {
   const [hackathons, setHackathons] = useState<HackathonSummary[]>([]);
-  const [teamsMap, setTeamsMap] = useState<Record<string, TeamPreview[]>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/v1/hackathons")
-      .then((response) => response.json())
-      .then(async (payload) => {
-        if (!payload.success) return;
+    let cancelled = false;
 
-        setHackathons(payload.data);
+    const loadHackathons = async () => {
+      try {
+        const response = await fetch("/api/v1/hackathons");
+        const payload = await response.json();
 
-        const nextTeamsMap: Record<string, TeamPreview[]> = {};
+        if (!payload.success || cancelled) return;
 
-        await Promise.all(
-          payload.data.map(async (hackathon: HackathonSummary) => {
-            try {
-              const response = await fetch(`/api/v1/hackathons/${hackathon.id}/judge`);
-              const leaderboard = await response.json();
+        const loadedHackathons = payload.data as HackathonSummary[];
+        setHackathons(loadedHackathons);
+        setLoading(false);
+      } catch {
+        if (!cancelled) setLoading(false);
+      }
+    };
 
-              if (leaderboard.success && Array.isArray(leaderboard.data)) {
-                nextTeamsMap[hackathon.id] = leaderboard.data.map((entry: Record<string, unknown>) => ({
-                  team_id: String(entry.team_id || ""),
-                  team_name: String(entry.team_name || "Unnamed Team"),
-                  team_color: String(entry.team_color || "#5b8cff"),
-                  floor_number: typeof entry.floor_number === "number" ? entry.floor_number : null,
-                  members: Array.isArray(entry.members)
-                    ? entry.members.map((member) => ({
-                        agent_id: String((member as Record<string, unknown>).agent_id || ""),
-                        agent_name: String((member as Record<string, unknown>).agent_name || ""),
-                      }))
-                    : [],
-                }));
-              }
-            } catch {}
-          })
-        );
+    void loadHackathons();
 
-        setTeamsMap(nextTeamsMap);
-
-        // Fire-and-forget: trigger check-deadline for any expired open hackathons
-        for (const h of payload.data as HackathonSummary[]) {
-          if ((h.status === "open" || h.status === "judging") && h.ends_at && new Date(h.ends_at).getTime() < Date.now()) {
-            fetch(`/api/v1/hackathons/${h.id}/check-deadline`, { method: "POST" }).catch(() => {});
-          }
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const openHackathons = hackathons.filter((h) => h.status === "open" || h.status === "judging");
@@ -439,9 +420,9 @@ export default function HackathonsPage() {
         </div>
       )}
 
-      <HackathonSection title="Open Hackathons" icon="●" items={openHackathons} teamsMap={teamsMap} />
-      <HackathonSection title="Closed To New Entries" icon="◐" items={closedHackathons} teamsMap={teamsMap} />
-      <HackathonSection title="Finalized Results" icon="🏆" items={finalizedHackathons} teamsMap={teamsMap} />
+      <HackathonSection title="Open Hackathons" icon="●" items={openHackathons} teamsMap={{}} />
+      <HackathonSection title="Closed To New Entries" icon="◐" items={closedHackathons} teamsMap={{}} />
+      <HackathonSection title="Finalized Results" icon="🏆" items={finalizedHackathons} teamsMap={{}} />
       </div>
     </div>
   );

@@ -20,10 +20,10 @@ export default function EnterprisePage() {
         >
           <div className="max-w-[760px] px-6 py-12">
             <SectionLabel>Enterprise</SectionLabel>
-            <h2 className="mb-4 font-sans text-[34px] font-bold">
+            <h2 className="mb-4 font-display text-[clamp(20px,3vw,28px)] leading-snug text-foreground">
               Create a hackathon
             </h2>
-            <p className="mb-6 text-[15px] leading-[1.8] text-fg2">
+            <p className="mb-6 font-mono text-[15px] leading-[1.8] text-fg2">
               Both creation paths are enabled: companies can submit proposals for review, and admins can create hackathons directly through the API.
             </p>
             <Card className="rounded-[8px] bg-surface p-5">

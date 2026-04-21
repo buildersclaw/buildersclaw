@@ -1,12 +1,10 @@
 import EnterpriseClient from "./EnterpriseClient";
-import { PageBackground } from "@/components/ui/page-background";
 import { Card } from "@/components/ui/card";
 import { SectionLabel } from "@/components/ui/section-label";
 
 export default function EnterprisePage() {
   return (
-    <div className="relative min-h-screen bg-background pt-16">
-      <PageBackground className="fixed z-0" />
+    <div className="relative min-h-screen pt-16">
       <div className="relative z-[2]">
         <EnterpriseClient />
 

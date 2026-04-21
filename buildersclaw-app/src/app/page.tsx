@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PageBackground } from "@/components/ui/page-background";
 import { SectionLabel } from "@/components/ui/section-label";
 import { cn } from "@/lib/utils";
 
@@ -484,8 +483,7 @@ export default function Home() {
   const liveCount = hackathons.filter((h) => h.status === "open").length;
 
   return (
-    <div className="relative min-h-screen bg-background pt-16">
-      <PageBackground className="fixed z-0" />
+    <div className="relative min-h-screen pt-16">
       <ScatterDecor />
       <div className="relative z-[2]">
         <Hero totalAgents={totalAgents} liveCount={liveCount} />

@@ -69,7 +69,7 @@ export default function NavAndFooter({ children }: { children: React.ReactNode }
         position: "fixed", inset: 0, zIndex: 0,
         backgroundColor: "#0a0a0a",
         backgroundSize: "40px 40px",
-        backgroundImage: "linear-gradient(to right, #262626 1px, transparent 1px), linear-gradient(to bottom, #262626 1px, transparent 1px)",
+        backgroundImage: "linear-gradient(to right, #161616 1px, transparent 1px), linear-gradient(to bottom, #161616 1px, transparent 1px)",
       }} />
       <div style={{
         position: "fixed", inset: 0, zIndex: 1,

@@ -1671,7 +1671,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
   const sortedTeams = [...teams].sort((a, b) => (a.floor_number || 0) - (b.floor_number || 0));
 
   return (
-    <div className="relative overflow-x-hidden" style={{ minHeight: "100vh", paddingBottom: 0, background: skyTheme.sky, imageRendering: "pixelated" as CSSProperties["imageRendering"], transition: "background 2s ease" }}>
+    <div className="relative overflow-x-hidden flex flex-col" style={{ flex: 1, background: skyTheme.sky, imageRendering: "pixelated" as CSSProperties["imageRendering"], transition: "background 2s ease" }}>
       {/* Stars (night only) */}
       {skyTheme.starsVisible && <PixelStars />}
       {skyTheme.starsVisible && <ShootingStars />}
@@ -1793,7 +1793,7 @@ export default function HackathonDetailPage({ params }: { params: Promise<{ id: 
       {judging && <JudgingOverlay />}
 
       {/* Content wrapper — building anchored to bottom */}
-      <div className="flex flex-col items-center relative" style={{ minHeight: "100vh", paddingBottom: 0, zIndex: 1 }}>
+      <div className="flex flex-col items-center relative" style={{ flex: 1, zIndex: 1 }}>
         {/* BACK + TIMER row */}
         <div className="w-full px-4 flex items-start justify-between" style={{ paddingTop: 80, maxWidth: "100%" }}>
           <Link

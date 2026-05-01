@@ -32,33 +32,47 @@ export async function createOrReuseFinalizationRun(options: {
   if (existingError) throw new Error(`Failed to check finalization run: ${existingError.message}`);
   if (existing) return { run: existing, created: false };
 
-  const { data: run, error } = await supabaseAdmin
-    .from("finalization_runs")
-    .insert({
-      hackathon_id: options.hackathonId,
-      winner_team_id: options.winnerTeamId,
-      winner_agent_id: options.winnerAgentId,
-      winners: options.winners,
-      notes: options.notes ?? null,
-      scores: options.scores ?? null,
-      status: "queued",
-    })
-    .select("*")
-    .single();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let insertedRun: any = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data, error } = await supabaseAdmin
+      .from("finalization_runs")
+      .insert({
+        hackathon_id: options.hackathonId,
+        winner_team_id: options.winnerTeamId,
+        winner_agent_id: options.winnerAgentId,
+        winners: options.winners,
+        notes: options.notes ?? null,
+        scores: options.scores ?? null,
+        status: "queued",
+      })
+      .select("*")
+      .single();
 
-  if (error) {
-    if (error.code === "23505") return createOrReuseFinalizationRun(options);
-    throw new Error(`Failed to create finalization run: ${error.message}`);
+    if (!error) { insertedRun = data; break; }
+    if (error.code !== "23505") throw new Error(`Failed to create finalization run: ${error.message}`);
+
+    // Concurrent insert won — fetch the row they created.
+    const { data: race } = await supabaseAdmin
+      .from("finalization_runs")
+      .select("*")
+      .eq("hackathon_id", options.hackathonId)
+      .in("status", ["queued", "broadcasting", "polling_receipt", "completed"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (race) return { run: race, created: false };
   }
+  if (!insertedRun) throw new Error("Failed to create finalization run after retries");
 
   const job = await enqueueJob({
     type: "escrow.finalize",
-    payload: { finalization_run_id: run.id },
+    payload: { finalization_run_id: insertedRun.id },
     maxAttempts: 10,
   });
 
-  await supabaseAdmin.from("finalization_runs").update({ job_id: job.id }).eq("id", run.id);
-  return { run: { ...run, job_id: job.id }, created: true };
+  await supabaseAdmin.from("finalization_runs").update({ job_id: job.id }).eq("id", insertedRun.id);
+  return { run: { ...insertedRun, job_id: job.id }, created: true };
 }
 
 export async function runEscrowFinalization(finalizationRunId: string) {
@@ -84,6 +98,12 @@ export async function runEscrowFinalization(finalizationRunId: string) {
   let txHash = run.tx_hash as string | null;
   const winners = run.winners as Winner[];
   const now = new Date().toISOString();
+
+  // If a previous attempt failed after broadcasting, restore the active status so the
+  // partial unique index prevents a concurrent run from being created for this hackathon.
+  if (run.status === "failed" && txHash) {
+    await supabaseAdmin.from("finalization_runs").update({ status: "polling_receipt", updated_at: now }).eq("id", run.id);
+  }
 
   try {
     if (!txHash) {

@@ -15,8 +15,8 @@ export async function handleJob(job: JobRecord) {
 
   switch (job.type) {
     case "process_expired_hackathons":
-      await processExpiredHackathons({ enqueueOnly: false });
-      await processQueuedGenLayerHackathons({ enqueueOnly: false });
+      await processExpiredHackathons({ enqueueOnly: true });
+      await processQueuedGenLayerHackathons({ enqueueOnly: true });
       return;
 
     case "continue_genlayer_judging": {

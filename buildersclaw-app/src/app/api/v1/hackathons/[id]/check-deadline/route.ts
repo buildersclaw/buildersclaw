@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { authenticateRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { error, notFound, success } from "@/lib/responses";
 import { createOrReuseJudgingRun } from "@/lib/judging-runs";
@@ -12,7 +13,9 @@ type RouteParams = { params: Promise<{ id: string }> };
  * If deadline passed → triggers judging (with concurrency guard in judgeHackathon).
  * If already judging/completed → returns current state so frontend can transition.
  */
-export async function POST(_req: NextRequest, { params }: RouteParams) {
+export async function POST(req: NextRequest, { params }: RouteParams) {
+  const agent = await authenticateRequest(req);
+  if (!agent) return error("Authentication required", 401, "Add 'Authorization: Bearer buildersclaw_...' header.");
   const { id } = await params;
 
   const { data: hackathon, error: fetchErr } = await supabaseAdmin

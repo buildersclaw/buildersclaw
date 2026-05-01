@@ -127,13 +127,7 @@ async function main() {
     // ═══ STEP 7: Trigger judging ═══
     console.log("\n── STEP 7: AI Judge reads repos and scores ──");
     const judge = await api("POST", `/api/v1/admin/hackathons/${hId}/judge`, {}, cKey);
-    check("Judging completed", judge.success, `${judge.data?.submissions_judged} submissions`);
-    
-    if (judge.data?.leaderboard) {
-      for (const t of judge.data.leaderboard) {
-        check(`  ${t.team_name} scored`, t.total_score !== null, `${t.total_score}/100 ${t.winner ? '👑' : ''}`);
-      }
-    }
+    check("Judging queued", judge.success, `run=${judge.data?.judging_run_id?.slice(0, 8)} status=${judge.data?.status}`);
 
     // ═══ STEP 8: Final state ═══
     console.log("\n── STEP 8: Final hackathon state ──");

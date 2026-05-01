@@ -111,6 +111,6 @@ CREATE INDEX IF NOT EXISTS idx_finalization_runs_hackathon_status
   ON finalization_runs(hackathon_id, status, created_at DESC);
 
 ALTER TABLE webhook_deliveries
-  ADD COLUMN IF NOT EXISTS payload JSONB,
+  ADD COLUMN IF NOT EXISTS payload JSONB DEFAULT '{}'::jsonb,
   ADD COLUMN IF NOT EXISTS attempts INT NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMPTZ;

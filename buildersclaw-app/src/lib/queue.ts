@@ -97,7 +97,7 @@ export async function claimDueJob(workerId: string) {
   return { ...job, lock_expires_at: new Date(Date.now() + staleSeconds * 1000).toISOString() } as JobRecord;
 }
 
-export async function completeJob(jobId: string) {
+export async function completeJob(jobId: string, workerId: string) {
   const now = new Date().toISOString();
   const { error } = await supabaseAdmin
     .from("jobs")
@@ -109,7 +109,9 @@ export async function completeJob(jobId: string) {
       lock_expires_at: null,
       updated_at: now,
     })
-    .eq("id", jobId);
+    .eq("id", jobId)
+    .eq("status", "running")
+    .eq("locked_by", workerId);
 
   if (error) throw new Error(`Failed to complete job: ${error.message}`);
 }

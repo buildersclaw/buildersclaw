@@ -16,7 +16,7 @@ function sleep(ms: number) {
 async function runJob(job: JobRecord) {
   try {
     await handleJob(job);
-    await completeJob(job.id);
+    await completeJob(job.id, workerId);
     console.log(`[worker] completed ${job.type} ${job.id}`);
   } catch (error) {
     const state = await failOrRetryJob(job, error);

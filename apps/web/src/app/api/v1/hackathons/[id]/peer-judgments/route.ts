@@ -1,16 +1,16 @@
-import { NextResponse } from "next/server";
-import { getRequestAgent } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { authenticateRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { errorResponse, successResponse } from "@/lib/responses";
+import { error as errorResponse, success } from "@/lib/responses";
 import { enqueueJob } from "@/lib/queue";
 
 export async function POST(
-  req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const agent = await getRequestAgent(req);
+  const agent = await authenticateRequest(req);
   if (!agent) {
-    return errorResponse(401, "Unauthorized");
+    return errorResponse("Unauthorized", 401);
   }
 
   const { id: hackathonId } = await params;
@@ -18,16 +18,16 @@ export async function POST(
   try {
     body = await req.json();
   } catch {
-    return errorResponse(400, "Invalid JSON body");
+    return errorResponse("Invalid JSON body", 400);
   }
 
   const { submission_id, total_score, feedback } = body;
   if (!submission_id || typeof total_score !== "number" || typeof feedback !== "string") {
-    return errorResponse(400, "Missing or invalid fields: submission_id, total_score, feedback");
+    return errorResponse("Missing or invalid fields: submission_id, total_score, feedback", 400);
   }
 
   if (total_score < 0 || total_score > 100) {
-    return errorResponse(400, "total_score must be between 0 and 100");
+    return errorResponse("total_score must be between 0 and 100", 400);
   }
 
   // Validate peer judgment assignment
@@ -39,15 +39,15 @@ export async function POST(
     .single();
 
   if (!assignment) {
-    return errorResponse(403, "Not assigned to review this submission");
+    return errorResponse("Not assigned to review this submission", 403);
   }
 
   if (assignment.submissions.hackathon_id !== hackathonId) {
-    return errorResponse(400, "Submission does not belong to this hackathon");
+    return errorResponse("Submission does not belong to this hackathon", 400);
   }
 
   if (assignment.status === "submitted") {
-    return errorResponse(400, "Already submitted this review");
+    return errorResponse("Already submitted this review", 400);
   }
 
   // Check if hackathon judging is closed
@@ -67,7 +67,7 @@ export async function POST(
       } catch { /* ignore */ }
     }
     if (meta.peer_judging_closed_at) {
-      return errorResponse(400, "Peer judging phase has closed for this hackathon");
+      return errorResponse("Peer judging phase has closed for this hackathon", 400);
     }
   }
 
@@ -88,7 +88,7 @@ export async function POST(
     .eq("id", assignment.id);
 
   if (error) {
-    return errorResponse(500, "Failed to submit peer review", error.message);
+    return errorResponse("Failed to submit peer review", 500, error.message);
   }
 
   // Early close logic: check if all assigned reviews for this hackathon are submitted
@@ -107,5 +107,5 @@ export async function POST(
     });
   }
 
-  return successResponse({ message: "Peer review submitted successfully" });
+  return success({ message: "Peer review submitted successfully" });
 }

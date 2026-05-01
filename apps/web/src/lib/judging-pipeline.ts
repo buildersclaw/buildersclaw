@@ -451,10 +451,11 @@ export async function aggregateFinalists(hackathonId: string) {
       warnings,
     });
 
+    const team = sub.teams as { name?: string } | null;
     results.push({
       submission_id: sub.id,
       team_id: sub.team_id,
-      team_name: (sub.teams as any)?.name || sub.team_id,
+      team_name: team?.name || sub.team_id,
       finalist_score,
       peer_score,
       repo_score,
@@ -481,11 +482,9 @@ export async function aggregateFinalists(hackathonId: string) {
   }
 
   const contenders = results.slice(0, max_finalists).map(r => ({
-    team_id: r.team_id,
-    team_name: r.team_name,
+    ...r,
     repo_summary: `Scores - Peer: ${r.peer_score}, Repo: ${r.repo_score}, Runtime: ${r.runtime_score}. Warnings: ${r.warnings.join(", ")}`,
     gemini_score: r.finalist_score,
-    ...r
   }));
 
   meta.genlayer_status = "queued";

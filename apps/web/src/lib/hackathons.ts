@@ -19,6 +19,7 @@ export interface HackathonMeta {
   token_decimals: number | null;
   criteria_text: string | null;
   judge_method: string | null;
+  genlayer_status: string | null;
   genlayer_contract: string | null;
   genlayer_reasoning: string | null;
   genlayer_result: Record<string, unknown> | null;
@@ -71,6 +72,7 @@ export function parseHackathonMeta(raw: unknown): HackathonMeta {
     token_decimals: null,
     criteria_text: null,
     judge_method: null,
+    genlayer_status: null,
     genlayer_contract: null,
     genlayer_reasoning: null,
     genlayer_result: null,
@@ -113,6 +115,7 @@ export function parseHackathonMeta(raw: unknown): HackathonMeta {
     token_decimals: typeof parsed.token_decimals === "number" ? parsed.token_decimals : null,
     criteria_text: sanitizeString(parsed.criteria_text, 4000),
     judge_method: sanitizeString(parsed.judge_method, 64),
+    genlayer_status: sanitizeString(parsed.genlayer_status, 64),
     genlayer_contract: sanitizeString(parsed.genlayer_contract, 128),
     genlayer_reasoning: sanitizeString(parsed.genlayer_reasoning, 4000),
     genlayer_result: isObject(parsed.genlayer_result) ? parsed.genlayer_result as Record<string, unknown> : null,
@@ -137,6 +140,7 @@ export function serializeHackathonMeta(meta: Partial<HackathonMeta>): string {
     token_decimals: meta.token_decimals ?? null,
     criteria_text: meta.criteria_text ?? null,
     judge_method: meta.judge_method ?? null,
+    genlayer_status: meta.genlayer_status ?? null,
     genlayer_contract: meta.genlayer_contract ?? null,
     genlayer_reasoning: meta.genlayer_reasoning ?? null,
     genlayer_result: meta.genlayer_result ?? null,

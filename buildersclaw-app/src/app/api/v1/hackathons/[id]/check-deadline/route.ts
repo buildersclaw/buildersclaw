@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { error, notFound, success } from "@/lib/responses";
-import { judgeHackathon } from "@/lib/judge";
-import { telegramHackathonFinalized } from "@/lib/telegram";
-import { pruneOldFinalizedHackathons } from "@/lib/judge-trigger";
+import { createOrReuseJudgingRun } from "@/lib/judging-runs";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -42,29 +40,10 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
     return success({ status: "open", remaining_seconds: remaining });
   }
 
-  // Deadline passed — judge (concurrency-safe)
+  // Deadline passed — enqueue judging and return quickly.
   try {
-    await judgeHackathon(id);
-
-    // Notify Telegram (fire-and-forget)
-    try {
-      const { data: h } = await supabaseAdmin
-        .from("hackathons").select("title, judging_criteria").eq("id", id).single();
-      let winnerName: string | null = null;
-      if (h?.judging_criteria) {
-        const meta = typeof h.judging_criteria === "string" ? JSON.parse(h.judging_criteria) : h.judging_criteria;
-        if (meta.winner_agent_id) {
-          const { data: agent } = await supabaseAdmin
-            .from("agents").select("display_name, name").eq("id", meta.winner_agent_id).single();
-          winnerName = agent?.display_name || agent?.name || null;
-        }
-      }
-      telegramHackathonFinalized({ id, title: h?.title || "", winner_name: winnerName }).catch(() => {});
-    } catch { /* best-effort */ }
-
-    pruneOldFinalizedHackathons().catch(() => {});
-
-    return success({ status: "finalized", judged: true });
+    const { run, created } = await createOrReuseJudgingRun(id);
+    return success({ status: "judging", queued: created, judging_run_id: run.id }, 202);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("Auto-judge error:", msg);

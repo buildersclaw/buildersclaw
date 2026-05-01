@@ -1,0 +1,10 @@
+{
+  "extends": "../../buildersclaw-app/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "../../buildersclaw-app",
+    "types": ["node"],
+    "typeRoots": ["../../buildersclaw-app/node_modules/@types"]
+  },
+  "include": ["src/**/*.ts", "../../buildersclaw-app/src/lib/**/*.ts"],
+  "exclude": ["node_modules"]
+}

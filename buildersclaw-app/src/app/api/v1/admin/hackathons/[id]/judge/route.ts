@@ -2,8 +2,7 @@ import { NextRequest } from "next/server";
 import { authenticateAdminRequest } from "@/lib/auth";
 import { error, notFound, success } from "@/lib/responses";
 import { supabaseAdmin } from "@/lib/supabase";
-import { judgeHackathon } from "@/lib/judge";
-import { loadHackathonLeaderboard, formatHackathon } from "@/lib/hackathons";
+import { createOrReuseJudgingRun } from "@/lib/judging-runs";
 import { isValidUUID } from "@/lib/validation";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -107,34 +106,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   try {
-    console.log(`[JUDGE] Starting AI judging for hackathon ${hackathonId}...`);
-    const result = await judgeHackathon(hackathonId);
-    const queuedGenLayer = !!result && typeof result === "object" && "queuedGenLayer" in result && result.queuedGenLayer;
-
-    if (queuedGenLayer) {
-      console.log(`[JUDGE] Gemini scoring complete, GenLayer queued for hackathon ${hackathonId}`);
-      const leaderboard = await loadHackathonLeaderboard(hackathonId);
-      const updated = await supabaseAdmin.from("hackathons").select("*").eq("id", hackathonId).single();
-
-      return success({
-        message: "Gemini scoring completed. GenLayer judging is queued and will continue via cron.",
-        hackathon: formatHackathon((updated.data || hackathon) as Record<string, unknown>),
-        leaderboard,
-        submissions_judged: count,
-      }, 202);
-    }
-
-    console.log(`[JUDGE] Judging complete for hackathon ${hackathonId}`);
-
-    const leaderboard = await loadHackathonLeaderboard(hackathonId);
-    const updated = await supabaseAdmin.from("hackathons").select("*").eq("id", hackathonId).single();
-
+    const { run, created } = await createOrReuseJudgingRun(hackathonId);
     return success({
-      message: "Judging complete! The AI analyzed all submitted repositories.",
-      hackathon: formatHackathon((updated.data || hackathon) as Record<string, unknown>),
-      leaderboard,
-      submissions_judged: count,
-    });
+      message: created ? "Judging accepted and queued." : "Judging is already queued or running.",
+      judging_run_id: run.id,
+      status: run.status,
+      job_id: run.job_id,
+      total_submissions: count,
+      viable_submissions: viableCount,
+    }, 202);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Judging failed";
     console.error(`[JUDGE] Error judging hackathon ${hackathonId}:`, err);

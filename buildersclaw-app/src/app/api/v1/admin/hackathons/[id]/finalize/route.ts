@@ -1,19 +1,13 @@
 import { NextRequest } from "next/server";
-import { v4 as uuid } from "uuid";
 import { authenticateAdminRequest } from "@/lib/auth";
-import { finalizeHackathonOnChain, normalizeAddress } from "@/lib/chain";
-import { formatHackathon, loadHackathonLeaderboard, parseHackathonMeta, sanitizeString, serializeHackathonMeta } from "@/lib/hackathons";
+import { normalizeAddress } from "@/lib/chain";
+import { parseHackathonMeta, sanitizeString } from "@/lib/hackathons";
 import { error, notFound, success } from "@/lib/responses";
 import { supabaseAdmin } from "@/lib/supabase";
-import { telegramHackathonFinalized } from "@/lib/telegram";
-import { validateWinnerShares, validateWalletAddress, isValidUUID, WINNER_MIN_BPS } from "@/lib/validation";
+import { createOrReuseFinalizationRun } from "@/lib/finalization";
+import { validateWinnerShares, isValidUUID, WINNER_MIN_BPS } from "@/lib/validation";
 
 type RouteParams = { params: Promise<{ id: string }> };
-
-function getConfiguredChainId(): number | null {
-  const parsed = Number.parseInt(process.env.CHAIN_ID || "", 10);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-}
 
 /**
  * POST /api/v1/admin/hackathons/:id/finalize — Select a winning team and finalize on-chain.
@@ -147,95 +141,32 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     );
   }
 
-  let finalizeResult;
-  try {
-    finalizeResult = await finalizeHackathonOnChain({
-      contractAddress: meta.contract_address,
-      winners: winners.map((w) => ({ wallet: w.wallet, shareBps: w.shareBps })),
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to finalize hackathon on-chain";
-    return error(message, 400);
-  }
-
-  const finalizedAt = new Date().toISOString();
   const notes = sanitizeString(body.notes, 4000);
   const leaderAgentId = members.find((m) => m.role === "leader")?.agent_id ?? members[0].agent_id;
 
-  const { data: updatedHackathon, error: updateErr } = await supabaseAdmin
-    .from("hackathons")
-    .update({
-      status: "completed",
-      updated_at: finalizedAt,
-      judging_criteria: serializeHackathonMeta({
-        ...meta,
-        chain_id: meta.chain_id ?? getConfiguredChainId(),
-        winner_agent_id: leaderAgentId,
-        winner_team_id: winnerTeamId,
-        winners: winners.map((w) => ({
-          agent_id: w.agent_id,
-          wallet: w.wallet,
-          share_bps: w.shareBps,
-        })),
-        finalization_notes: notes,
-        finalized_at: finalizedAt,
-        finalize_tx_hash: finalizeResult.txHash,
-        scores: body.scores ?? meta.scores,
-      }),
-    })
-    .eq("id", hackathonId)
-    .select("*")
-    .single();
-
-  if (updateErr) return error("Failed to finalize hackathon", 500);
-
-  await supabaseAdmin.from("teams").update({ status: "judged" }).eq("id", winnerTeamId!);
-
-  await supabaseAdmin.from("activity_log").insert({
-    id: uuid(),
-    hackathon_id: hackathonId,
-    team_id: winnerTeamId,
-    agent_id: leaderAgentId,
-    event_type: "hackathon_finalized",
-    event_data: {
-      winner_team_id: winnerTeamId,
-      winners: winners.map((w) => ({
-        agent_id: w.agent_id,
-        wallet: w.wallet,
-        share_bps: w.shareBps,
-      })),
-      finalize_tx_hash: finalizeResult.txHash,
-      contract_address: meta.contract_address,
-      notes,
-    },
-  });
-
-  const leaderboard = await loadHackathonLeaderboard(hackathonId);
-
-  // Notify Telegram (fire-and-forget)
+  // Idempotency guard: reuse existing in-flight run instead of broadcasting again.
   try {
-    let winnerName: string | null = null;
-    if (leaderAgentId) {
-      const { data: agentRow } = await supabaseAdmin
-        .from("agents").select("display_name, name").eq("id", leaderAgentId).single();
-      winnerName = agentRow?.display_name || agentRow?.name || null;
-    }
-    telegramHackathonFinalized({
-      id: hackathonId,
-      title: hackathon.title,
-      winner_name: winnerName,
-    }).catch(() => {});
-  } catch { /* best-effort */ }
+    const { run, created } = await createOrReuseFinalizationRun({
+      hackathonId,
+      winnerTeamId: winnerTeamId!,
+      winnerAgentId: leaderAgentId,
+      winners,
+      notes,
+      scores: body.scores ?? meta.scores,
+    });
 
-  return success({
-    hackathon: formatHackathon(updatedHackathon as Record<string, unknown>),
-    winner_team_id: winnerTeamId,
-    winners: winners.map((w) => ({
-      agent_id: w.agent_id,
-      wallet: w.wallet,
-      share_bps: w.shareBps,
-    })),
-    notes,
-    leaderboard,
-  });
+    return success({
+      message: created ? "Escrow finalization accepted and queued." : "Escrow finalization is already queued or running.",
+      finalization_run_id: run.id,
+      status: run.status,
+      job_id: run.job_id,
+      tx_hash: run.tx_hash,
+      winner_team_id: winnerTeamId,
+      winners: winners.map((w) => ({ agent_id: w.agent_id, wallet: w.wallet, share_bps: w.shareBps })),
+      notes,
+    }, 202);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to queue escrow finalization";
+    return error(message, 500);
+  }
 }

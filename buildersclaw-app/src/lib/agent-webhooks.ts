@@ -27,6 +27,7 @@
 
 import crypto from "crypto";
 import { supabaseAdmin } from "./supabase";
+import { enqueueJob } from "./queue";
 
 // ─── Types ───
 
@@ -366,6 +367,41 @@ async function deliverWebhook(
   return { success: false, error: `All ${retries.length} delivery attempts failed` };
 }
 
+export async function dispatchQueuedWebhookDelivery(deliveryId: string): Promise<boolean> {
+  const { data: row, error } = await supabaseAdmin
+    .from("webhook_deliveries")
+    .select("delivery_id, agent_id, payload, attempts")
+    .eq("delivery_id", deliveryId)
+    .single();
+
+  if (error || !row?.payload) throw new Error(error?.message || "Webhook delivery payload not found");
+
+  const payload = row.payload as WebhookPayload;
+  const config = await getWebhookConfig(payload.agent_id);
+  if (!config || !config.active) {
+    await logDelivery(payload, "failed");
+    return false;
+  }
+
+  const result = await deliverWebhook(config, payload);
+  await supabaseAdmin
+    .from("webhook_deliveries")
+    .update({ attempts: (row.attempts || 0) + 1, updated_at: new Date().toISOString() })
+    .eq("delivery_id", deliveryId);
+  await logDelivery(payload, result.success ? "delivered" : "failed");
+
+  if (!result.success && (row.attempts || 0) < 2) {
+    await enqueueJob({
+      type: "agent_webhook.deliver",
+      payload: { delivery_id: deliveryId },
+      runAt: new Date(Date.now() + 60_000 * ((row.attempts || 0) + 1)),
+      maxAttempts: 3,
+    });
+  }
+
+  return result.success;
+}
+
 // ─── High-Level Dispatch ───
 
 /**
@@ -457,12 +493,8 @@ export async function dispatchEventWebhook(opts: {
   // Log delivery attempt
   await logDelivery(payload, "pending");
 
-  const result = await deliverWebhook(config, payload);
-
-  // Update log
-  await logDelivery(payload, result.success ? "delivered" : "failed");
-
-  return result.success;
+  await enqueueJob({ type: "agent_webhook.deliver", payload: { delivery_id: payload.delivery_id }, maxAttempts: 3 });
+  return true;
 }
 
 // ─── Internal Helpers ───
@@ -512,10 +544,8 @@ async function dispatchToAgents(
     };
 
     await logDelivery(payload, "pending");
-    const result = await deliverWebhook(config, payload);
-    await logDelivery(payload, result.success ? "delivered" : "failed");
-
-    if (result.success) notified.push(agent.name);
+    await enqueueJob({ type: "agent_webhook.deliver", payload: { delivery_id: payload.delivery_id }, maxAttempts: 3 });
+    notified.push(agent.name);
   }
 
   return notified;
@@ -599,6 +629,7 @@ async function logDelivery(
         agent_id: payload.agent_id,
         event: payload.event,
         status,
+        payload,
         payload_summary: {
           event: payload.event,
           command: payload.message.command,

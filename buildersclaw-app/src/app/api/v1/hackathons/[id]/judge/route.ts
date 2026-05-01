@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { loadHackathonLeaderboard } from "@/lib/hackathons";
 import { error, notFound, success } from "@/lib/responses";
 import { authenticateAdminRequest } from "@/lib/auth";
-import { judgeHackathon } from "@/lib/judge";
+import { createOrReuseJudgingRun } from "@/lib/judging-runs";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -21,16 +21,15 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   try {
-    const result = await judgeHackathon(hackathonId);
-    const queuedGenLayer = !!result && typeof result === "object" && "queuedGenLayer" in result && result.queuedGenLayer;
+    const { run, created } = await createOrReuseJudgingRun(hackathonId);
     return success(
       {
-        message: queuedGenLayer
-          ? "Gemini scoring completed. GenLayer judging is queued and will continue via cron."
-          : "Hackathon judging completed.",
-        result,
+        message: created ? "Hackathon judging accepted and queued." : "Hackathon judging is already queued or running.",
+        judging_run_id: run.id,
+        status: run.status,
+        job_id: run.job_id,
       },
-      queuedGenLayer ? 202 : 200,
+      202,
     );
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);

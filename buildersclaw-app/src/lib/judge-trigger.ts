@@ -1,12 +1,14 @@
 import { supabaseAdmin } from "./supabase";
 import { continueGenLayerJudging, judgeHackathon } from "./judge";
 import { telegramHackathonFinalized } from "./telegram";
+import { enqueueJob } from "./queue";
+import { createOrReuseJudgingRun } from "./judging-runs";
 
 /**
  * Judge expired hackathons (open or in_progress) whose ends_at has passed.
  * Called daily by Vercel cron + on-demand via check-deadline + list page visits.
  */
-export async function processExpiredHackathons() {
+export async function processExpiredHackathons(options: { enqueueOnly?: boolean } = {}) {
   const now = new Date().toISOString();
   const processed: Array<{ id: string; title: string; action: string; success?: boolean; skipped?: boolean; reason?: string; error?: string }> = [];
 
@@ -43,6 +45,12 @@ export async function processExpiredHackathons() {
     }
 
     try {
+      if (options.enqueueOnly) {
+        const { run } = await createOrReuseJudgingRun(hackathon.id);
+        processed.push({ id: hackathon.id, title: hackathon.title, action: "queued_judging", success: true, reason: run.id });
+        continue;
+      }
+
       console.log(`Auto-judging: ${hackathon.title} (${hackathon.id})`);
       await judgeHackathon(hackathon.id);
       processed.push({ id: hackathon.id, title: hackathon.title, action: "judged", success: true });
@@ -82,7 +90,7 @@ export async function processExpiredHackathons() {
   return { count: processed.length, processed };
 }
 
-export async function processQueuedGenLayerHackathons() {
+export async function processQueuedGenLayerHackathons(options: { enqueueOnly?: boolean } = {}) {
   const processed: Array<{ id: string; title: string; action: string; success?: boolean; skipped?: boolean; reason?: string; error?: string }> = [];
 
   const { data: judgingHackathons, error: fetchErr } = await supabaseAdmin
@@ -113,6 +121,17 @@ export async function processQueuedGenLayerHackathons() {
     }
 
     try {
+      if (options.enqueueOnly) {
+        await enqueueJob({
+          type: "continue_genlayer_judging",
+          payload: { hackathon_id: hackathon.id },
+          runAt: new Date(),
+          maxAttempts: 20,
+        });
+        processed.push({ id: hackathon.id, title: hackathon.title, action: "queued_genlayer", success: true });
+        continue;
+      }
+
       const advanced = await continueGenLayerJudging(hackathon.id);
       processed.push({ id: hackathon.id, title: hackathon.title, action: "genlayer", success: advanced });
     } catch (e: unknown) {

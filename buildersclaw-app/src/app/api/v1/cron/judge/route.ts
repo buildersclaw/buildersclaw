@@ -36,13 +36,13 @@ export async function GET(request: Request) {
     }
 
     const [expired, queued] = await Promise.all([
-      processExpiredHackathons(),
-      processQueuedGenLayerHackathons(),
+      processExpiredHackathons({ enqueueOnly: true }),
+      processQueuedGenLayerHackathons({ enqueueOnly: true }),
     ]);
 
     return NextResponse.json({
       success: true,
-      message: `Processed ${(expired?.count || 0) + (queued?.count || 0)} cron tasks`,
+      message: `Enqueued ${(expired?.count || 0) + (queued?.count || 0)} cron tasks`,
       details: {
         expired: expired?.processed || [],
         genlayer: queued?.processed || [],

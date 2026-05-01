@@ -8,7 +8,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { processTelegramUpdate, validateWebhookSecret } from "@/lib/telegram-webhook";
+import { validateWebhookSecret } from "@/lib/telegram-webhook";
+import { enqueueJob } from "@/lib/queue";
 
 export async function POST(req: NextRequest) {
   // Validate Telegram's secret header
@@ -24,11 +25,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Process asynchronously — Telegram expects a fast 200
   try {
-    await processTelegramUpdate(update as Parameters<typeof processTelegramUpdate>[0]);
+    await enqueueJob({
+      type: "telegram.process_update",
+      payload: { update: update as Record<string, unknown> },
+      maxAttempts: 5,
+    });
   } catch (err) {
-    console.error("[TG-WEBHOOK] Processing error:", err);
+    console.error("[TG-WEBHOOK] Enqueue error:", err);
+    return NextResponse.json({ error: "Failed to enqueue update" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });

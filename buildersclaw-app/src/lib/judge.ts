@@ -14,6 +14,8 @@ import {
 } from "./genlayer";
 import { isViableSubmission } from "./validation";
 import { TransactionStatus } from "genlayer-js/types";
+import { enqueueJob } from "./queue";
+import { updateActiveJudgingRunForHackathon, updateJudgingRun } from "./judging-runs";
 
 export interface EvaluationResult {
   functionality_score: number;
@@ -279,12 +281,15 @@ export async function continueGenLayerJudging(hackathonId: string) {
     }
 
     if (status === "reading_result") {
-      return await persistGenLayerVerdict(hackathon.id, meta);
+      const completed = await persistGenLayerVerdict(hackathon.id, meta);
+      if (completed) await updateActiveJudgingRunForHackathon(hackathon.id, "completed");
+      return completed;
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`continueGenLayerJudging(${hackathon.id}) failed:`, msg);
     await finalizeGeminiFallback(hackathon.id, meta, msg);
+    await updateActiveJudgingRunForHackathon(hackathon.id, "completed", { metadata: { genlayer_fallback: true } });
     return true;
   }
 
@@ -514,7 +519,8 @@ export async function judgeSubmission(
   }
 }
 
-export async function judgeHackathon(hackathonId: string) {
+export async function judgeHackathon(hackathonId: string, judgingRunId?: string) {
+  await updateJudgingRun(judgingRunId, "running");
   const { data: hackathon } = await supabaseAdmin
     .from("hackathons")
     .select("*")
@@ -524,7 +530,10 @@ export async function judgeHackathon(hackathonId: string) {
   if (!hackathon) throw new Error("Hackathon not found");
 
   // ── Concurrency guard: atomically claim "judging" status ──
-  if (hackathon.status === "completed") return true;
+  if (hackathon.status === "completed") {
+    await updateJudgingRun(judgingRunId, "completed");
+    return true;
+  }
 
   // Try to claim — works from open, in_progress, OR judging (retry after failure)
   const { data: locked, error: lockErr } = await supabaseAdmin
@@ -560,6 +569,7 @@ export async function judgeHackathon(hackathonId: string) {
         .from("hackathons")
         .update({ status: "completed", judging_criteria: updatedMeta })
         .eq("id", hackathonId);
+      await updateJudgingRun(judgingRunId, "completed", { metadata: { submissions_judged: 0 } });
       return true;
     }
 
@@ -602,6 +612,7 @@ export async function judgeHackathon(hackathonId: string) {
         .from("hackathons")
         .update({ status: "completed", judging_criteria: updatedMeta })
         .eq("id", hackathonId);
+      await updateJudgingRun(judgingRunId, "completed", { metadata: { submissions_judged: 0, skipped_submissions: skippedSubmissions } });
       return true;
     }
 
@@ -675,6 +686,15 @@ export async function judgeHackathon(hackathonId: string) {
         updatedMeta.judge_method = "gemini_pending_genlayer";
         updatedMeta.notes = `Gemini pre-scored ${submissions.length} submissions. Top ${contenders.length} contenders are queued for GenLayer on-chain consensus.`;
         await updateHackathonJudgingMeta(hackathonId, updatedMeta, "judging");
+        await updateJudgingRun(judgingRunId, "waiting_genlayer", {
+          metadata: { submissions_judged: submissions.length },
+        });
+        await enqueueJob({
+          type: "continue_genlayer_judging",
+          payload: { hackathon_id: hackathonId },
+          runAt: new Date(Date.now() + 60_000),
+          maxAttempts: 20,
+        });
         return {
           completed: false,
           queuedGenLayer: true,
@@ -712,6 +732,9 @@ export async function judgeHackathon(hackathonId: string) {
         : "Automatically judged by Gemini AI. Code repositories were analyzed.";
 
     await updateHackathonJudgingMeta(hackathonId, updatedMeta, "completed");
+    await updateJudgingRun(judgingRunId, "completed", {
+      metadata: { submissions_judged: submissions.length },
+    });
 
     return {
       completed: true,
@@ -726,6 +749,7 @@ export async function judgeHackathon(hackathonId: string) {
       .update({ status: "in_progress" })
       .eq("id", hackathonId)
       .eq("status", "judging");
+    await updateJudgingRun(judgingRunId, "failed", { error: err instanceof Error ? err.message : String(err) });
     throw err;
   }
 }

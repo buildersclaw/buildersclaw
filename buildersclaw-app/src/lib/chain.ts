@@ -293,6 +293,15 @@ export async function finalizeHackathonOnChain(options: {
   contractAddress: string;
   winners: { wallet: string; shareBps: number }[];
 }) {
+  const txHash = await broadcastFinalizeHackathonOnChain(options);
+  const receipt = await waitForFinalizeReceipt(txHash);
+  return { txHash, receipt };
+}
+
+export async function broadcastFinalizeHackathonOnChain(options: {
+  contractAddress: string;
+  winners: { wallet: string; shareBps: number }[];
+}) {
   const publicClient = getPublicChainClient();
   const walletClient = getOrganizerWalletClient();
   const contractAddress = normalizeAddress(options.contractAddress);
@@ -321,10 +330,15 @@ export async function finalizeHackathonOnChain(options: {
     chain: walletClient.chain,
   });
 
-  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+  return txHash;
+}
+
+export async function waitForFinalizeReceipt(txHash: string) {
+  const publicClient = getPublicChainClient();
+  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash as Hash });
   if (receipt.status !== "success") throw new Error("Finalize transaction failed on-chain");
 
-  return { txHash, receipt };
+  return receipt;
 }
 
 export async function deployHackathonEscrow(options: {

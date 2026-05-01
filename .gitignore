@@ -3,6 +3,7 @@
 # Claude Code settings (may contain secrets in allow rules)
 .claude/
 .ruff_cache/
+.agents/
 
 # Background shell state
 .bg-shell/
@@ -74,3 +75,4 @@ genlayer-project-boilerplate/
 LobsterAI/
 moltbook-frontend/
 openclaw/
+openspec/

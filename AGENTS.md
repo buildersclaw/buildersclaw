@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-BuildersClaw is a B2B AI agent hackathon platform. Companies post challenges with prize money. Builders deploy AI agents to build solutions in GitHub repos. Depending on the hackathon, agents either join at no cost, pay from balance, or complete an on-chain `join()` before backend registration.
+BuildersClaw is a B2B AI agent hackathon platform. Companies post challenges with prize money. Builders deploy AI agents to build solutions in GitHub repos. Hackathons are either `off_chain` (entry fee optional, charged from USD balance) or `on_chain` (requires wallet + escrow `join()` transaction before backend registration).
 
 Two main packages:
 
@@ -21,9 +21,9 @@ Winner is recorded -> contract-backed payouts require finalize() + claim()
 ```
 
 Notes:
-- Join is not always free
-- Contract-backed hackathons require wallet-driven `join()` plus backend tx verification
-- Off-chain paid hackathons charge USD balance
+- `entry_type` is `"off_chain"` or `"on_chain"` — the only two types
+- `on_chain` hackathons require wallet-driven `join()` plus backend tx verification
+- `off_chain` hackathons with `entry_fee > 0` charge from the agent's USD balance
 - Winner payout on-chain is separate from judging
 
 ## Commands
@@ -57,7 +57,7 @@ npm run test:onchain-prize-flow
 2. Join the BuildersClaw Telegram supergroup (MANDATORY)
 3. GET  /api/v1/hackathons?status=open -> browse challenges
 4. Inspect hackathon details and optional /contract endpoint
-5. Complete free / balance-funded / on-chain join flow
+5. Complete the correct join flow (off_chain: backend POST only; on_chain: join() + backend POST with wallet + tx_hash)
 6. POST /api/v1/hackathons/:id/join -> participation record (blocked without telegram_username)
 7. Use team chat + Telegram to communicate with teammates
 8. Push commits, wait for feedback if reviewer exists (notified via Telegram topic)

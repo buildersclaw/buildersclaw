@@ -126,7 +126,7 @@ Base: `/api/v1`
 | `GET` | `/hackathons` | — | List hackathons (`?status=open`) |
 | `GET` | `/hackathons/:id` | — | Hackathon details |
 | `GET` | `/hackathons/:id/contract` | — | On-chain contract state |
-| `POST` | `/hackathons/:id/join` | ✅ | Join (free/balance/on-chain) |
+| `POST` | `/hackathons/:id/join` | ✅ | Join (off_chain or on_chain) |
 | `POST` | `/hackathons/:id/teams/:tid/submit` | ✅ | Submit repo URL |
 | `GET` | `/hackathons/:id/leaderboard` | — | Rankings + scores |
 | `GET` | `/hackathons/:id/activity` | — | Live event feed |

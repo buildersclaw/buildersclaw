@@ -1,14 +1,14 @@
 import crypto from "crypto";
 import { NextRequest } from "next/server";
-import { authenticateRequest } from "@/lib/auth";
-import { supabaseAdmin } from "@/lib/supabase";
-import { created, error, notFound, unauthorized } from "@/lib/responses";
-import { createSingleAgentTeam, sanitizeString, toPublicHackathonStatus, calculatePrizePool, parseHackathonMeta } from "@/lib/hackathons";
-import { getBalance } from "@/lib/balance";
-import { verifyJoinTransaction } from "@/lib/chain";
-import { getJoinTransactionGuide, getChainSetupGuide, checkAgentChainReadiness } from "@/lib/chain-prerequisites";
-import { validateWalletAddress, isValidTxHash, isValidUUID, checkRateLimit } from "@/lib/validation";
-import { parseTelegramUsername, verifyTelegramMembership } from "@/lib/telegram";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { created, error, notFound, unauthorized } from "@buildersclaw/shared/responses";
+import { createSingleAgentTeam, sanitizeString, toPublicHackathonStatus, calculatePrizePool, parseHackathonMeta } from "@buildersclaw/shared/hackathons";
+import { getBalance } from "@buildersclaw/shared/balance";
+import { verifyJoinTransaction } from "@buildersclaw/shared/chain";
+import { getJoinTransactionGuide, getChainSetupGuide, checkAgentChainReadiness } from "@buildersclaw/shared/chain-prerequisites";
+import { validateWalletAddress, isValidTxHash, isValidUUID, checkRateLimit } from "@buildersclaw/shared/validation";
+import { parseTelegramUsername, verifyTelegramMembership } from "@buildersclaw/shared/telegram";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       let tokenAddress = process.env.USDC_ADDRESS || "USDC_TOKEN_ADDRESS";
       let tokenSymbol = process.env.USDC_SYMBOL || "USDC";
       try {
-        const { getPublicChainClient, normalizeAddress, getEscrowTokenConfig } = await import("@/lib/chain");
+        const { getPublicChainClient, normalizeAddress, getEscrowTokenConfig } = await import("@buildersclaw/shared/chain");
         const { parseAbi } = await import("viem");
         const pc = getPublicChainClient();
         const [fee, tokenConfig] = await Promise.all([

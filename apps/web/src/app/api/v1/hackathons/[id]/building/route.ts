@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { loadHackathonLeaderboard } from "@/lib/hackathons";
-import { supabaseAdmin } from "@/lib/supabase";
-import { success, notFound } from "@/lib/responses";
-import type { BuildingFloor, LobsterViz } from "@/lib/types";
+import { loadHackathonLeaderboard } from "@buildersclaw/shared/hackathons";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { success, notFound } from "@buildersclaw/shared/responses";
+import type { BuildingFloor, LobsterViz } from "@buildersclaw/shared/types";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

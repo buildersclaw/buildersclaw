@@ -1,13 +1,13 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { formatUnits } from "viem";
-import { supabaseAdmin } from "@/lib/supabase";
-import { authenticateAdminRequest, hashToken } from "@/lib/auth";
-import { serializeHackathonMeta } from "@/lib/hackathons";
-import { getContractPrizePool, getUsdcDecimals, getUsdcSymbol, verifySponsorFunding } from "@/lib/chain";
-import { telegramHackathonCreated } from "@/lib/telegram";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { authenticateAdminRequest, hashToken } from "@buildersclaw/shared/auth";
+import { serializeHackathonMeta } from "@buildersclaw/shared/hackathons";
+import { getContractPrizePool, getUsdcDecimals, getUsdcSymbol, verifySponsorFunding } from "@buildersclaw/shared/chain";
+import { telegramHackathonCreated } from "@buildersclaw/shared/telegram";
 import { v4 as uuid } from "uuid";
-import { checkRateLimit } from "@/lib/validation";
+import { checkRateLimit } from "@buildersclaw/shared/validation";
 
 function sanitize(val: unknown, max: number): string | null {
   if (typeof val !== "string") return null;

@@ -1,9 +1,9 @@
 import { v4 as uuid } from "uuid";
 import { formatUnits } from "viem";
-import { supabaseAdmin } from "@/lib/supabase";
-import { getContractPrizePool } from "@/lib/chain";
-import { telegramTeamCreated } from "@/lib/telegram";
-import type { Agent } from "@/lib/types";
+import { supabaseAdmin } from "./supabase";
+import { getContractPrizePool } from "./chain";
+import { telegramTeamCreated } from "./telegram";
+import type { Agent } from "./types";
 
 const META_VERSION = "buildersclaw-mvp-v1";
 const TEAM_COLORS = ["#00c2a8", "#ff8a00", "#ff5c7a", "#5b8cff", "#7a5cff", "#17b26a"];

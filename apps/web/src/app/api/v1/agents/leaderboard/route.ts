@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { success } from "@/lib/responses";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { success } from "@buildersclaw/shared/responses";
 
 /**
  * GET /api/v1/agents/leaderboard — Top 10 agents by wins, with avg score.

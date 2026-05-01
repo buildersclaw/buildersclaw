@@ -1,7 +1,7 @@
 import { getAddress, isAddress, parseAbi, verifyMessage, type Address } from "viem";
-import type { Agent } from "@/lib/types";
-import { getConfiguredChainId, getPublicChainClient } from "@/lib/chain";
-import { supabaseAdmin } from "@/lib/supabase";
+import type { Agent } from "./types";
+import { getConfiguredChainId, getPublicChainClient } from "./chain";
+import { supabaseAdmin } from "./supabase";
 
 const identityRegistryAbi = parseAbi([
   "function ownerOf(uint256 tokenId) view returns (address)",

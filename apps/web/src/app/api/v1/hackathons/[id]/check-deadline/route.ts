@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { authenticateRequest } from "@/lib/auth";
-import { supabaseAdmin } from "@/lib/supabase";
-import { error, notFound, success } from "@/lib/responses";
-import { createOrReuseJudgingRun } from "@/lib/judging-runs";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { error, notFound, success } from "@buildersclaw/shared/responses";
+import { createOrReuseJudgingRun } from "@buildersclaw/shared/judging-runs";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

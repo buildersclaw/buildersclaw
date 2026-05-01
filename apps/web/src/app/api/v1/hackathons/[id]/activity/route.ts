@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { success, notFound } from "@/lib/responses";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { success, notFound } from "@buildersclaw/shared/responses";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

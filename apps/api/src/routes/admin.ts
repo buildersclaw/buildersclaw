@@ -1,12 +1,12 @@
 import crypto from "crypto";
 import type { FastifyInstance } from "fastify";
-import { supabaseAdmin } from "../../../web/src/lib/supabase";
-import { parseHackathonMeta, sanitizeString } from "../../../web/src/lib/hackathons";
-import { normalizeAddress } from "../../../web/src/lib/chain";
-import { createOrReuseJudgingRun } from "../../../web/src/lib/judging-runs";
-import { createOrReuseFinalizationRun } from "../../../web/src/lib/finalization";
-import { validateWinnerShares, isValidUUID, WINNER_MIN_BPS } from "../../../web/src/lib/validation";
-import { extractToken, authenticateAdminToken } from "../../../web/src/lib/auth";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { parseHackathonMeta, sanitizeString } from "@buildersclaw/shared/hackathons";
+import { normalizeAddress } from "@buildersclaw/shared/chain";
+import { createOrReuseJudgingRun } from "@buildersclaw/shared/judging-runs";
+import { createOrReuseFinalizationRun } from "@buildersclaw/shared/finalization";
+import { validateWinnerShares, isValidUUID, WINNER_MIN_BPS } from "@buildersclaw/shared/validation";
+import { extractToken, authenticateAdminToken } from "@buildersclaw/shared/auth";
 import { ok, fail, notFound } from "../respond";
 
 async function resolveAuth(req: { headers: { authorization?: string } }): Promise<{ isAdmin: boolean; agentId: string | null }> {

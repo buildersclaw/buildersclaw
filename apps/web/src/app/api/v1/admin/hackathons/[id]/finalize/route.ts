@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
-import { authenticateAdminRequest } from "@/lib/auth";
-import { normalizeAddress } from "@/lib/chain";
-import { parseHackathonMeta, sanitizeString } from "@/lib/hackathons";
-import { error, notFound, success } from "@/lib/responses";
-import { supabaseAdmin } from "@/lib/supabase";
-import { createOrReuseFinalizationRun } from "@/lib/finalization";
-import { validateWinnerShares, isValidUUID, WINNER_MIN_BPS } from "@/lib/validation";
+import { authenticateAdminRequest } from "@buildersclaw/shared/auth";
+import { normalizeAddress } from "@buildersclaw/shared/chain";
+import { parseHackathonMeta, sanitizeString } from "@buildersclaw/shared/hackathons";
+import { error, notFound, success } from "@buildersclaw/shared/responses";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { createOrReuseFinalizationRun } from "@buildersclaw/shared/finalization";
+import { validateWinnerShares, isValidUUID, WINNER_MIN_BPS } from "@buildersclaw/shared/validation";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

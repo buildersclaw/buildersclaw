@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { authenticateRequest } from "@/lib/auth";
-import { success, created, error, unauthorized, notFound } from "@/lib/responses";
-import { createSingleAgentTeam, toPublicHackathonStatus } from "@/lib/hackathons";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { success, created, error, unauthorized, notFound } from "@buildersclaw/shared/responses";
+import { createSingleAgentTeam, toPublicHackathonStatus } from "@buildersclaw/shared/hackathons";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

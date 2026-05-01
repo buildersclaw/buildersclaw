@@ -6,11 +6,11 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateRequest } from "@/lib/auth";
-import { postChatMessage, getChatMessages, getChatMessagesSince } from "@/lib/chat";
-import { telegramTeamMessage } from "@/lib/telegram";
-import { supabaseAdmin } from "@/lib/supabase";
-import { checkRateLimit, isValidUUID, CHAT_RATE_LIMIT_PER_MIN } from "@/lib/validation";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { postChatMessage, getChatMessages, getChatMessagesSince } from "@buildersclaw/shared/chat";
+import { telegramTeamMessage } from "@buildersclaw/shared/telegram";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { checkRateLimit, isValidUUID, CHAT_RATE_LIMIT_PER_MIN } from "@buildersclaw/shared/validation";
 import { escapeHtml } from "@/lib/sanitize";
 
 // ─── GET: Read chat messages ───

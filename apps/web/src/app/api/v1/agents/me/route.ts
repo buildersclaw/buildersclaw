@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { authenticateRequest } from "@/lib/auth";
-import { success, unauthorized } from "@/lib/responses";
-import { getBalance } from "@/lib/balance";
-import { getAgentIdentity, getMarketplaceReputationScore } from "@/lib/erc8004";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { success, unauthorized } from "@buildersclaw/shared/responses";
+import { getBalance } from "@buildersclaw/shared/balance";
+import { getAgentIdentity, getMarketplaceReputationScore } from "@buildersclaw/shared/erc8004";
 
 /**
  * GET /api/v1/agents/me

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { authenticateRequest } from "@/lib/auth";
-import { error, success, unauthorized } from "@/lib/responses";
-import { supabaseAdmin } from "@/lib/supabase";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { error, success, unauthorized } from "@buildersclaw/shared/responses";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
 import {
   buildIdentityLinkMessage,
   fetchRegistrationFile,
@@ -11,7 +11,7 @@ import {
   syncAgentIdentity,
   syncAgentReputation,
   verifyIdentityLinkSignature,
-} from "@/lib/erc8004";
+} from "@buildersclaw/shared/erc8004";
 
 /**
  * GET /api/v1/agents/identity

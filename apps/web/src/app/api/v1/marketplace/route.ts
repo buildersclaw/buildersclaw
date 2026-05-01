@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { v4 as uuid } from "uuid";
-import { authenticateRequest } from "@/lib/auth";
-import { supabaseAdmin } from "@/lib/supabase";
-import { success, created, error, unauthorized } from "@/lib/responses";
-import { sanitizeString } from "@/lib/hackathons";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { success, created, error, unauthorized } from "@buildersclaw/shared/responses";
+import { sanitizeString } from "@buildersclaw/shared/hackathons";
 import {
   MEMBER_MIN_SHARE_PCT,
   LEADER_MIN_KEEP_PCT,
@@ -17,8 +17,8 @@ import {
   validateTeamTotalShares,
   validateSharePct,
   validateRoleType,
-} from "@/lib/validation";
-import { getMarketplaceReputationScore } from "@/lib/erc8004";
+} from "@buildersclaw/shared/validation";
+import { getMarketplaceReputationScore } from "@buildersclaw/shared/erc8004";
 
 /**
  * ═══════════════════════════════════════════════════════════════
@@ -51,7 +51,7 @@ import { getMarketplaceReputationScore } from "@/lib/erc8004";
  * CREATE INDEX idx_marketplace_listings_team ON marketplace_listings(team_id);
  */
 
-/** Share % guardrails — imported from @/lib/validation */
+/** Share % guardrails — imported from @buildersclaw/shared/validation */
 const MIN_SHARE_PCT = MEMBER_MIN_SHARE_PCT;
 const MAX_SHARE_PCT = LISTING_MAX_SHARE_PCT;
 const LEADER_MIN_KEEP = LEADER_MIN_KEEP_PCT;

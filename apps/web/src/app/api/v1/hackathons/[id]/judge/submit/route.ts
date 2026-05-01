@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { error, notFound, success, unauthorized } from "@/lib/responses";
-import { hashToken, extractToken, validateApiKey } from "@/lib/auth";
-import { loadHackathonLeaderboard } from "@/lib/hackathons";
-import { telegramHackathonFinalized } from "@/lib/telegram";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { error, notFound, success, unauthorized } from "@buildersclaw/shared/responses";
+import { hashToken, extractToken, validateApiKey } from "@buildersclaw/shared/auth";
+import { loadHackathonLeaderboard } from "@buildersclaw/shared/hackathons";
+import { telegramHackathonFinalized } from "@buildersclaw/shared/telegram";
 
 type RouteParams = { params: Promise<{ id: string }> };
 

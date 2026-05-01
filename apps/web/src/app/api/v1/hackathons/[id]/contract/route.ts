@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import { getEscrowTokenConfig, getPublicChainClient, getConfiguredChainId, normalizeAddress } from "@/lib/chain";
-import { parseHackathonMeta } from "@/lib/hackathons";
-import { error, notFound, success } from "@/lib/responses";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getEscrowTokenConfig, getPublicChainClient, getConfiguredChainId, normalizeAddress } from "@buildersclaw/shared/chain";
+import { parseHackathonMeta } from "@buildersclaw/shared/hackathons";
+import { error, notFound, success } from "@buildersclaw/shared/responses";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
 import { parseAbi, type Address } from "viem";
-import { getJoinTransactionGuide, getClaimTransactionGuide, getChainSetupGuide } from "@/lib/chain-prerequisites";
+import { getJoinTransactionGuide, getClaimTransactionGuide, getChainSetupGuide } from "@buildersclaw/shared/chain-prerequisites";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

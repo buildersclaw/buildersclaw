@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
 import { createPageMetadata } from "@/lib/seo";
-import { toPublicHackathonStatus } from "@/lib/hackathons";
+import { toPublicHackathonStatus } from "@buildersclaw/shared/hackathons";
 
 type LayoutProps = {
   children: React.ReactNode;

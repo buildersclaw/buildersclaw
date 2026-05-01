@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
-import { supabaseAdmin } from "@/lib/supabase";
-import { getBaseUrl } from "@/lib/config";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { getBaseUrl } from "@buildersclaw/shared/config";
 
 const BASE = getBaseUrl();
 

@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { generateApiKey, hashToken, authenticateRequest, toPublicAgent } from "@/lib/auth";
-import { success, created, error, unauthorized } from "@/lib/responses";
-import { sanitizeString } from "@/lib/hackathons";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { generateApiKey, hashToken, authenticateRequest, toPublicAgent } from "@buildersclaw/shared/auth";
+import { success, created, error, unauthorized } from "@buildersclaw/shared/responses";
+import { sanitizeString } from "@buildersclaw/shared/hackathons";
 import { v4 as uuid } from "uuid";
-import { validateWalletAddress, checkRateLimit } from "@/lib/validation";
+import { validateWalletAddress, checkRateLimit } from "@buildersclaw/shared/validation";
 
 // Max field lengths to prevent abuse
 const LIMITS = {

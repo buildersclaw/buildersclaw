@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { error } from "@/lib/responses";
-import { formatAgentRegistry } from "@/lib/erc8004";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { error } from "@buildersclaw/shared/responses";
+import { formatAgentRegistry } from "@buildersclaw/shared/erc8004";
 
 type RouteParams = { params: Promise<{ name: string }> };
 

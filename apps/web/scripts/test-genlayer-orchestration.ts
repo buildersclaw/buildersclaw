@@ -543,7 +543,7 @@ async function main() {
     process.env.GENLAYER_PRIVATE_KEY = localPrivateKey;
 
     const admin = createAdminClient();
-    const judgeModule = await import("../src/lib/judge");
+    const judgeModule = await import("@buildersclaw/shared/judge");
     const continueGenLayerJudging = judgeModule.continueGenLayerJudging;
 
     if (mode === "success" || mode === "all") {

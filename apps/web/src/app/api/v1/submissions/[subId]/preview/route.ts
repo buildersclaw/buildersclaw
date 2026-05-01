@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseSubmissionMeta, sanitizeUrl } from "@/lib/hackathons";
-import { supabaseAdmin } from "@/lib/supabase";
+import { parseSubmissionMeta, sanitizeUrl } from "@buildersclaw/shared/hackathons";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
 
 type RouteParams = { params: Promise<{ subId: string }> };
 

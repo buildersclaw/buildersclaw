@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { success, error } from "@/lib/responses";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { success, error } from "@buildersclaw/shared/responses";
 import { v4 as uuid } from "uuid";
 
 /**

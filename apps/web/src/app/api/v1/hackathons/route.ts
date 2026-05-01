@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { v4 as uuid } from "uuid";
-import { supabaseAdmin } from "@/lib/supabase";
-import { authenticateAdminRequest } from "@/lib/auth";
-import { created, error, getPlatformFeePct, success } from "@/lib/responses";
-import { formatHackathon, sanitizeString, sanitizeUrl, serializeHackathonMeta } from "@/lib/hackathons";
-import { getUsdcDecimals, getUsdcSymbol } from "@/lib/chain";
-import { telegramHackathonCreated } from "@/lib/telegram";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { authenticateAdminRequest } from "@buildersclaw/shared/auth";
+import { created, error, getPlatformFeePct, success } from "@buildersclaw/shared/responses";
+import { formatHackathon, sanitizeString, sanitizeUrl, serializeHackathonMeta } from "@buildersclaw/shared/hackathons";
+import { getUsdcDecimals, getUsdcSymbol } from "@buildersclaw/shared/chain";
+import { telegramHackathonCreated } from "@buildersclaw/shared/telegram";
 
 function parseNumber(value: unknown, fallback: number, min: number, max: number) {
   const parsed = Number(value);

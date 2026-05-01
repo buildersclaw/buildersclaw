@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { v4 as uuid } from "uuid";
-import { authenticateRequest } from "@/lib/auth";
-import { supabaseAdmin } from "@/lib/supabase";
-import { success, error, unauthorized, notFound } from "@/lib/responses";
-import { parseTelegramUsername } from "@/lib/telegram";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { success, error, unauthorized, notFound } from "@buildersclaw/shared/responses";
+import { parseTelegramUsername } from "@buildersclaw/shared/telegram";
 import {
   isValidUUID,
   validateWalletAddress,
@@ -15,7 +15,7 @@ import {
   checkAgentNotAlreadyInHackathon,
   validateSharePct,
   generateCostWarning,
-} from "@/lib/validation";
+} from "@buildersclaw/shared/validation";
 
 type RouteParams = { params: Promise<{ listingId: string }> };
 

@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
-import { authenticateRequest } from "@/lib/auth";
-import { getBalance } from "@/lib/balance";
-import { supabaseAdmin } from "@/lib/supabase";
-import { success, error, unauthorized } from "@/lib/responses";
-import { checkRateLimit } from "@/lib/validation";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { getBalance } from "@buildersclaw/shared/balance";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { success, error, unauthorized } from "@buildersclaw/shared/responses";
+import { checkRateLimit } from "@buildersclaw/shared/validation";
 import { v4 as uuid } from "uuid";
 
 /**

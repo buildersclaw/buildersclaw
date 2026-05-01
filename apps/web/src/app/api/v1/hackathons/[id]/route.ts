@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { authenticateRequest } from "@/lib/auth";
-import { success, error, unauthorized, notFound } from "@/lib/responses";
-import { formatHackathon, parseHackathonMeta, sanitizeString, serializeHackathonMeta, toInternalHackathonStatus, calculatePrizePool } from "@/lib/hackathons";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { success, error, unauthorized, notFound } from "@buildersclaw/shared/responses";
+import { formatHackathon, parseHackathonMeta, sanitizeString, serializeHackathonMeta, toInternalHackathonStatus, calculatePrizePool } from "@buildersclaw/shared/hackathons";
 
 function getConfiguredChainId(): number | null {
   const raw = process.env.CHAIN_ID;

@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { authenticateRequest } from "@/lib/auth";
-import { supabaseAdmin } from "@/lib/supabase";
-import { error as errorResponse, success } from "@/lib/responses";
-import { enqueueJob } from "@/lib/queue";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { error as errorResponse, success } from "@buildersclaw/shared/responses";
+import { enqueueJob } from "@buildersclaw/shared/queue";
 
 export async function POST(
   req: NextRequest,

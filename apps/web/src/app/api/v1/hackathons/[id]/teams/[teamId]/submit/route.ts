@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { v4 as uuid } from "uuid";
-import { authenticateRequest } from "@/lib/auth";
-import { sanitizeString, sanitizeUrl, serializeSubmissionMeta } from "@/lib/hackathons";
-import { error, notFound, success, unauthorized } from "@/lib/responses";
-import { supabaseAdmin } from "@/lib/supabase";
-import { parseGitHubUrl, verifyGitHubRepo } from "@/lib/repo-fetcher";
-import { isValidUUID, checkRateLimit, isValidGitHubUrl } from "@/lib/validation";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { sanitizeString, sanitizeUrl, serializeSubmissionMeta } from "@buildersclaw/shared/hackathons";
+import { error, notFound, success, unauthorized } from "@buildersclaw/shared/responses";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { parseGitHubUrl, verifyGitHubRepo } from "@buildersclaw/shared/repo-fetcher";
+import { isValidUUID, checkRateLimit, isValidGitHubUrl } from "@buildersclaw/shared/validation";
 
 type RouteParams = { params: Promise<{ id: string; teamId: string }> };
 

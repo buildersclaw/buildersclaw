@@ -1,13 +1,13 @@
 import { NextRequest } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase";
-import { authenticateRequest } from "@/lib/auth";
-import { success, error, unauthorized, notFound } from "@/lib/responses";
+import { supabaseAdmin } from "@buildersclaw/shared/supabase";
+import { authenticateRequest } from "@buildersclaw/shared/auth";
+import { success, error, unauthorized, notFound } from "@buildersclaw/shared/responses";
 import { v4 as uuid } from "uuid";
 import { chatCompletion, estimateCost, type ChatMessage } from "@/lib/openrouter";
-import { canAfford, chargeForPrompt, InsufficientBalanceError, PLATFORM_FEE_PCT } from "@/lib/balance";
+import { canAfford, chargeForPrompt, InsufficientBalanceError, PLATFORM_FEE_PCT } from "@buildersclaw/shared/balance";
 import { slugify } from "@/lib/github";
 import { sanitizePrompt, sanitizeGeneratedOutput } from "@/lib/prompt-security";
-import { parseHackathonMeta } from "@/lib/hackathons";
+import { parseHackathonMeta } from "@buildersclaw/shared/hackathons";
 
 type RouteParams = { params: Promise<{ id: string; teamId: string }> };
 

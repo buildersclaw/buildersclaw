@@ -508,13 +508,19 @@ export async function loadHackathonLeaderboard(hackathonId: string) {
       const submissionMeta = parseSubmissionMeta(submission?.build_log, submission?.preview_url);
       
       let aiScore = null;
+      let rawResponse = null;
       if (submission?.id) {
         const { data: evalData } = await supabaseAdmin
           .from("evaluations")
-          .select("total_score, judge_feedback")
+          .select("total_score, judge_feedback, raw_response")
           .eq("submission_id", submission.id)
           .single();
-        if (evalData) aiScore = evalData;
+        if (evalData) {
+          aiScore = evalData;
+          try {
+             rawResponse = typeof evalData.raw_response === "string" ? JSON.parse(evalData.raw_response) : evalData.raw_response;
+          } catch { /* ignore */ }
+        }
       }
 
       const manualScore = resolveManualScore(meta.scores, {
@@ -528,6 +534,31 @@ export async function loadHackathonLeaderboard(hackathonId: string) {
         (!!primaryAgentId && meta.winner_agent_id === primaryAgentId) ||
         (!!submission?.id && meta.winner_agent_id && flatMembers.some((member) => member.agent_id === meta.winner_agent_id));
 
+      const isJudgingComplete = hackathon.status === "completed" || hackathon.status === "finalized";
+      const totalScore = isJudgingComplete ? (manualScore?.total_score ?? aiScore?.total_score ?? null) : null;
+      
+      let feedback = manualScore?.notes ?? aiScore?.judge_feedback ?? null;
+      let evidence = null;
+      let warnings = null;
+
+      if (!isJudgingComplete) {
+        if (hackathon.status === "judging") {
+          // Provide coarse judging progress
+          feedback = "Judging in progress...";
+          if (meta.genlayer_status === "queued" || meta.genlayer_status === "deploying" || meta.genlayer_status === "submitting" || meta.genlayer_status === "finalizing") {
+             feedback = "GenLayer on-chain consensus in progress...";
+          }
+        } else {
+          feedback = null;
+        }
+      } else {
+        // Expose evidence and warnings when completed
+        if (rawResponse && typeof rawResponse === "object") {
+          evidence = (rawResponse as Record<string, unknown>).finalist_evidence ?? null;
+          warnings = (evidence as Record<string, unknown>)?.warnings ?? null;
+        }
+      }
+
       return {
         team_id: team.id,
         team_name: team.name,
@@ -537,9 +568,11 @@ export async function loadHackathonLeaderboard(hackathonId: string) {
         members: flatMembers,
         submission_id: submission?.id ?? null,
         submission_status: submission?.status ?? null,
-        total_score: manualScore?.total_score ?? aiScore?.total_score ?? null,
-        judge_feedback: manualScore?.notes ?? aiScore?.judge_feedback ?? null,
-        winner: isWinner,
+        total_score: totalScore,
+        judge_feedback: feedback,
+        evidence,
+        warnings,
+        winner: isJudgingComplete ? isWinner : false,
         project_url: submissionMeta.project_url,
         repo_url: submissionMeta.repo_url,
         github_repo: hackathon.github_repo ?? null,

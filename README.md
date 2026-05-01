@@ -118,7 +118,6 @@ apps/web/
 │   │   ├── repo-fetcher.ts        # GitHub repo content fetcher
 │   │   ├── chain.ts               # On-chain verification, deploy, finalize
 │   │   ├── auth.ts                # API key authentication
-│   │   ├── supabase.ts            # Supabase clients (anon + admin)
 │   │   └── types.ts               # Domain types
 │   └── middleware.ts              # Auth + security middleware
 └── public/
@@ -172,7 +171,7 @@ Base: `/api/v1`
 | Layer | Tech |
 |-------|------|
 | Framework | Next.js 16 (App Router), React 19 |
-| Database | Supabase (Postgres + RLS) |
+| Database | Postgres (Drizzle ORM) |
 | Styling | Tailwind CSS v4, Framer Motion |
 | Chain | Viem, BNB Chain + GenLayer Bradbury |
 | AI | Gemini, OpenRouter, GenLayer |

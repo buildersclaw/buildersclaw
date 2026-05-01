@@ -8,7 +8,9 @@
  * This module handles the DB layer and Telegram bridging logic.
  */
 
-import { supabaseAdmin } from "./supabase";
+import { and, asc, desc, eq, gt, lt } from "drizzle-orm";
+import { getDb } from "./db";
+import { teamChat, type TeamChatRow } from "./db/schema";
 
 export interface ChatMessage {
   id: string;
@@ -22,6 +24,22 @@ export interface ChatMessage {
   metadata: Record<string, unknown> | null;
   telegram_message_id: number | null;
   created_at: string;
+}
+
+function toChatMessage(row: TeamChatRow): ChatMessage {
+  return {
+    id: row.id,
+    team_id: row.teamId,
+    hackathon_id: row.hackathonId,
+    sender_type: row.senderType,
+    sender_id: row.senderId,
+    sender_name: row.senderName,
+    message_type: row.messageType,
+    content: row.content,
+    metadata: row.metadata,
+    telegram_message_id: row.telegramMessageId,
+    created_at: row.createdAt,
+  };
 }
 
 /**
@@ -38,27 +56,26 @@ export async function postChatMessage(opts: {
   content: string;
   metadata?: Record<string, unknown>;
 }): Promise<ChatMessage | null> {
-  const { data, error } = await supabaseAdmin
-    .from("team_chat")
-    .insert({
-      team_id: opts.teamId,
-      hackathon_id: opts.hackathonId,
-      sender_type: opts.senderType,
-      sender_id: opts.senderId,
-      sender_name: opts.senderName,
-      message_type: opts.messageType,
-      content: opts.content,
-      metadata: opts.metadata || null,
-    })
-    .select("*")
-    .single();
+  try {
+    const [data] = await getDb()
+      .insert(teamChat)
+      .values({
+        teamId: opts.teamId,
+        hackathonId: opts.hackathonId,
+        senderType: opts.senderType,
+        senderId: opts.senderId,
+        senderName: opts.senderName,
+        messageType: opts.messageType,
+        content: opts.content,
+        metadata: opts.metadata || null,
+      })
+      .returning();
 
-  if (error) {
-    console.error("[CHAT] Insert failed:", error.message);
+    return data ? toChatMessage(data) : null;
+  } catch (error) {
+    console.error("[CHAT] Insert failed:", error instanceof Error ? error.message : String(error));
     return null;
   }
-
-  return data as ChatMessage;
 }
 
 /**
@@ -69,26 +86,19 @@ export async function getChatMessages(opts: {
   limit?: number;
   before?: string; // ISO timestamp for cursor pagination
 }): Promise<ChatMessage[]> {
-  let query = supabaseAdmin
-    .from("team_chat")
-    .select("*")
-    .eq("team_id", opts.teamId)
-    .order("created_at", { ascending: false })
-    .limit(opts.limit || 50);
+  try {
+    const rows = await getDb()
+      .select()
+      .from(teamChat)
+      .where(opts.before ? and(eq(teamChat.teamId, opts.teamId), lt(teamChat.createdAt, opts.before)) : eq(teamChat.teamId, opts.teamId))
+      .orderBy(desc(teamChat.createdAt))
+      .limit(opts.limit || 50);
 
-  if (opts.before) {
-    query = query.lt("created_at", opts.before);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("[CHAT] Fetch failed:", error.message);
+    return rows.map(toChatMessage).reverse();
+  } catch (error) {
+    console.error("[CHAT] Fetch failed:", error instanceof Error ? error.message : String(error));
     return [];
   }
-
-  // Return in chronological order
-  return (data as ChatMessage[]).reverse();
 }
 
 /**
@@ -98,18 +108,17 @@ export async function getChatMessagesSince(opts: {
   teamId: string;
   since: string; // ISO timestamp
 }): Promise<ChatMessage[]> {
-  const { data, error } = await supabaseAdmin
-    .from("team_chat")
-    .select("*")
-    .eq("team_id", opts.teamId)
-    .gt("created_at", opts.since)
-    .order("created_at", { ascending: true })
-    .limit(100);
+  try {
+    const rows = await getDb()
+      .select()
+      .from(teamChat)
+      .where(and(eq(teamChat.teamId, opts.teamId), gt(teamChat.createdAt, opts.since)))
+      .orderBy(asc(teamChat.createdAt))
+      .limit(100);
 
-  if (error) {
-    console.error("[CHAT] Poll failed:", error.message);
+    return rows.map(toChatMessage);
+  } catch (error) {
+    console.error("[CHAT] Poll failed:", error instanceof Error ? error.message : String(error));
     return [];
   }
-
-  return data as ChatMessage[];
 }

@@ -8,8 +8,9 @@
  * Transactions logged in `balance_transactions` for full audit trail.
  */
 
-import { supabaseAdmin } from "./supabase";
-import { v4 as uuid } from "uuid";
+import { and, desc, eq, gte } from "drizzle-orm";
+import { getDb } from "./db";
+import { agentBalances, balanceTransactions, type AgentBalanceRow, type BalanceTransactionRow } from "./db/schema";
 
 /** Platform fee taken from each prompt (5%) */
 export const PLATFORM_FEE_PCT = 0.05;
@@ -36,32 +37,47 @@ export interface BalanceTransaction {
   created_at: string;
 }
 
+function toAgentBalance(row: AgentBalanceRow): AgentBalance {
+  return {
+    agent_id: row.agentId,
+    balance_usd: row.balanceUsd,
+    total_deposited_usd: row.totalDepositedUsd,
+    total_spent_usd: row.totalSpentUsd,
+    total_fees_usd: row.totalFeesUsd,
+    updated_at: row.updatedAt,
+  };
+}
+
+function toBalanceTransaction(row: BalanceTransactionRow): BalanceTransaction {
+  return {
+    id: row.id,
+    agent_id: row.agentId,
+    type: row.type,
+    amount_usd: row.amountUsd,
+    balance_after: row.balanceAfter,
+    reference_id: row.referenceId,
+    metadata: row.metadata,
+    created_at: row.createdAt,
+  };
+}
+
 // ─── Balance Operations ───
 
 /**
  * Get or create an agent's balance record.
  */
 export async function getBalance(agentId: string): Promise<AgentBalance> {
-  const { data: existing } = await supabaseAdmin
-    .from("agent_balances")
-    .select("*")
-    .eq("agent_id", agentId)
-    .single();
+  const [balance] = await getDb()
+    .insert(agentBalances)
+    .values({ agentId })
+    .onConflictDoNothing()
+    .returning();
 
-  if (existing) return existing as AgentBalance;
+  if (balance) return toAgentBalance(balance);
 
-  // Create new balance record
-  const newBalance: AgentBalance = {
-    agent_id: agentId,
-    balance_usd: 0,
-    total_deposited_usd: 0,
-    total_spent_usd: 0,
-    total_fees_usd: 0,
-    updated_at: new Date().toISOString(),
-  };
-
-  await supabaseAdmin.from("agent_balances").insert(newBalance);
-  return newBalance;
+  const [existing] = await getDb().select().from(agentBalances).where(eq(agentBalances.agentId, agentId)).limit(1);
+  if (!existing) throw new Error("Failed to create balance record");
+  return toAgentBalance(existing);
 }
 
 /**
@@ -81,90 +97,82 @@ export async function creditBalance(options: {
   // ── Dedup: Atomically insert tx record FIRST to prevent race conditions ──
   // If two identical tx_hash requests arrive simultaneously, only one INSERT succeeds.
   if (referenceId) {
-    const txId = uuid();
-    const { error: insertErr } = await supabaseAdmin
-      .from("balance_transactions")
-      .insert({
-        id: txId,
-        agent_id: agentId,
-        type: "deposit",
-        amount_usd: amountUsd,
-        balance_after: 0, // Placeholder — updated below
-        reference_id: referenceId,
-        metadata: metadata || null,
-        created_at: new Date().toISOString(),
-      });
+    return getDb().transaction(async (tx) => {
+      const [insertedTx] = await tx
+        .insert(balanceTransactions)
+        .values({
+          agentId,
+          type: "deposit",
+          amountUsd,
+          balanceAfter: 0,
+          referenceId,
+          metadata: metadata || null,
+        })
+        .onConflictDoNothing()
+        .returning();
 
-    // If insert fails due to unique constraint on reference_id, it's a duplicate
-    if (insertErr) {
-      // Check if it's actually a duplicate (reference_id conflict)
-      const { data: existing } = await supabaseAdmin
-        .from("balance_transactions")
-        .select("id")
-        .eq("reference_id", referenceId)
-        .eq("type", "deposit")
-        .limit(1);
-
-      if (existing && existing.length > 0) {
-        throw new DuplicateDepositError(
-          `Deposit already credited for tx_hash: ${referenceId}`
-        );
+      if (!insertedTx) {
+        const [existing] = await tx
+          .select({ id: balanceTransactions.id })
+          .from(balanceTransactions)
+          .where(and(eq(balanceTransactions.referenceId, referenceId), eq(balanceTransactions.type, "deposit")))
+          .limit(1);
+        if (existing) throw new DuplicateDepositError(`Deposit already credited for tx_hash: ${referenceId}`);
+        throw new Error("Failed to record deposit transaction");
       }
-      // If not a duplicate, it's some other error
-      throw new Error(`Failed to record deposit transaction: ${insertErr.message}`);
-    }
 
-    // Transaction record claimed — now safe to update balance
-    const balance = await getBalance(agentId);
-    const newBalance = balance.balance_usd + amountUsd;
+      const [existingBalance] = await tx
+        .insert(agentBalances)
+        .values({ agentId })
+        .onConflictDoNothing()
+        .returning();
+      const balanceRow = existingBalance ?? (await tx.select().from(agentBalances).where(eq(agentBalances.agentId, agentId)).limit(1))[0];
+      if (!balanceRow) throw new Error("Failed to load balance record");
 
-    await supabaseAdmin
-      .from("agent_balances")
-      .upsert({
-        agent_id: agentId,
-        balance_usd: newBalance,
-        total_deposited_usd: balance.total_deposited_usd + amountUsd,
-        total_spent_usd: balance.total_spent_usd,
-        total_fees_usd: balance.total_fees_usd,
-        updated_at: new Date().toISOString(),
-      });
+      const newBalance = balanceRow.balanceUsd + amountUsd;
+      const [updatedBalance] = await tx
+        .update(agentBalances)
+        .set({
+          balanceUsd: newBalance,
+          totalDepositedUsd: balanceRow.totalDepositedUsd + amountUsd,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(agentBalances.agentId, agentId))
+        .returning();
 
-    // Update the placeholder balance_after
-    await supabaseAdmin
-      .from("balance_transactions")
-      .update({ balance_after: newBalance })
-      .eq("id", txId);
-
-    return { ...balance, balance_usd: newBalance, total_deposited_usd: balance.total_deposited_usd + amountUsd };
+      await tx.update(balanceTransactions).set({ balanceAfter: newBalance }).where(eq(balanceTransactions.id, insertedTx.id));
+      return toAgentBalance(updatedBalance);
+    });
   }
 
   // No referenceId — direct credit (admin/test only)
-  const balance = await getBalance(agentId);
-  const newBalance = balance.balance_usd + amountUsd;
+  return getDb().transaction(async (tx) => {
+    const [created] = await tx.insert(agentBalances).values({ agentId }).onConflictDoNothing().returning();
+    const balance = created ?? (await tx.select().from(agentBalances).where(eq(agentBalances.agentId, agentId)).limit(1))[0];
+    if (!balance) throw new Error("Failed to load balance record");
 
-  await supabaseAdmin
-    .from("agent_balances")
-    .upsert({
-      agent_id: agentId,
-      balance_usd: newBalance,
-      total_deposited_usd: balance.total_deposited_usd + amountUsd,
-      total_spent_usd: balance.total_spent_usd,
-      total_fees_usd: balance.total_fees_usd,
-      updated_at: new Date().toISOString(),
+    const newBalance = balance.balanceUsd + amountUsd;
+    const [updatedBalance] = await tx
+      .update(agentBalances)
+      .set({
+        balanceUsd: newBalance,
+        totalDepositedUsd: balance.totalDepositedUsd + amountUsd,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(agentBalances.agentId, agentId))
+      .returning();
+
+    await tx.insert(balanceTransactions).values({
+      agentId,
+      type: "deposit",
+      amountUsd,
+      balanceAfter: newBalance,
+      referenceId: null,
+      metadata: metadata || null,
     });
 
-  await supabaseAdmin.from("balance_transactions").insert({
-    id: uuid(),
-    agent_id: agentId,
-    type: "deposit",
-    amount_usd: amountUsd,
-    balance_after: newBalance,
-    reference_id: null,
-    metadata: metadata || null,
-    created_at: new Date().toISOString(),
+    return toAgentBalance(updatedBalance);
   });
-
-  return { ...balance, balance_usd: newBalance, total_deposited_usd: balance.total_deposited_usd + amountUsd };
 }
 
 /**
@@ -206,20 +214,18 @@ export async function chargeForPrompt(options: {
 
   // Step 2: Conditional update — only succeeds if balance still >= totalCharge
   // This prevents double-spend from concurrent requests
-  const { data: updated, error: updateErr } = await supabaseAdmin
-    .from("agent_balances")
-    .update({
-      balance_usd: newBalance,
-      total_spent_usd: balance.total_spent_usd + modelCostUsd,
-      total_fees_usd: balance.total_fees_usd + fee,
-      updated_at: new Date().toISOString(),
+  const [updated] = await getDb()
+    .update(agentBalances)
+    .set({
+      balanceUsd: newBalance,
+      totalSpentUsd: balance.total_spent_usd + modelCostUsd,
+      totalFeesUsd: balance.total_fees_usd + fee,
+      updatedAt: new Date().toISOString(),
     })
-    .eq("agent_id", agentId)
-    .gte("balance_usd", totalCharge)
-    .select("balance_usd")
-    .single();
+    .where(and(eq(agentBalances.agentId, agentId), gte(agentBalances.balanceUsd, totalCharge)))
+    .returning({ balanceUsd: agentBalances.balanceUsd });
 
-  if (updateErr || !updated) {
+  if (!updated) {
     // Another request drained the balance between check and update
     const freshBalance = await getBalance(agentId);
     throw new InsufficientBalanceError(
@@ -229,28 +235,24 @@ export async function chargeForPrompt(options: {
   }
 
   // Log prompt charge
-  await supabaseAdmin.from("balance_transactions").insert({
-    id: uuid(),
-    agent_id: agentId,
-    type: "prompt_charge",
-    amount_usd: -modelCostUsd,
-    balance_after: newBalance + fee, // before fee
-    reference_id: referenceId || null,
-    metadata: { ...metadata, fee_usd: fee },
-    created_at: new Date().toISOString(),
-  });
-
-  // Log fee separately for accounting
-  await supabaseAdmin.from("balance_transactions").insert({
-    id: uuid(),
-    agent_id: agentId,
-    type: "fee",
-    amount_usd: -fee,
-    balance_after: newBalance,
-    reference_id: referenceId || null,
-    metadata: { fee_pct: PLATFORM_FEE_PCT, model_cost_usd: modelCostUsd },
-    created_at: new Date().toISOString(),
-  });
+  await getDb().insert(balanceTransactions).values([
+    {
+      agentId,
+      type: "prompt_charge",
+      amountUsd: -modelCostUsd,
+      balanceAfter: newBalance + fee,
+      referenceId: referenceId || null,
+      metadata: { ...metadata, fee_usd: fee },
+    },
+    {
+      agentId,
+      type: "fee",
+      amountUsd: -fee,
+      balanceAfter: newBalance,
+      referenceId: referenceId || null,
+      metadata: { fee_pct: PLATFORM_FEE_PCT, model_cost_usd: modelCostUsd },
+    },
+  ]);
 
   return {
     model_cost: modelCostUsd,
@@ -285,14 +287,14 @@ export async function canAfford(agentId: string, estimatedCostUsd: number): Prom
  * Get transaction history for an agent.
  */
 export async function getTransactions(agentId: string, limit = 50): Promise<BalanceTransaction[]> {
-  const { data } = await supabaseAdmin
-    .from("balance_transactions")
-    .select("*")
-    .eq("agent_id", agentId)
-    .order("created_at", { ascending: false })
+  const rows = await getDb()
+    .select()
+    .from(balanceTransactions)
+    .where(eq(balanceTransactions.agentId, agentId))
+    .orderBy(desc(balanceTransactions.createdAt))
     .limit(limit);
 
-  return (data || []) as BalanceTransaction[];
+  return rows.map(toBalanceTransaction);
 }
 
 // ─── Errors ───

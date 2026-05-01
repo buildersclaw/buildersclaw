@@ -31,7 +31,6 @@
     "@buildersclaw/shared": "workspace:*",
     "@google/genai": "^1.46.0",
     "@privy-io/react-auth": "^3.18.0",
-    "@supabase/supabase-js": "^2.99.3",
     "@types/uuid": "^10.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

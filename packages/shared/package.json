@@ -9,7 +9,6 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.81.0",
     "@google/genai": "^1.46.0",
-    "@supabase/supabase-js": "^2.99.3",
     "drizzle-orm": "^0.45.2",
     "genlayer-js": "^0.27.9",
     "openai": "^6.32.0",

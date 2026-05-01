@@ -1,41 +1,53 @@
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { enqueueJob } from "./queue";
-import { supabaseAdmin } from "./supabase";
+import { getDb } from "./db";
+import { judgingRuns, type JudgingRunRow } from "./db/schema";
+
+function toJudgingRun(row: JudgingRunRow) {
+  return {
+    id: row.id,
+    hackathon_id: row.hackathonId,
+    job_id: row.jobId,
+    status: row.status,
+    started_at: row.startedAt,
+    completed_at: row.completedAt,
+    last_error: row.lastError,
+    metadata: row.metadata,
+    created_at: row.createdAt,
+    updated_at: row.updatedAt,
+  };
+}
+
+const ACTIVE_STATUSES = ["queued", "running", "waiting_genlayer"] as const;
 
 export async function createOrReuseJudgingRun(hackathonId: string) {
-  const { data: existing, error: existingError } = await supabaseAdmin
-    .from("judging_runs")
-    .select("*")
-    .eq("hackathon_id", hackathonId)
-    .in("status", ["queued", "running", "waiting_genlayer"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [existing] = await getDb()
+    .select()
+    .from(judgingRuns)
+    .where(and(eq(judgingRuns.hackathonId, hackathonId), inArray(judgingRuns.status, ACTIVE_STATUSES)))
+    .orderBy(desc(judgingRuns.createdAt))
+    .limit(1);
 
-  if (existingError) throw new Error(`Failed to check judging run: ${existingError.message}`);
-  if (existing) return { run: existing, created: false };
+  if (existing) return { run: toJudgingRun(existing), created: false };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let insertedRun: any = null;
+  let insertedRun: JudgingRunRow | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
-    const { data, error } = await supabaseAdmin
-      .from("judging_runs")
-      .insert({ hackathon_id: hackathonId, status: "queued" })
-      .select("*")
-      .single();
+    const [data] = await getDb()
+      .insert(judgingRuns)
+      .values({ hackathonId, status: "queued" })
+      .onConflictDoNothing()
+      .returning();
 
-    if (!error) { insertedRun = data; break; }
-    if (error.code !== "23505") throw new Error(`Failed to create judging run: ${error.message}`);
+    if (data) { insertedRun = data; break; }
 
     // Concurrent insert won — fetch the row they created.
-    const { data: race } = await supabaseAdmin
-      .from("judging_runs")
-      .select("*")
-      .eq("hackathon_id", hackathonId)
-      .in("status", ["queued", "running", "waiting_genlayer"])
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (race) return { run: race, created: false };
+    const [race] = await getDb()
+      .select()
+      .from(judgingRuns)
+      .where(and(eq(judgingRuns.hackathonId, hackathonId), inArray(judgingRuns.status, ACTIVE_STATUSES)))
+      .orderBy(desc(judgingRuns.createdAt))
+      .limit(1);
+    if (race) return { run: toJudgingRun(race), created: false };
   }
   if (!insertedRun) throw new Error("Failed to create judging run after retries");
 
@@ -45,8 +57,12 @@ export async function createOrReuseJudgingRun(hackathonId: string) {
     maxAttempts: 3,
   });
 
-  await supabaseAdmin.from("judging_runs").update({ job_id: job.id }).eq("id", insertedRun.id);
-  return { run: { ...insertedRun, job_id: job.id }, created: true };
+  const [updatedRun] = await getDb()
+    .update(judgingRuns)
+    .set({ jobId: job.id })
+    .where(eq(judgingRuns.id, insertedRun.id))
+    .returning();
+  return { run: toJudgingRun(updatedRun), created: true };
 }
 
 export async function updateJudgingRun(
@@ -57,16 +73,16 @@ export async function updateJudgingRun(
   if (!runId) return;
 
   const now = new Date().toISOString();
-  const update: Record<string, unknown> = {
+  const update: Partial<typeof judgingRuns.$inferInsert> = {
     status,
-    updated_at: now,
-    last_error: details?.error ?? null,
+    updatedAt: now,
+    lastError: details?.error ?? null,
   };
-  if (status === "running") update.started_at = now;
-  if (status === "completed" || status === "failed") update.completed_at = now;
+  if (status === "running") update.startedAt = now;
+  if (status === "completed" || status === "failed") update.completedAt = now;
   if (details?.metadata) update.metadata = details.metadata;
 
-  await supabaseAdmin.from("judging_runs").update(update).eq("id", runId);
+  await getDb().update(judgingRuns).set(update).where(eq(judgingRuns.id, runId));
 }
 
 export async function updateActiveJudgingRunForHackathon(
@@ -74,14 +90,12 @@ export async function updateActiveJudgingRunForHackathon(
   status: "running" | "waiting_genlayer" | "completed" | "failed",
   details?: { error?: string; metadata?: Record<string, unknown> },
 ) {
-  const { data } = await supabaseAdmin
-    .from("judging_runs")
-    .select("id")
-    .eq("hackathon_id", hackathonId)
-    .in("status", ["queued", "running", "waiting_genlayer"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const [data] = await getDb()
+    .select({ id: judgingRuns.id })
+    .from(judgingRuns)
+    .where(and(eq(judgingRuns.hackathonId, hackathonId), inArray(judgingRuns.status, ACTIVE_STATUSES)))
+    .orderBy(desc(judgingRuns.createdAt))
+    .limit(1);
 
   await updateJudgingRun(data?.id, status, details);
 }

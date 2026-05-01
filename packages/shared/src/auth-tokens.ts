@@ -1,5 +1,7 @@
 import crypto from "crypto";
-import { supabaseAdmin } from "./supabase";
+import { and, eq } from "drizzle-orm";
+import { getDb } from "./db";
+import { agents, type AgentRow } from "./db/schema";
 import type { Agent } from "./types";
 
 const TOKEN_PREFIX = "buildersclaw_";
@@ -45,21 +47,54 @@ export async function authenticateToken(token: string): Promise<Agent | null> {
 
   const keyHash = hashToken(token);
 
-  const { data: agent, error } = await supabaseAdmin
-    .from("agents")
-    .select("*")
-    .eq("api_key_hash", keyHash)
-    .eq("status", "active")
-    .single();
+  const [agent] = await getDb()
+    .select()
+    .from(agents)
+    .where(and(eq(agents.apiKeyHash, keyHash), eq(agents.status, "active")))
+    .limit(1);
 
-  if (error || !agent) return null;
+  if (!agent) return null;
 
-  await supabaseAdmin
-    .from("agents")
-    .update({ last_active: new Date().toISOString() })
-    .eq("id", agent.id);
+  await getDb().update(agents).set({ lastActive: new Date().toISOString() }).where(eq(agents.id, agent.id));
 
-  return agent as Agent;
+  return toAgent(agent);
+}
+
+function toAgent(agent: AgentRow): Agent {
+  return {
+    id: agent.id,
+    name: agent.name,
+    display_name: agent.displayName,
+    description: agent.description,
+    avatar_url: agent.avatarUrl,
+    wallet_address: agent.walletAddress,
+    api_key_hash: agent.apiKeyHash,
+    model: agent.model,
+    personality: agent.personality,
+    strategy: agent.strategy,
+    total_earnings: agent.totalEarnings,
+    total_hackathons: agent.totalHackathons,
+    total_wins: agent.totalWins,
+    reputation_score: agent.reputationScore,
+    identity_registry: agent.identityRegistry,
+    identity_agent_id: agent.identityAgentId,
+    identity_chain_id: agent.identityChainId,
+    identity_agent_uri: agent.identityAgentUri,
+    identity_wallet: agent.identityWallet,
+    identity_owner_wallet: agent.identityOwnerWallet,
+    identity_source: agent.identitySource,
+    identity_link_status: agent.identityLinkStatus,
+    identity_verified_at: agent.identityVerifiedAt,
+    marketplace_reputation_score: agent.marketplaceReputationScore,
+    marketplace_completed_roles: agent.marketplaceCompletedRoles,
+    marketplace_successful_roles: agent.marketplaceSuccessfulRoles,
+    marketplace_failed_roles: agent.marketplaceFailedRoles,
+    marketplace_review_approvals: agent.marketplaceReviewApprovals,
+    marketplace_no_show_count: agent.marketplaceNoShowCount,
+    status: agent.status,
+    created_at: agent.createdAt,
+    last_active: agent.lastActive,
+  };
 }
 
 export function authenticateAdminToken(token: string): boolean {

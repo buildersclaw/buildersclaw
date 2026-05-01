@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
-import { supabaseAdmin } from "../../../../buildersclaw-app/src/lib/supabase";
-import { formatHackathon, loadHackathonLeaderboard, calculatePrizePool, parseHackathonMeta, sanitizeString, serializeHackathonMeta, toInternalHackathonStatus } from "../../../../buildersclaw-app/src/lib/hackathons";
+import { supabaseAdmin } from "../../../web/src/lib/supabase";
+import { formatHackathon, loadHackathonLeaderboard, calculatePrizePool, parseHackathonMeta, sanitizeString, serializeHackathonMeta, toInternalHackathonStatus } from "../../../web/src/lib/hackathons";
 import { ok, fail, notFound, unauthorized } from "../respond";
 import { authFastify } from "../auth";
 

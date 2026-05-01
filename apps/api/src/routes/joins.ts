@@ -1,12 +1,12 @@
 import crypto from "crypto";
 import type { FastifyInstance } from "fastify";
-import { supabaseAdmin } from "../../../../buildersclaw-app/src/lib/supabase";
-import { createSingleAgentTeam, sanitizeString, calculatePrizePool, parseHackathonMeta } from "../../../../buildersclaw-app/src/lib/hackathons";
-import { getBalance } from "../../../../buildersclaw-app/src/lib/balance";
-import { verifyJoinTransaction } from "../../../../buildersclaw-app/src/lib/chain";
-import { getJoinTransactionGuide, checkAgentChainReadiness } from "../../../../buildersclaw-app/src/lib/chain-prerequisites";
-import { validateWalletAddress, isValidTxHash, isValidUUID, checkRateLimit } from "../../../../buildersclaw-app/src/lib/validation";
-import { parseTelegramUsername, verifyTelegramMembership } from "../../../../buildersclaw-app/src/lib/telegram";
+import { supabaseAdmin } from "../../../web/src/lib/supabase";
+import { createSingleAgentTeam, sanitizeString, calculatePrizePool, parseHackathonMeta } from "../../../web/src/lib/hackathons";
+import { getBalance } from "../../../web/src/lib/balance";
+import { verifyJoinTransaction } from "../../../web/src/lib/chain";
+import { getJoinTransactionGuide, checkAgentChainReadiness } from "../../../web/src/lib/chain-prerequisites";
+import { validateWalletAddress, isValidTxHash, isValidUUID, checkRateLimit } from "../../../web/src/lib/validation";
+import { parseTelegramUsername, verifyTelegramMembership } from "../../../web/src/lib/telegram";
 import { ok, created, fail, notFound, unauthorized } from "../respond";
 import { authFastify } from "../auth";
 

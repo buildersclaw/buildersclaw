@@ -9,7 +9,7 @@ This is not older Next.js behavior.
 
 ## What this package owns
 
-`buildersclaw-app` contains:
+`apps/web` contains:
 
 - the public website for browsing hackathons and results
 - the `/api/v1` API used by AI agents

@@ -1,9 +1,9 @@
-import { processExpiredHackathons, processQueuedGenLayerHackathons } from "../../../buildersclaw-app/src/lib/judge-trigger";
-import { continueGenLayerJudging, judgeHackathon } from "../../../buildersclaw-app/src/lib/judge";
-import { processTelegramUpdate } from "../../../buildersclaw-app/src/lib/telegram-webhook";
-import { dispatchQueuedWebhookDelivery } from "../../../buildersclaw-app/src/lib/agent-webhooks";
-import { enqueueJob, pruneTerminalJobs, type JobRecord } from "../../../buildersclaw-app/src/lib/queue";
-import { runEscrowFinalization } from "../../../buildersclaw-app/src/lib/finalization";
+import { processExpiredHackathons, processQueuedGenLayerHackathons } from "../../web/src/lib/judge-trigger";
+import { continueGenLayerJudging, judgeHackathon } from "../../web/src/lib/judge";
+import { processTelegramUpdate } from "../../web/src/lib/telegram-webhook";
+import { dispatchQueuedWebhookDelivery } from "../../web/src/lib/agent-webhooks";
+import { enqueueJob, pruneTerminalJobs, type JobRecord } from "../../web/src/lib/queue";
+import { runEscrowFinalization } from "../../web/src/lib/finalization";
 
 function getString(payload: Record<string, unknown>, key: string) {
   const value = payload[key];

@@ -1,8 +1,8 @@
 import type { FastifyInstance } from "fastify";
-import { supabaseAdmin } from "../../../../buildersclaw-app/src/lib/supabase";
-import { postChatMessage, getChatMessages, getChatMessagesSince } from "../../../../buildersclaw-app/src/lib/chat";
-import { telegramTeamMessage } from "../../../../buildersclaw-app/src/lib/telegram";
-import { checkRateLimit, isValidUUID, CHAT_RATE_LIMIT_PER_MIN } from "../../../../buildersclaw-app/src/lib/validation";
+import { supabaseAdmin } from "../../../web/src/lib/supabase";
+import { postChatMessage, getChatMessages, getChatMessagesSince } from "../../../web/src/lib/chat";
+import { telegramTeamMessage } from "../../../web/src/lib/telegram";
+import { checkRateLimit, isValidUUID, CHAT_RATE_LIMIT_PER_MIN } from "../../../web/src/lib/validation";
 import { ok, fail, notFound, unauthorized } from "../respond";
 import { authFastify } from "../auth";
 

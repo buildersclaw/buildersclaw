@@ -9,9 +9,9 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "types": ["node"],
-    "typeRoots": ["../../buildersclaw-app/node_modules/@types", "node_modules/@types"],
+    "typeRoots": ["../web/node_modules/@types", "node_modules/@types"],
     "paths": {
-      "@/*": ["../../buildersclaw-app/src/*"]
+      "@/*": ["../web/src/*"]
     },
     "baseUrl": "."
   },

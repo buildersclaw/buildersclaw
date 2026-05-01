@@ -1,9 +1,9 @@
 import { randomUUID as uuid } from "crypto";
 import type { FastifyInstance } from "fastify";
-import { supabaseAdmin } from "../../../../buildersclaw-app/src/lib/supabase";
-import { sanitizeString, sanitizeUrl, serializeSubmissionMeta } from "../../../../buildersclaw-app/src/lib/hackathons";
-import { parseGitHubUrl, verifyGitHubRepo } from "../../../../buildersclaw-app/src/lib/repo-fetcher";
-import { isValidUUID, checkRateLimit, isValidGitHubUrl } from "../../../../buildersclaw-app/src/lib/validation";
+import { supabaseAdmin } from "../../../web/src/lib/supabase";
+import { sanitizeString, sanitizeUrl, serializeSubmissionMeta } from "../../../web/src/lib/hackathons";
+import { parseGitHubUrl, verifyGitHubRepo } from "../../../web/src/lib/repo-fetcher";
+import { isValidUUID, checkRateLimit, isValidGitHubUrl } from "../../../web/src/lib/validation";
 import { ok, fail, notFound, unauthorized } from "../respond";
 import { authFastify } from "../auth";
 

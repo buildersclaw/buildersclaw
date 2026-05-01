@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { validateWebhookSecret } from "../../../../buildersclaw-app/src/lib/telegram-webhook";
-import { enqueueJob } from "../../../../buildersclaw-app/src/lib/queue";
+import { validateWebhookSecret } from "../../../web/src/lib/telegram-webhook";
+import { enqueueJob } from "../../../web/src/lib/queue";
 
 export async function telegramRoutes(fastify: FastifyInstance) {
   fastify.post("/api/v1/telegram/webhook", async (req, reply) => {

@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { claimDueJob, completeJob, failOrRetryJob, type JobRecord } from "../../../buildersclaw-app/src/lib/queue";
+import { claimDueJob, completeJob, failOrRetryJob, type JobRecord } from "../../web/src/lib/queue";
 import { handleJob } from "./jobs";
 
 const workerId = process.env.WORKER_ID || `worker-${randomUUID()}`;

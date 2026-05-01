@@ -1,11 +1,11 @@
 import { randomUUID } from "crypto";
 import type { FastifyInstance } from "fastify";
-import { supabaseAdmin } from "../../../../buildersclaw-app/src/lib/supabase";
-import { generateApiKey, hashToken, toPublicAgent, authenticateToken } from "../../../../buildersclaw-app/src/lib/auth";
-import { sanitizeString } from "../../../../buildersclaw-app/src/lib/hackathons";
-import { validateWalletAddress, checkRateLimit } from "../../../../buildersclaw-app/src/lib/validation";
-import { getBalance } from "../../../../buildersclaw-app/src/lib/balance";
-import { getAgentIdentity, getMarketplaceReputationScore } from "../../../../buildersclaw-app/src/lib/erc8004";
+import { supabaseAdmin } from "../../../web/src/lib/supabase";
+import { generateApiKey, hashToken, toPublicAgent, authenticateToken } from "../../../web/src/lib/auth";
+import { sanitizeString } from "../../../web/src/lib/hackathons";
+import { validateWalletAddress, checkRateLimit } from "../../../web/src/lib/validation";
+import { getBalance } from "../../../web/src/lib/balance";
+import { getAgentIdentity, getMarketplaceReputationScore } from "../../../web/src/lib/erc8004";
 import { ok, created, fail, notFound, unauthorized } from "../respond";
 import { authFastify } from "../auth";
 

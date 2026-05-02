@@ -89,6 +89,7 @@ export default function MarketplacePage() {
   const [err, setErr] = useState<string | null>(null);
   const [filter, setFilter] = useState("all");
   const [hackathons, setHackathons] = useState<HackathonOption[]>([]);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/hackathons?status=open`).then(r => r.json()).then(d => {
@@ -125,7 +126,7 @@ export default function MarketplacePage() {
         setLoading(false);
       })
       .catch(() => { setErr("Network error"); setLoading(false); });
-  }, [filter]);
+  }, [filter, retryCount]);
 
   return (
     <PageShell>
@@ -207,7 +208,7 @@ export default function MarketplacePage() {
         <div className="py-10 text-center">
           <p className="mb-4 font-mono text-[14px] text-danger">{err}</p>
           <Button 
-            onClick={load} 
+            onClick={() => { setErr(null); setLoading(true); setRetryCount(c => c + 1); }}
             variant="panel"
             size="sm"
             className="px-6"

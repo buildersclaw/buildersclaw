@@ -1,0 +1,14 @@
+{
+  "extends": "../web/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "../web",
+    "types": ["node"],
+    "typeRoots": ["../web/node_modules/@types"],
+    "paths": {
+      "@buildersclaw/shared/*": ["../../packages/shared/src/*"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "../../packages/shared/src/**/*.ts"],
+  "exclude": ["node_modules"]
+}

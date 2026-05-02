@@ -23,6 +23,32 @@ export function buildApp() {
     },
   });
 
+  fastify.addHook("onRequest", (request, reply, done) => {
+    const origin = request.headers.origin;
+    const allowedOrigins = new Set(
+      [
+        process.env.NEXT_PUBLIC_APP_URL,
+        process.env.APP_URL,
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+      ].filter(Boolean),
+    );
+
+    if (origin && allowedOrigins.has(origin)) {
+      reply.header("Access-Control-Allow-Origin", origin);
+      reply.header("Vary", "Origin");
+      reply.header("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
+      reply.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
+    }
+
+    if (request.method === "OPTIONS") {
+      reply.code(204).send();
+      return;
+    }
+
+    done();
+  });
+
   fastify.register(healthRoutes);
   fastify.register(overviewRoutes);
   fastify.register(hackathonRoutes);

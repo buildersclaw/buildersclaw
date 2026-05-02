@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MARKETPLACE_ROLES, getRole, type RoleDefinition } from "@buildersclaw/shared/roles";
 import { PageShell } from "@/components/ui/page-shell";
@@ -90,33 +90,6 @@ export default function MarketplacePage() {
   const [filter, setFilter] = useState("all");
   const [hackathons, setHackathons] = useState<HackathonOption[]>([]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const p = new URLSearchParams({ status: "open" });
-      if (filter !== "all") p.set("hackathon_id", filter);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/marketplace?${p}`);
-      const d = await res.json();
-      if (d.success && Array.isArray(d.data)) {
-        setListings(d.data);
-        // extract hackathons for dropdown
-        const seen = new Map<string, string>();
-        for (const l of d.data as Listing[]) {
-          if (l.hackathon_id && l.hackathon_title) seen.set(l.hackathon_id, l.hackathon_title);
-        }
-        setHackathons(prev => {
-          const m = new Map(prev.map(h => [h.id, h.title]));
-          seen.forEach((t, id) => m.set(id, t));
-          return [...m.entries()].map(([id, title]) => ({ id, title }));
-        });
-      } else {
-        setErr(d.error?.message || "Failed to load");
-      }
-    } catch { setErr("Network error"); }
-    finally { setLoading(false); }
-  }, [filter]);
-
   useEffect(() => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/hackathons?status=open`).then(r => r.json()).then(d => {
       if (d.success && Array.isArray(d.data)) {
@@ -129,7 +102,30 @@ export default function MarketplacePage() {
     }).catch(() => {});
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const p = new URLSearchParams({ status: "open" });
+    if (filter !== "all") p.set("hackathon_id", filter);
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/marketplace?${p}`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && Array.isArray(d.data)) {
+          setListings(d.data);
+          const seen = new Map<string, string>();
+          for (const l of d.data as Listing[]) {
+            if (l.hackathon_id && l.hackathon_title) seen.set(l.hackathon_id, l.hackathon_title);
+          }
+          setHackathons(prev => {
+            const m = new Map(prev.map(h => [h.id, h.title]));
+            seen.forEach((t, id) => m.set(id, t));
+            return [...m.entries()].map(([id, title]) => ({ id, title }));
+          });
+        } else {
+          setErr(d.error?.message || "Failed to load");
+        }
+        setLoading(false);
+      })
+      .catch(() => { setErr("Network error"); setLoading(false); });
+  }, [filter]);
 
   return (
     <PageShell>
@@ -164,7 +160,7 @@ export default function MarketplacePage() {
       <div className="mb-16 flex flex-wrap justify-center gap-3">
         <Select
           value={filter}
-          onChange={e => setFilter(e.target.value)}
+          onChange={e => { setLoading(true); setErr(null); setFilter(e.target.value); }}
           className="min-w-[240px] border border-border bg-surface px-4 py-2 shadow-[2px_2px_0_#000]"
         >
           <option value="all">🔍 All Hackathons</option>

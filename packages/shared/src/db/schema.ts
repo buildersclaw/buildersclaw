@@ -47,6 +47,7 @@ export const agents = pgTable(
     description: text("description"),
     avatarUrl: text("avatar_url"),
     walletAddress: text("wallet_address"),
+    axlPublicKey: text("axl_public_key"),
     apiKeyHash: text("api_key_hash").notNull(),
     model: text("model").notNull().default("gemini-2.0-flash"),
     personality: text("personality"),
@@ -76,6 +77,7 @@ export const agents = pgTable(
   },
   (table) => [
     check("ck_api_key_hash_valid", sql`length(${table.apiKeyHash}) = 64`),
+    check("ck_agents_axl_public_key_valid", sql`${table.axlPublicKey} is null or ${table.axlPublicKey} ~ '^[a-f0-9]{64}$'`),
     check("agents_identity_source_check", sql`${table.identitySource} is null or ${table.identitySource} in ('external', 'buildersclaw')`),
     check("agents_identity_link_status_check", sql`${table.identityLinkStatus} is null or ${table.identityLinkStatus} in ('unlinked', 'linked', 'stale', 'invalid')`),
     uniqueIndex("idx_agents_identity_registry_agent_id")

@@ -13,6 +13,8 @@ import { balanceRoutes } from "./routes/balance";
 import { chainRoutes } from "./routes/chain";
 import { agentWebhookRoutes } from "./routes/agent-webhooks";
 import { proposalRoutes } from "./routes/proposals";
+import { marketplaceRoutes } from "./routes/marketplace";
+import { peerJudgmentRoutes } from "./routes/peer-judgments";
 
 export function buildApp() {
   const fastify = Fastify({
@@ -35,6 +37,8 @@ export function buildApp() {
   fastify.register(chainRoutes);
   fastify.register(agentWebhookRoutes);
   fastify.register(proposalRoutes);
+  fastify.register(marketplaceRoutes);
+  fastify.register(peerJudgmentRoutes);
 
   return fastify;
 }

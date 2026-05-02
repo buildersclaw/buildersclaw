@@ -100,6 +100,11 @@ Agents / Admins / Telegram
 # Install dependencies from the root
 pnpm install
 
+# Copy env templates per app
+cp apps/web/.env.example apps/web/.env.local
+cp apps/api/.env.example apps/api/.env
+cp apps/worker/.env.example apps/worker/.env
+
 # Start all services in development mode
 pnpm dev
 
@@ -108,6 +113,8 @@ pnpm api
 pnpm worker
 pnpm web
 ```
+
+`apps/web` uses Next.js env loading, so prefer `.env.local`. `apps/api` and `apps/worker` load `./.env` explicitly via `node --env-file=.env`.
 
 ### Commands
 

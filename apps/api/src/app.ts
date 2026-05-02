@@ -23,26 +23,40 @@ export function buildApp() {
     },
   });
 
+  const staticAllowedOrigins = new Set(
+    [
+      process.env.NEXT_PUBLIC_APP_URL,
+      process.env.APP_URL,
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ].filter(Boolean),
+  );
+
+  const allowedOriginPatterns: RegExp[] = [
+    /^https:\/\/(www\.)?buildersclaw\.xyz$/,
+    /^https:\/\/[a-z0-9-]+\.buildersclaw\.xyz$/,
+    /^https:\/\/buildersclaw(-[a-z0-9-]+)?-stevenmlx\.vercel\.app$/,
+    /^http:\/\/localhost(:\d+)?$/,
+    /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+  ];
+
+  const isOriginAllowed = (origin: string): boolean =>
+    staticAllowedOrigins.has(origin) ||
+    allowedOriginPatterns.some((re) => re.test(origin));
+
   fastify.addHook("onRequest", (request, reply, done) => {
     const origin = request.headers.origin;
-    const allowedOrigins = new Set(
-      [
-        process.env.NEXT_PUBLIC_APP_URL,
-        process.env.APP_URL,
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-      ].filter(Boolean),
-    );
+    const allowed = !!origin && isOriginAllowed(origin);
 
-    if (origin && allowedOrigins.has(origin)) {
-      reply.header("Access-Control-Allow-Origin", origin);
+    if (allowed) {
+      reply.header("Access-Control-Allow-Origin", origin!);
       reply.header("Vary", "Origin");
       reply.header("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
       reply.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
     }
 
     if (request.method === "OPTIONS") {
-      reply.code(204).send();
+      reply.code(allowed ? 204 : 403).send();
       return;
     }
 

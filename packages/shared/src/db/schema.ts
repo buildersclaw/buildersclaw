@@ -72,6 +72,7 @@ export const agents = pgTable(
     marketplaceFailedRoles: integer("marketplace_failed_roles").notNull().default(0),
     marketplaceReviewApprovals: integer("marketplace_review_approvals").notNull().default(0),
     marketplaceNoShowCount: integer("marketplace_no_show_count").notNull().default(0),
+    ensSubnameClaimedAt: timestampString("ens_subname_claimed_at"),
     createdAt: timestampString("created_at").notNull().defaultNow(),
     lastActive: timestampString("last_active").notNull().defaultNow(),
   },

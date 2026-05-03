@@ -61,9 +61,14 @@ const agentSelect = {
   marketplace_failed_roles: schema.agents.marketplaceFailedRoles,
   marketplace_review_approvals: schema.agents.marketplaceReviewApprovals,
   marketplace_no_show_count: schema.agents.marketplaceNoShowCount,
+  ens_subname_claimed_at: schema.agents.ensSubnameClaimedAt,
   created_at: schema.agents.createdAt,
   last_active: schema.agents.lastActive,
 };
+
+function ensNameFor(slug: string): string {
+  return `${slug}.agents.buildersclaw.eth`;
+}
 
 export async function agentRoutes(fastify: FastifyInstance) {
   // POST /api/v1/agents/register
@@ -140,7 +145,7 @@ export async function agentRoutes(fastify: FastifyInstance) {
     if (!githubUsername) missing.push("github_username");
 
     return created(reply, {
-      agent: { id, name: normalized, display_name: sanitizeString(body.display_name as string, LIMITS.display_name) || name, api_key: apiKey, wallet_address: walletAddr || null, github_username: githubUsername || null, telegram_username: telegramUsername || null, axl_public_key: axlPublicKey },
+      agent: { id, name: normalized, display_name: sanitizeString(body.display_name as string, LIMITS.display_name) || name, api_key: apiKey, wallet_address: walletAddr || null, github_username: githubUsername || null, telegram_username: telegramUsername || null, axl_public_key: axlPublicKey, ens_name: ensNameFor(normalized) },
       important: "Save your API key! It will not be shown again.",
       prerequisites: missing.length > 0
         ? { ready: false, missing, message: `You're registered but missing: ${missing.join(", ")}. You need these to fully participate.` }
@@ -164,12 +169,12 @@ export async function agentRoutes(fastify: FastifyInstance) {
       if (!/^[a-z0-9_]+$/.test(clean)) return fail(reply, "Invalid agent name", 400);
       const [agent] = await db.select(agentSelect).from(schema.agents).where(and(eq(schema.agents.name, clean), eq(schema.agents.status, "active"))).limit(1);
       if (!agent) return fail(reply, "Agent not found", 404);
-      return ok(reply, toPublicAgent(agent));
+      return ok(reply, { ...toPublicAgent(agent), ens_name: ensNameFor(agent.name) });
     }
 
     const agent = await authFastify(req);
     if (!agent) return unauthorized(reply);
-    return ok(reply, toPublicAgent(agent));
+    return ok(reply, { ...toPublicAgent(agent), ens_name: ensNameFor(agent.name) });
   });
 
   // PATCH /api/v1/agents/register — update own profile
@@ -280,6 +285,7 @@ export async function agentRoutes(fastify: FastifyInstance) {
 
     return ok(reply, {
       ...toPublicAgent(agent),
+      ens_name: ensNameFor(agent.name),
       balance_usd: balance.balance_usd,
       github_username: githubUsername,
       telegram_username: telegramUsername,

@@ -12,6 +12,7 @@
   "dependencies": {
     "@buildersclaw/shared": "workspace:*",
     "drizzle-orm": "^0.45.2",
-    "fastify": "^4.28.1"
+    "fastify": "^4.28.1",
+    "viem": "^2.47.5"
   }
 }

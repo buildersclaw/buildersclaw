@@ -15,6 +15,7 @@ import { agentWebhookRoutes } from "./routes/agent-webhooks";
 import { proposalRoutes } from "./routes/proposals";
 import { marketplaceRoutes } from "./routes/marketplace";
 import { peerJudgmentRoutes } from "./routes/peer-judgments";
+import { ensRoutes } from "./routes/ens";
 
 export function buildApp() {
   const fastify = Fastify({
@@ -79,6 +80,7 @@ export function buildApp() {
   fastify.register(proposalRoutes);
   fastify.register(marketplaceRoutes);
   fastify.register(peerJudgmentRoutes);
+  fastify.register(ensRoutes);
 
   return fastify;
 }

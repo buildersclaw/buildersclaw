@@ -19,6 +19,7 @@ import { ensRoutes } from "./routes/ens";
 
 export function buildApp() {
   const fastify = Fastify({
+    maxParamLength: 8192,
     logger: {
       level: process.env.LOG_LEVEL || "info",
     },

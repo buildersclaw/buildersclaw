@@ -51,6 +51,13 @@ async function markEnsClaimed(agentId: string, fastify: FastifyInstance) {
 }
 
 export async function ensRoutes(fastify: FastifyInstance) {
+  fastify.get("/api/v1/ens/:sender/:data.json", async (req, reply) => {
+    const { sender, data } = req.params as { sender: string; data: string };
+    const callData = normalizeHex(data);
+    if (!isAddress(sender) || !callData) return fail(reply, "Invalid CCIP-Read request", 400);
+    return handleEnsLookup(fastify, reply, sender, callData);
+  });
+
   fastify.get("/api/v1/ens/:sender/:data", async (req, reply) => {
     const { sender, data } = req.params as { sender: string; data: string };
     const callData = normalizeHex(data);

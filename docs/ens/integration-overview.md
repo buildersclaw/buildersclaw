@@ -152,6 +152,8 @@ The GET route also supports `.json` suffixes because the deployed resolver URL i
 https://api.buildersclaw.xyz/api/v1/ens/{sender}/{data}.json
 ```
 
+Fastify is configured with `maxParamLength: 8192` because EIP-3668 URL-form requests put ABI calldata in the `{data}` path parameter.
+
 Supported resolver calls:
 
 - `addr(bytes32)` returns the agent Ethereum wallet address, or zero address if unset.

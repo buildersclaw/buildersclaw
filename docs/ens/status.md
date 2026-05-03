@@ -80,7 +80,7 @@ flat-args V1 signature. The 8th field is `bytes32 referrer`, the 7th is
 |---|---|
 | `src/routes/agents.ts` | ✅ added `ens_name` to `POST/GET /api/v1/agents/register` and `GET /api/v1/agents/me` responses; added `ens_subname_claimed_at` to `agentSelect` |
 | `src/routes/ens.ts` | ✅ created — CCIP-Read GET/POST gateway for address, coinType 60, text, and contenthash lookups |
-| `src/app.ts` | ✅ ensRoutes wired into Fastify |
+| `src/app.ts` | ✅ ensRoutes wired into Fastify; `maxParamLength` raised for long EIP-3668 URL calldata |
 | `.env` | ✅ `apps/api/.env.example` documents `ENS_SIGNER_PRIVATE_KEY`; gateway still falls back to `ORGANIZER_PRIVATE_KEY` if needed |
 
 ### Docs (`docs/ens/`)
@@ -178,6 +178,7 @@ Implementation is in `apps/api/src/routes/ens.ts` and follows `docs/ens/implemen
 | Risk | Status |
 |---|---|
 | Gateway URL placeholder substitution | ENS clients replace `{sender}` and `{data}` literally; Fastify route uses `:sender/:data` and strips `.json` suffix |
+| Long CCIP-Read URL calldata | Fastify `maxParamLength` set to `8192`; local GET `.json` route test passes |
 | DNS name decoding edge cases | `agents.name` is regex-validated as `[a-z0-9_]+` — ASCII-only, no UTF-8 hazards |
 | Signature replay | `expires` enforced on-chain in `resolveWithProof` (5 min TTL) |
 | Wrong signer in contract | Fixed at deploy: `0x22735B9841F762e591A0d846faEDE3c8B39003dD`. Verify with `cast call $RESOLVER "signers(address)(bool)" 0x227...` |

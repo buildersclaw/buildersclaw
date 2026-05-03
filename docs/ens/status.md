@@ -66,7 +66,7 @@ flat-args V1 signature. The 8th field is `bytes32 referrer`, the 7th is
 |---|---|
 | `packages/shared/src/db/schema.ts` | ✅ added `ensSubnameClaimedAt` column on `agents` |
 | `apps/web/drizzle/0003_curved_blackheart.sql` | ✅ generated with Drizzle Kit from the shared schema |
-| Migration applied to live DB | ❌ not yet run |
+| Migration applied to live DB | ✅ `pnpm --filter web db:migrate` completed successfully |
 
 ### Shared helpers (`packages/shared/`)
 
@@ -81,7 +81,7 @@ flat-args V1 signature. The 8th field is `bytes32 referrer`, the 7th is
 | `src/routes/agents.ts` | ✅ added `ens_name` to `POST/GET /api/v1/agents/register` and `GET /api/v1/agents/me` responses; added `ens_subname_claimed_at` to `agentSelect` |
 | `src/routes/ens.ts` | ✅ created — CCIP-Read GET/POST gateway for address, coinType 60, text, and contenthash lookups |
 | `src/app.ts` | ✅ ensRoutes wired into Fastify |
-| `.env` | ❌ `ENS_SIGNER_PRIVATE_KEY` not set (gateway falls back to `ORGANIZER_PRIVATE_KEY`, which is acceptable for the hackathon) |
+| `.env` | ✅ `apps/api/.env.example` documents `ENS_SIGNER_PRIVATE_KEY`; gateway still falls back to `ORGANIZER_PRIVATE_KEY` if needed |
 
 ### Docs (`docs/ens/`)
 
@@ -96,19 +96,20 @@ flat-args V1 signature. The 8th field is `bytes32 referrer`, the 7th is
 
 ## What's Left
 
-### 1. Apply the database migration
-
-```bash
-pnpm --filter web db:migrate
-```
-
-This uses `apps/web/drizzle.config.ts`, which points at the shared schema and `apps/web/drizzle` migration folder.
-
-### 2. Deploy the API
+### 1. Deploy the API
 
 The resolver contract was deployed pointing to `https://api.buildersclaw.xyz/api/v1/ens/{sender}/{data}.json`. Push the new code and redeploy whatever serves that domain.
 
-### 3. End-to-end verification
+Required API deployment env:
+
+```bash
+DATABASE_URL=...
+ENS_SIGNER_PRIVATE_KEY=...
+```
+
+`ENS_SIGNER_PRIVATE_KEY` must correspond to an address authorized on the deployed `OffchainResolver`. For the hackathon deployment, that signer is `0x22735B9841F762e591A0d846faEDE3c8B39003dD`.
+
+### 2. End-to-end verification
 
 ```bash
 RPC=https://ethereum-sepolia-rpc.publicnode.com
@@ -167,9 +168,8 @@ Implementation is in `apps/api/src/routes/ens.ts` and follows `docs/ens/implemen
 
 ## How to Pick This Up Cleanly
 
-1. **Run `pnpm --filter web db:migrate`** before deploying the API, because the gateway can update `ens_subname_claimed_at` on first successful resolution.
-2. **Don't redeploy the contract** unless you change the gateway URL or the signer set. The contract supports `setUrl(string)` and `addSigners/removeSigners(address[])` for live updates without redeploy.
-3. **Signer key** — the contract was deployed with signer = `0x22735B9841F762e591A0d846faEDE3c8B39003dD` (the same as `ORGANIZER_PRIVATE_KEY`). The gateway falls back to `ORGANIZER_PRIVATE_KEY` if `ENS_SIGNER_PRIVATE_KEY` isn't set, so no env change is required.
+1. **Don't redeploy the contract** unless you change the gateway URL or the signer set. The contract supports `setUrl(string)` and `addSigners/removeSigners(address[])` for live updates without redeploy.
+2. **Signer key** — the contract was deployed with signer = `0x22735B9841F762e591A0d846faEDE3c8B39003dD` (the same as `ORGANIZER_PRIVATE_KEY`). Prefer setting `ENS_SIGNER_PRIVATE_KEY` on the API deployment; the gateway falls back to `ORGANIZER_PRIVATE_KEY` if needed.
 
 ---
 

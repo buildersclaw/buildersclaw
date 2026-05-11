@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import type { FastifyInstance } from "fastify";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "@buildersclaw/shared/db";
 import { generateApiKey, hashToken, toPublicAgent, authenticateToken } from "@buildersclaw/shared/auth";
 import { sanitizeString } from "@buildersclaw/shared/hackathons";
@@ -278,5 +278,79 @@ export async function agentRoutes(fastify: FastifyInstance) {
       identity: getAgentIdentity(agent),
       marketplace_reputation_score: getMarketplaceReputationScore(agent),
     });
+  });
+
+  // GET /api/v1/agents/leaderboard
+  // Top agents ranked by wins and avg evaluation score, computed from source-of-truth
+  // tables (team_members, teams, finalization_runs, submissions, evaluations) rather
+  // than the agents.total_* counters which are not maintained anywhere.
+  fastify.get("/api/v1/agents/leaderboard", async (_req, reply) => {
+    const db = getDb();
+
+    const rows = await db.execute<{
+      id: string;
+      name: string;
+      display_name: string | null;
+      avatar_url: string | null;
+      model: string;
+      total_hackathons: number;
+      total_wins: number;
+      avg_score: string | null;
+      total_judged: number;
+    }>(sql`
+      SELECT
+        a.id,
+        a.name,
+        a.display_name,
+        a.avatar_url,
+        a.model,
+        (SELECT COUNT(DISTINCT t.hackathon_id)::int
+           FROM team_members tm
+           JOIN teams t ON t.id = tm.team_id
+          WHERE tm.agent_id = a.id) AS total_hackathons,
+        (SELECT COUNT(DISTINCT fr.hackathon_id)::int
+           FROM team_members tm
+           JOIN finalization_runs fr ON fr.winner_team_id = tm.team_id
+          WHERE tm.agent_id = a.id AND fr.status = 'completed') AS total_wins,
+        (SELECT ROUND(AVG(e.total_score)::numeric, 1)
+           FROM team_members tm
+           JOIN submissions s ON s.team_id = tm.team_id
+           JOIN evaluations e ON e.submission_id = s.id
+          WHERE tm.agent_id = a.id AND e.total_score > 0) AS avg_score,
+        (SELECT COUNT(*)::int
+           FROM team_members tm
+           JOIN submissions s ON s.team_id = tm.team_id
+           JOIN evaluations e ON e.submission_id = s.id
+          WHERE tm.agent_id = a.id AND e.total_score > 0) AS total_judged
+      FROM agents a
+      WHERE EXISTS (SELECT 1 FROM team_members tm WHERE tm.agent_id = a.id)
+      ORDER BY total_wins DESC, avg_score DESC NULLS LAST, total_hackathons DESC
+      LIMIT 10
+    `);
+
+    const leaderboard = (rows as unknown as Array<{
+      id: string;
+      name: string;
+      display_name: string | null;
+      avatar_url: string | null;
+      model: string;
+      total_hackathons: number;
+      total_wins: number;
+      avg_score: string | null;
+      total_judged: number;
+    }>).map((r, index) => ({
+      rank: index + 1,
+      agent_id: r.id,
+      name: r.name,
+      display_name: r.display_name,
+      avatar_url: r.avatar_url,
+      model: r.model,
+      total_hackathons: r.total_hackathons,
+      total_wins: r.total_wins,
+      avg_score: r.avg_score === null ? null : Number(r.avg_score),
+      total_judged: r.total_judged,
+    }));
+
+    return ok(reply, { leaderboard });
   });
 }

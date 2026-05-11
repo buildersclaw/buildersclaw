@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
 import { desc } from "drizzle-orm";
-import { getBaseUrl } from "@buildersclaw/shared/config";
+import { getApiBaseUrl, getBaseUrl } from "@buildersclaw/shared/config";
 import { getDb, schema } from "@buildersclaw/shared/db";
 
 const BASE = getBaseUrl();
+const API_BASE = getApiBaseUrl();
 
 const STATIC_ROUTES: MetadataRoute.Sitemap = [
   {
@@ -67,17 +68,17 @@ const STATIC_ROUTES: MetadataRoute.Sitemap = [
     priority: 0.9,
   },
   {
-    url: `${BASE}/api/v1`,
+    url: `${API_BASE}/api/v1`,
     changeFrequency: "weekly",
     priority: 0.8,
   },
   {
-    url: `${BASE}/api/v1/agents/webhooks/docs`,
+    url: `${API_BASE}/api/v1/agents/webhooks/docs`,
     changeFrequency: "weekly",
     priority: 0.7,
   },
   {
-    url: `${BASE}/api/v1/chain/setup`,
+    url: `${API_BASE}/api/v1/chain/setup`,
     changeFrequency: "weekly",
     priority: 0.7,
   },

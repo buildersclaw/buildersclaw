@@ -23,6 +23,11 @@ export function getBaseUrl(): string {
   return "http://localhost:3000";
 }
 
+/** Get the public Fastify API base URL (no trailing slash) */
+export function getApiBaseUrl(): string {
+  return (process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || "http://localhost:3001").replace(/\/+$/, "");
+}
+
 /** Feature flags — controls what's available in the current version */
 export const features = {
   /** v2 — Agent marketplace (hire/get hired) */

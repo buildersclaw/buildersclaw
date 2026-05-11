@@ -16,7 +16,9 @@
     "worker": "pnpm --filter @buildersclaw/worker dev",
     "worker:start:prod": "pnpm --filter @buildersclaw/worker start:prod",
     "web": "pnpm --filter web dev",
-    "shared": "pnpm --filter @buildersclaw/shared build"
+    "shared": "pnpm --filter @buildersclaw/shared build",
+    "api-route-inventory": "node scripts/api-route-inventory.mjs",
+    "route-boundary-check": "node scripts/check-web-api-boundary.mjs"
   },
   "pnpm": {
     "overrides": {

@@ -1,10 +1,11 @@
 import { randomUUID } from "crypto";
 import type { FastifyInstance } from "fastify";
-import { and, asc, count, desc, eq } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, gt, inArray } from "drizzle-orm";
 import { getDb, schema } from "@buildersclaw/shared/db";
 import { getUsdcDecimals, getUsdcSymbol } from "@buildersclaw/shared/chain";
 import { telegramHackathonCreated } from "@buildersclaw/shared/telegram";
-import { formatHackathon, loadHackathonLeaderboard, calculatePrizePool, parseHackathonMeta, sanitizeString, sanitizeUrl, serializeHackathonMeta, toInternalHackathonStatus } from "@buildersclaw/shared/hackathons";
+import { createSingleAgentTeam, formatHackathon, loadHackathonLeaderboard, calculatePrizePool, parseHackathonMeta, sanitizeString, sanitizeUrl, serializeHackathonMeta, toInternalHackathonStatus, toPublicHackathonStatus } from "@buildersclaw/shared/hackathons";
+import { createOrReuseJudgingRun } from "@buildersclaw/shared/judging-runs";
 import { ok, created, fail, notFound, unauthorized } from "../respond";
 import { adminAuthFastify, authFastify } from "../auth";
 
@@ -158,23 +159,31 @@ export async function hackathonRoutes(fastify: FastifyInstance) {
       .orderBy(desc(schema.hackathons.createdAt))
       .limit(50);
 
-    const enriched = await Promise.all(
-      hackathons.map(async (h) => {
-        const [{ value: teamCount }] = await db.select({ value: count() }).from(schema.teams).where(eq(schema.teams.hackathonId, h.id));
-        const members = await db
-          .select({ agent_id: schema.teamMembers.agentId })
-          .from(schema.teamMembers)
-          .innerJoin(schema.teams, eq(schema.teamMembers.teamId, schema.teams.id))
-          .where(eq(schema.teams.hackathonId, h.id));
+    const hackathonIds = hackathons.map((h) => h.id);
+    const [teamCounts, agentCounts] = hackathonIds.length
+      ? await Promise.all([
+          db
+            .select({ hackathon_id: schema.teams.hackathonId, total: count() })
+            .from(schema.teams)
+            .where(inArray(schema.teams.hackathonId, hackathonIds))
+            .groupBy(schema.teams.hackathonId),
+          db
+            .select({ hackathon_id: schema.teams.hackathonId, total: countDistinct(schema.teamMembers.agentId) })
+            .from(schema.teamMembers)
+            .innerJoin(schema.teams, eq(schema.teamMembers.teamId, schema.teams.id))
+            .where(inArray(schema.teams.hackathonId, hackathonIds))
+            .groupBy(schema.teams.hackathonId),
+        ])
+      : [[], []];
 
-        const uniqueAgents = new Set(members.map((m) => m.agent_id));
-        return {
-          ...formatHackathon(h as Record<string, unknown>),
-          total_teams: teamCount,
-          total_agents: uniqueAgents.size,
-        };
-      }),
-    );
+    const teamCountByHackathon = new Map(teamCounts.map((row) => [row.hackathon_id, row.total]));
+    const agentCountByHackathon = new Map(agentCounts.map((row) => [row.hackathon_id, row.total]));
+
+    const enriched = hackathons.map((h) => ({
+      ...formatHackathon(h as Record<string, unknown>),
+      total_teams: teamCountByHackathon.get(h.id) || 0,
+      total_agents: agentCountByHackathon.get(h.id) || 0,
+    }));
 
     const filtered = query.status
       ? enriched.filter((h) => h.status === query.status)
@@ -243,6 +252,222 @@ export async function hackathonRoutes(fastify: FastifyInstance) {
       total_agents: totalAgents,
       prize_pool_dynamic: prize,
     });
+  });
+
+  // GET /api/v1/hackathons/:id/activity
+  fastify.get("/api/v1/hackathons/:id/activity", async (req, reply) => {
+    const { id: hackathonId } = req.params as { id: string };
+    const query = req.query as { since?: string; limit?: string };
+    const db = getDb();
+
+    const [hackathon] = await db.select({ id: schema.hackathons.id }).from(schema.hackathons).where(eq(schema.hackathons.id, hackathonId)).limit(1);
+    if (!hackathon) return notFound(reply, "Hackathon");
+
+    const limit = Math.min(Math.max(Number.parseInt(query.limit || "50", 10) || 50, 1), 200);
+    const where = query.since
+      ? and(eq(schema.activityLog.hackathonId, hackathonId), gt(schema.activityLog.createdAt, query.since))
+      : eq(schema.activityLog.hackathonId, hackathonId);
+
+    const events = await db
+      .select({
+        id: schema.activityLog.id,
+        hackathon_id: schema.activityLog.hackathonId,
+        team_id: schema.activityLog.teamId,
+        agent_id: schema.activityLog.agentId,
+        event_type: schema.activityLog.eventType,
+        event_data: schema.activityLog.eventData,
+        created_at: schema.activityLog.createdAt,
+        agent_name: schema.agents.name,
+        agent_display_name: schema.agents.displayName,
+        team_name: schema.teams.name,
+        team_color: schema.teams.color,
+      })
+      .from(schema.activityLog)
+      .leftJoin(schema.agents, eq(schema.activityLog.agentId, schema.agents.id))
+      .leftJoin(schema.teams, eq(schema.activityLog.teamId, schema.teams.id))
+      .where(where)
+      .orderBy(desc(schema.activityLog.createdAt))
+      .limit(limit);
+
+    return ok(reply, events);
+  });
+
+  // POST /api/v1/hackathons/:id/check-deadline
+  fastify.post("/api/v1/hackathons/:id/check-deadline", async (req, reply) => {
+    const agent = await authFastify(req);
+    if (!agent) return unauthorized(reply);
+
+    const { id: hackathonId } = req.params as { id: string };
+    const [hackathon] = await getDb()
+      .select({ id: schema.hackathons.id, status: schema.hackathons.status, ends_at: schema.hackathons.endsAt })
+      .from(schema.hackathons)
+      .where(eq(schema.hackathons.id, hackathonId))
+      .limit(1);
+
+    if (!hackathon) return notFound(reply, "Hackathon");
+    if (hackathon.status === "completed") return ok(reply, { status: "finalized", already: true });
+    if (hackathon.status === "judging") return ok(reply, { status: "judging", already: true });
+    if (!hackathon.ends_at) return fail(reply, "Hackathon has no deadline set", 400);
+
+    const deadline = new Date(hackathon.ends_at).getTime();
+    if (Date.now() < deadline) {
+      return ok(reply, { status: "open", remaining_seconds: Math.ceil((deadline - Date.now()) / 1000) });
+    }
+
+    try {
+      const { run, created } = await createOrReuseJudgingRun(hackathonId);
+      return ok(reply, { status: "judging", queued: created, judging_run_id: run.id }, 202);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return fail(reply, `Failed to judge hackathon: ${message}`, 500);
+    }
+  });
+
+  // GET /api/v1/hackathons/:id/building
+  fastify.get("/api/v1/hackathons/:id/building", async (req, reply) => {
+    const { id: hackathonId } = req.params as { id: string };
+    const db = getDb();
+
+    const [hackathon] = await db.select().from(schema.hackathons).where(eq(schema.hackathons.id, hackathonId)).limit(1);
+    if (!hackathon) return notFound(reply, "Hackathon");
+
+    const teams = await db.select().from(schema.teams).where(eq(schema.teams.hackathonId, hackathonId)).orderBy(asc(schema.teams.floorNumber));
+    const leaderboard = await loadHackathonLeaderboard(hackathonId);
+    const scoreByTeamId = new Map((leaderboard || []).map((entry) => [entry.team_id, entry.total_score]));
+
+    const floors = await Promise.all(teams.map(async (team) => {
+      const members = await db
+        .select({
+          agent_id: schema.teamMembers.agentId,
+          role: schema.teamMembers.role,
+          revenue_share_pct: schema.teamMembers.revenueSharePct,
+          agent_name: schema.agents.name,
+          agent_display_name: schema.agents.displayName,
+        })
+        .from(schema.teamMembers)
+        .leftJoin(schema.agents, eq(schema.teamMembers.agentId, schema.agents.id))
+        .where(eq(schema.teamMembers.teamId, team.id))
+        .orderBy(desc(schema.teamMembers.revenueSharePct));
+
+      const lobsters = members.map((member) => {
+        const sharePct = member.revenue_share_pct;
+        return {
+          agent_id: member.agent_id,
+          agent_name: member.agent_name || "",
+          display_name: member.agent_display_name || null,
+          role: member.role,
+          share_pct: sharePct,
+          size: sharePct >= 50 ? "large" : sharePct >= 20 ? "medium" : "small",
+        };
+      });
+
+      return {
+        floor_number: team.floorNumber,
+        team_id: team.id,
+        team_name: team.name,
+        color: team.color,
+        lobsters,
+        empty_seats: Math.max(0, (hackathon.teamSizeMax || 1) - lobsters.length),
+        status: team.status,
+        score: scoreByTeamId.get(team.id) ?? null,
+      };
+    }));
+
+    return ok(reply, {
+      hackathon_id: hackathonId,
+      hackathon_title: hackathon.title,
+      status: hackathon.status,
+      total_floors: floors.length,
+      floors,
+    });
+  });
+
+  // GET /api/v1/hackathons/:id/teams
+  fastify.get("/api/v1/hackathons/:id/teams", async (req, reply) => {
+    const { id: hackathonId } = req.params as { id: string };
+    const db = getDb();
+
+    const [hackathon] = await db.select({ id: schema.hackathons.id }).from(schema.hackathons).where(eq(schema.hackathons.id, hackathonId)).limit(1);
+    if (!hackathon) return notFound(reply, "Hackathon");
+
+    const teams = await db
+      .select({
+        id: schema.teams.id,
+        hackathon_id: schema.teams.hackathonId,
+        name: schema.teams.name,
+        color: schema.teams.color,
+        floor_number: schema.teams.floorNumber,
+        status: schema.teams.status,
+        telegram_chat_id: schema.teams.telegramChatId,
+        created_by: schema.teams.createdBy,
+        created_at: schema.teams.createdAt,
+      })
+      .from(schema.teams)
+      .where(eq(schema.teams.hackathonId, hackathonId))
+      .orderBy(asc(schema.teams.floorNumber));
+
+    const enriched = await Promise.all(teams.map(async (team) => {
+      const members = await db
+        .select({
+          id: schema.teamMembers.id,
+          team_id: schema.teamMembers.teamId,
+          agent_id: schema.teamMembers.agentId,
+          role: schema.teamMembers.role,
+          revenue_share_pct: schema.teamMembers.revenueSharePct,
+          joined_via: schema.teamMembers.joinedVia,
+          status: schema.teamMembers.status,
+          joined_at: schema.teamMembers.joinedAt,
+          agent_name: schema.agents.name,
+          agent_display_name: schema.agents.displayName,
+          agent_avatar_url: schema.agents.avatarUrl,
+          reputation_score: schema.agents.reputationScore,
+        })
+        .from(schema.teamMembers)
+        .leftJoin(schema.agents, eq(schema.teamMembers.agentId, schema.agents.id))
+        .where(eq(schema.teamMembers.teamId, team.id));
+
+      return { ...team, members };
+    }));
+
+    return ok(reply, enriched);
+  });
+
+  // POST /api/v1/hackathons/:id/teams
+  fastify.post("/api/v1/hackathons/:id/teams", async (req, reply) => {
+    const agent = await authFastify(req);
+    if (!agent) return unauthorized(reply);
+
+    const { id: hackathonId } = req.params as { id: string };
+    const [hackathon] = await getDb()
+      .select({ status: schema.hackathons.status })
+      .from(schema.hackathons)
+      .where(eq(schema.hackathons.id, hackathonId))
+      .limit(1);
+    if (!hackathon) return notFound(reply, "Hackathon");
+    if (toPublicHackathonStatus(hackathon.status) !== "open") return fail(reply, "Hackathon is not open for registration", 400);
+
+    const body = req.body as Record<string, unknown> || {};
+    const { team, existed } = await createSingleAgentTeam({
+      hackathonId,
+      agent,
+      name: typeof body.name === "string" ? body.name : undefined,
+      color: typeof body.color === "string" ? body.color : undefined,
+      wallet: typeof body.wallet === "string" ? body.wallet : typeof body.wallet_address === "string" ? body.wallet_address : undefined,
+      txHash: typeof body.tx_hash === "string" ? body.tx_hash : undefined,
+    });
+    if (!team) return fail(reply, "Failed to create participant team", 500);
+
+    return created(reply, {
+      team,
+      message: existed ? "You were already registered for this hackathon." : "Participant team created. Teams are single-agent in the MVP.",
+    });
+  });
+
+  // POST /api/v1/hackathons/:id/teams/:teamId/join — disabled in single-agent MVP
+  fastify.post("/api/v1/hackathons/:id/teams/:teamId/join", async (req, reply) => {
+    const agent = await authFastify(req);
+    if (!agent) return unauthorized(reply);
+    return fail(reply, "Team joining is disabled in the MVP. Each hackathon entry is a single-agent team.", 410, "Use POST /api/v1/hackathons/:id/join instead.");
   });
 
   // PATCH /api/v1/hackathons/:id

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const BASE = process.env.BASE_URL || process.argv[2] || "http://localhost:3000";
+const BASE = process.env.BASE_URL || process.argv[2] || "http://localhost:3001";
 
 console.log(`Quick note:
 - legacy quick-e2e repo-submission flow has been retired

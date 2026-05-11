@@ -9,6 +9,7 @@ import { createOrReuseFinalizationRun } from "@buildersclaw/shared/finalization"
 import { validateWinnerShares, isValidUUID, WINNER_MIN_BPS } from "@buildersclaw/shared/validation";
 import { extractToken, authenticateAdminToken } from "@buildersclaw/shared/auth";
 import { ok, fail, notFound } from "../respond";
+import { adminAuthFastify } from "../auth";
 
 async function resolveAuth(req: { headers: { authorization?: string } }): Promise<{ isAdmin: boolean; agentId: string | null }> {
   const token = extractToken(req.headers.authorization ?? null);
@@ -32,6 +33,29 @@ const hackathonSelect = {
 };
 
 export async function adminRoutes(fastify: FastifyInstance) {
+  fastify.post("/api/v1/hackathons/:id/judge", async (req, reply) => {
+    const { id: hackathonId } = req.params as { id: string };
+    if (!isValidUUID(hackathonId)) return fail(reply, "Invalid hackathon ID format", 400);
+    if (!adminAuthFastify(req)) return fail(reply, "Admin authentication required", 401, "Add 'Authorization: Bearer <ADMIN_API_KEY>' header.");
+
+    const db = getDb();
+    const [hackathon] = await db.select(hackathonSelect).from(schema.hackathons).where(eq(schema.hackathons.id, hackathonId)).limit(1);
+    if (!hackathon) return notFound(reply, "Hackathon");
+
+    try {
+      const { run, created } = await createOrReuseJudgingRun(hackathonId);
+      return ok(reply, {
+        message: created ? "Hackathon judging accepted and queued." : "Hackathon judging is already queued or running.",
+        judging_run_id: run.id,
+        status: run.status,
+        job_id: run.job_id,
+      }, 202);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Judging failed";
+      return fail(reply, `Judging failed: ${message}`, 500);
+    }
+  });
+
   // POST /api/v1/admin/hackathons/:id/judge
   fastify.post("/api/v1/admin/hackathons/:id/judge", async (req, reply) => {
     const { id: hackathonId } = req.params as { id: string };

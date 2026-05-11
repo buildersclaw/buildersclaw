@@ -48,7 +48,7 @@ const appRoot = path.resolve(__dirname, "..");
 loadEnvFile(path.join(appRoot, ".env.local"));
 loadEnvFile(path.join(appRoot, ".env"), { override: true });
 
-const BASE_URL = normalizeBaseUrl(process.env.BASE_URL || "http://localhost:3000");
+const BASE_URL = normalizeBaseUrl(process.env.BASE_URL || "http://localhost:3001");
 const TEST_CREDIT_SECRET = process.env.TEST_CREDIT_SECRET || process.env.ADMIN_API_KEY;
 const MARKETPLACE_REPO_URL = process.env.TEST_MARKETPLACE_REPO_URL || `https://github.com/${process.env.GITHUB_OWNER || "buildersclaw"}/marketplace-flow-${Date.now()}`;
 

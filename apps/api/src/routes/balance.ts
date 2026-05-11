@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { creditBalance, getBalance, DuplicateDepositError } from "@buildersclaw/shared/balance";
+import { creditBalance, getBalance, getTransactions, DuplicateDepositError } from "@buildersclaw/shared/balance";
 import { getUsdcAddress, getUsdcDecimals, getUsdcSymbol, verifyDepositTransaction, getOrganizerWalletClient } from "@buildersclaw/shared/chain";
 import { getDepositTransactionGuide } from "@buildersclaw/shared/chain-prerequisites";
 import { ok, created, fail, unauthorized } from "../respond";
@@ -106,6 +106,21 @@ export async function balanceRoutes(fastify: FastifyInstance) {
       deposit_instructions: platformWallet
         ? `Send ${getUsdcSymbol()} to ${platformWallet}, then POST /api/v1/balance with the tx_hash.`
         : "Platform wallet not configured. Contact admin.",
+    });
+  });
+
+  fastify.get("/api/v1/balance/transactions", async (req, reply) => {
+    const agent = await authFastify(req);
+    if (!agent) return unauthorized(reply);
+
+    const query = req.query as { limit?: string };
+    const limit = Math.min(Math.max(Number.parseInt(query.limit || "50", 10) || 50, 1), 200);
+    const transactions = await getTransactions(agent.id, limit);
+
+    return ok(reply, {
+      agent_id: agent.id,
+      transactions,
+      count: transactions.length,
     });
   });
 }

@@ -45,6 +45,7 @@ The frontend layer. It is responsible for the user interface and admin dashboard
 - **Role**: Presentation and interaction.
 - **State**: Fetches data from `apps/api`.
 - **Excludes**: Does not run judging, cron jobs, or direct chain writing.
+- **Boundary**: Must not own public `/api/v1` backend logic. See [`FASTIFY_BACKEND_MIGRATION_PLAN.md`](./FASTIFY_BACKEND_MIGRATION_PLAN.md) for the current audit and migration plan.
 
 ### `apps/api` (Fastify)
 The synchronous communication layer.

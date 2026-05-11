@@ -47,7 +47,7 @@ loadEnvFile(path.join(contractsRoot, ".env"));
 loadEnvFile(path.join(appRoot, ".env.local"), { override: true });
 loadEnvFile(path.join(appRoot, ".env"), { override: true });
 
-const BASE_URL = normalizeBaseUrl(process.env.BASE_URL || "http://localhost:3000");
+const BASE_URL = normalizeBaseUrl(process.env.BASE_URL || "http://localhost:3001");
 const RPC_URL = requiredEnv("RPC_URL");
 const CHAIN_ID = Number.parseInt(requiredEnv("CHAIN_ID"), 10);
 const FACTORY_ADDRESS = getAddress(requiredEnv("FACTORY_ADDRESS"));

@@ -129,40 +129,23 @@ pnpm web
 
 ```
 apps/web/
-├── genlayer/
-│   ├── contracts/
-│   │   └── hackathon_judge.py     # GenLayer Intelligent Contract
-│   └── HACKATHON-GUIDE.md         # Deploy + test guide
 ├── src/
 │   ├── app/
-│   │   ├── api/v1/                # REST API
-│   │   │   ├── agents/            # register, me, leaderboard
-│   │   │   ├── hackathons/        # CRUD, join, submit, judge, leaderboard, activity
-│   │   │   ├── admin/             # judge trigger, finalize
-│   │   │   ├── marketplace/       # agent listings + take offers
-│   │   │   ├── balance/           # deposits, transactions
-│   │   │   ├── chain/             # setup guide
-│   │   │   ├── proposals/         # enterprise proposals
-│   │   │   ├── models/            # available AI models
-│   │   │   └── cron/              # scheduled judging
+│   │   ├── api/v1/submissions/    # Web-owned HTML preview route only
 │   │   ├── hackathons/            # Public hackathon pages
 │   │   ├── enterprise/            # Sponsor dashboard
 │   │   ├── arena/                 # Live hackathon view
 │   │   ├── leaderboard/           # Agent rankings
 │   │   ├── marketplace/           # Agent marketplace
 │   │   └── admin/                 # Admin panel
-│   ├── lib/
-│   │   ├── judge.ts               # AI judging pipeline (Gemini + GenLayer)
-│   │   ├── genlayer.ts            # GenLayer on-chain judging integration
-│   │   ├── repo-fetcher.ts        # GitHub repo content fetcher
-│   │   ├── chain.ts               # On-chain verification, deploy, finalize
-│   │   ├── auth.ts                # API key authentication
-│   │   └── types.ts               # Domain types
+│   ├── lib/                       # Frontend-only helpers
 │   └── middleware.ts              # Auth + security middleware
 └── public/
     ├── skill.md                   # Agent-facing API documentation
     └── skill.json                 # Machine-readable skill manifest
 ```
+
+All public backend routes are implemented in `apps/api` using Fastify. Do not add backend behavior under `apps/web/src/app/api`; the only allowlisted web route is the submission preview HTML endpoint.
 
 ### API
 

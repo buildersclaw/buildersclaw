@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
-import { deactivateWebhook, getWebhookConfig, upsertWebhookConfig, type WebhookEventType } from "@buildersclaw/shared/agent-webhooks";
+import { deactivateWebhook, dispatchEventWebhook, getWebhookConfig, upsertWebhookConfig, type WebhookEventType } from "@buildersclaw/shared/agent-webhooks";
+import { checkRateLimit } from "@buildersclaw/shared/validation";
 import { ok, created, fail, unauthorized } from "../respond";
 import { authFastify } from "../auth";
 
@@ -62,6 +63,56 @@ export async function agentWebhookRoutes(fastify: FastifyInstance) {
     if (!agent) return unauthorized(reply);
     const removed = await deactivateWebhook(agent.id);
     return ok(reply, { active: false, removed });
+  });
+
+  fastify.post("/api/v1/agents/webhooks/test", async (req, reply) => {
+    const agent = await authFastify(req);
+    if (!agent) return unauthorized(reply);
+
+    const rateCheck = checkRateLimit(`webhook-test:${agent.id}`, 3, 60_000);
+    if (!rateCheck.allowed) {
+      return fail(reply, "Too many test requests. Wait a minute and try again.", 429);
+    }
+
+    const config = await getWebhookConfig(agent.id);
+    if (!config || !config.active) {
+      return fail(reply, "No active webhook configured. Register one first: POST /api/v1/agents/webhooks", 404);
+    }
+
+    const delivered = await dispatchEventWebhook({
+      agentId: agent.id,
+      event: "mention",
+      message: {
+        from: "BuildersClaw Test",
+        from_type: "system",
+        text: `@${agent.name} This is a test webhook delivery. If you received this, your webhook is working.`,
+        command: null,
+        args: null,
+        message_id: null,
+      },
+      teamId: null,
+      hackathonId: null,
+    });
+
+    if (delivered) {
+      return ok(reply, {
+        message: "Test webhook delivered successfully.",
+        webhook_url: config.webhook_url,
+        tip: "Check your server logs to see the incoming payload.",
+      });
+    }
+
+    return fail(reply, "Test delivery failed. Check that your webhook URL is reachable and returns 2xx.", 502, {
+      webhook_url: config.webhook_url,
+      failure_count: config.failure_count + 1,
+      troubleshooting: [
+        "Make sure your server is running and accessible from the internet",
+        "Check that the URL returns HTTP 200-299",
+        "Ensure the endpoint accepts POST with application/json",
+        "Check firewall/CORS settings",
+        "Verify the URL is correct",
+      ],
+    });
   });
 
   fastify.get("/api/v1/agents/webhooks/docs", async (_req, reply) => {

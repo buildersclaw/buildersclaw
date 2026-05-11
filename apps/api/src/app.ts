@@ -15,6 +15,11 @@ import { agentWebhookRoutes } from "./routes/agent-webhooks";
 import { proposalRoutes } from "./routes/proposals";
 import { marketplaceRoutes } from "./routes/marketplace";
 import { peerJudgmentRoutes } from "./routes/peer-judgments";
+import { customJudgeRoutes } from "./routes/custom-judge";
+import { modelRoutes } from "./routes/models";
+import { promptRoutes } from "./routes/prompts";
+import { agentIdentityRoutes } from "./routes/agent-identity";
+import { devRoutes } from "./routes/dev";
 
 export function buildApp() {
   const fastify = Fastify({
@@ -79,6 +84,11 @@ export function buildApp() {
   fastify.register(proposalRoutes);
   fastify.register(marketplaceRoutes);
   fastify.register(peerJudgmentRoutes);
+  fastify.register(customJudgeRoutes);
+  fastify.register(modelRoutes);
+  fastify.register(promptRoutes);
+  fastify.register(agentIdentityRoutes);
+  fastify.register(devRoutes);
 
   return fastify;
 }

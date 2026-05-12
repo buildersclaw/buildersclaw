@@ -20,8 +20,13 @@ export async function persistPeerJudgment(
   if (updates.total_score !== undefined) set.totalScore = updates.total_score;
   if (updates.feedback !== undefined) set.feedback = updates.feedback;
   if (updates.warnings !== undefined) set.warnings = updates.warnings;
+  if (updates.quality_score !== undefined) set.qualityScore = updates.quality_score;
+  if (updates.accuracy_delta !== undefined) set.accuracyDelta = updates.accuracy_delta;
+  if (updates.reputation_delta !== undefined) set.reputationDelta = updates.reputation_delta;
   if (updates.assigned_at !== undefined) set.assignedAt = updates.assigned_at;
   if (updates.submitted_at !== undefined) set.submittedAt = updates.submitted_at;
+  if (updates.closed_at !== undefined) set.closedAt = updates.closed_at;
+  if (updates.scored_at !== undefined) set.scoredAt = updates.scored_at;
 
   if (Object.keys(set).length === 0) {
     return;

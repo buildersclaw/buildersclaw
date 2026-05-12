@@ -4,6 +4,7 @@ import { updateActiveJudgingRunForHackathon } from "./judging-runs";
 import { isViableSubmission } from "./validation";
 import { getDb } from "./db";
 import { parseSubmissionMeta } from "./hackathons";
+import { noteReviewAccuracy, noteReviewAssigned, noteReviewMissed } from "./review-stats";
 import type { Hackathon, Submission, JudgingRunMetadata } from "./types";
 
 type HackathonJudgingRow = {
@@ -24,8 +25,11 @@ type TeamMembersRow = {
 type PeerJudgmentRow = {
   id: string;
   submission_id: string;
+  reviewer_agent_id: string;
   status: string;
   total_score: number | null;
+  reputation_delta: number | null;
+  scored_at: string | null;
 };
 
 type DeploymentCheckRow = {
@@ -36,6 +40,14 @@ type DeploymentCheckRow = {
 type EvaluationScoreRow = {
   submission_id: string;
   total_score: number;
+};
+
+type ReviewerStatsRow = {
+  agent_id: string;
+  reputation_score: number;
+  assigned_count: number;
+  submitted_count: number;
+  missed_count: number;
 };
 
 async function queryRows<T>(query: SQL) {
@@ -232,8 +244,8 @@ export async function freezeSubmissions(hackathonId: string, judgingRunId: strin
     maxAttempts: 3,
   });
 
-  // Close peer reviews later (e.g. 2 hours later)
-  const peerWindowHours = meta.peer_weight === 0 ? 0 : (meta.peer_review_window_hours ?? 2);
+  // Close peer reviews later (default 4 hours).
+  const peerWindowHours = meta.peer_weight === 0 ? 0 : (meta.peer_review_window_hours ?? 4);
   await enqueueJob({
     type: "judging.close_peer_reviews",
     payload: { hackathon_id: hackathonId },
@@ -423,7 +435,19 @@ export async function assignPeerReviews(hackathonId: string) {
 
   if (teams.length === 0) return;
 
-  const eligibleReviewers: { agent_id: string; team_id: string; review_count: number }[] = [];
+  const stats = await queryRows<ReviewerStatsRow>(sql`
+    select agent_id, reputation_score, assigned_count, submitted_count, missed_count
+    from agent_review_stats
+  `);
+  const statsByAgent = new Map(stats.map((s) => [s.agent_id, s]));
+
+  const eligibleReviewers: {
+    agent_id: string;
+    team_id: string;
+    review_count: number;
+    reputation_score: number;
+    completion_rate: number;
+  }[] = [];
 
   for (const sub of submissions) {
     const team = teams.find(t => t.id === sub.team_id);
@@ -431,7 +455,15 @@ export async function assignPeerReviews(hackathonId: string) {
     const members = team.team_members || [];
     for (const m of members) {
       if (m.status === "active") {
-        eligibleReviewers.push({ agent_id: m.agent_id, team_id: team.id, review_count: 0 });
+        const stat = statsByAgent.get(m.agent_id);
+        const assignedCount = stat?.assigned_count ?? 0;
+        eligibleReviewers.push({
+          agent_id: m.agent_id,
+          team_id: team.id,
+          review_count: 0,
+          reputation_score: stat?.reputation_score ?? 0,
+          completion_rate: assignedCount > 0 ? (stat?.submitted_count ?? 0) / assignedCount : 1,
+        });
       }
     }
   }
@@ -441,6 +473,12 @@ export async function assignPeerReviews(hackathonId: string) {
     const j = Math.floor(Math.random() * (i + 1));
     [eligibleReviewers[i], eligibleReviewers[j]] = [eligibleReviewers[j], eligibleReviewers[i]];
   }
+
+  eligibleReviewers.sort((a, b) => {
+    const completionDiff = b.completion_rate - a.completion_rate;
+    if (completionDiff !== 0) return completionDiff;
+    return b.reputation_score - a.reputation_score;
+  });
 
   const assignmentsToInsert = [];
 
@@ -467,12 +505,15 @@ export async function assignPeerReviews(hackathonId: string) {
 
   if (assignmentsToInsert.length > 0) {
     for (const assignment of assignmentsToInsert) {
-      await getDb().execute(sql`
+      const inserted = await queryRows<{ reviewer_agent_id: string }>(sql`
         insert into peer_judgments (submission_id, reviewer_agent_id, status)
         values (${assignment.submission_id}, ${assignment.reviewer_agent_id}, ${assignment.status})
-        on conflict (submission_id, reviewer_agent_id) do update set
-          status = excluded.status
+        on conflict (submission_id, reviewer_agent_id) do nothing
+        returning reviewer_agent_id
       `);
+      if (inserted[0]?.reviewer_agent_id) {
+        await noteReviewAssigned(inserted[0].reviewer_agent_id);
+      }
     }
   }
 }
@@ -501,7 +542,14 @@ export async function closePeerReviews(hackathonId: string) {
   // Automatically skip remaining un-submitted assignments
   const pendingJudgments = judgments.filter(j => j.status === "assigned");
   for (const j of pendingJudgments) {
-    await getDb().execute(sql`update peer_judgments set status = 'skipped' where id = ${j.id}`);
+    const reputationDelta = await noteReviewMissed(j.reviewer_agent_id);
+    await getDb().execute(sql`
+      update peer_judgments
+      set status = 'skipped',
+          reputation_delta = ${reputationDelta},
+          closed_at = now()
+      where id = ${j.id}
+    `);
   }
 
   meta.peer_judging_closed_at = new Date().toISOString();
@@ -541,10 +589,12 @@ export async function aggregateFinalists(hackathonId: string) {
   const meta = parseMetadata(hackathon.judging_criteria);
 
   const peerJudgments = await queryRows<PeerJudgmentRow>(sql`
-    select *
+    select peer_judgments.*
     from peer_judgments
-    where status = 'submitted'
-  `); // we only care about submitted scores
+    inner join submissions on submissions.id = peer_judgments.submission_id
+    where peer_judgments.status = 'submitted'
+      and submissions.hackathon_id = ${hackathonId}
+  `); // we only care about submitted scores for this hackathon
 
   const runtimeChecks = await queryRows<DeploymentCheckRow>(sql`select * from deployment_checks`);
 
@@ -606,6 +656,19 @@ export async function aggregateFinalists(hackathonId: string) {
       finalist_score,
       warnings,
     });
+
+    for (const judgment of subPeers) {
+      if (judgment.total_score === null || judgment.scored_at) continue;
+      const accuracy = await noteReviewAccuracy(judgment.reviewer_agent_id, judgment.total_score - finalist_score);
+      const reputationDelta = (judgment.reputation_delta ?? 0) + accuracy.reputationDelta;
+      await getDb().execute(sql`
+        update peer_judgments
+        set accuracy_delta = ${accuracy.accuracyDelta},
+            reputation_delta = ${reputationDelta},
+            scored_at = now()
+        where id = ${judgment.id}
+      `);
+    }
 
     const team = sub.teams as { name?: string } | null;
     results.push({

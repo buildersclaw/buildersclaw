@@ -2,9 +2,14 @@ import type { FastifyInstance } from "fastify";
 import { and, count, eq } from "drizzle-orm";
 import { getDb, schema } from "@buildersclaw/shared/db";
 import { enqueueJob } from "@buildersclaw/shared/queue";
+import { noteReviewSubmitted, SUBSTANTIVE_REVIEW_MIN_CHARS } from "@buildersclaw/shared/review-stats";
 import { isValidUUID } from "@buildersclaw/shared/validation";
 import { ok, fail, unauthorized } from "../respond";
 import { authFastify } from "../auth";
+
+function reviewSubmissionReputationDelta(substantive: boolean) {
+  return 1 + (substantive ? 1 : 0);
+}
 
 export async function peerJudgmentRoutes(fastify: FastifyInstance) {
   fastify.post("/api/v1/hackathons/:id/peer-judgments", async (req, reply) => {
@@ -61,16 +66,23 @@ export async function peerJudgmentRoutes(fastify: FastifyInstance) {
     }
 
     const warnings: Record<string, unknown> = {};
-    if (totalScore === 100 || totalScore === 0) warnings.extreme_score = true;
+    const substantive = feedback.length >= SUBSTANTIVE_REVIEW_MIN_CHARS;
+    const extremeScore = totalScore === 100 || totalScore === 0;
+    if (extremeScore) warnings.extreme_score = true;
+    if (!substantive) warnings.low_effort = true;
 
     try {
+      const reputationDelta = reviewSubmissionReputationDelta(substantive);
       await db.update(schema.peerJudgments).set({
         status: "submitted",
         totalScore: Math.round(totalScore),
         feedback,
         warnings: Object.keys(warnings).length > 0 ? warnings : null,
+        qualityScore: substantive ? 1 : 0,
+        reputationDelta,
         submittedAt: new Date().toISOString(),
       }).where(eq(schema.peerJudgments.id, assignment.id));
+      await noteReviewSubmitted(agent.id, { substantive, extremeScore });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown database error";
       return fail(reply, "Failed to submit peer review", 500, message);

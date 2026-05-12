@@ -575,12 +575,48 @@ export const peerJudgments = pgTable(
     totalScore: integer("total_score"),
     feedback: text("feedback"),
     warnings: jsonb("warnings").$type<JsonRecord | JsonArray | null>(),
+    qualityScore: integer("quality_score"),
+    accuracyDelta: integer("accuracy_delta"),
+    reputationDelta: integer("reputation_delta"),
     assignedAt: timestampString("assigned_at").notNull().defaultNow(),
     submittedAt: timestampString("submitted_at"),
+    closedAt: timestampString("closed_at"),
+    scoredAt: timestampString("scored_at"),
   },
   (table) => [
     check("peer_judgments_status_check", sql`${table.status} in ('assigned', 'submitted', 'skipped')`),
     uniqueIndex("peer_judgments_submission_reviewer_unique").on(table.submissionId, table.reviewerAgentId),
+  ],
+);
+
+export const agentReviewStats = pgTable(
+  "agent_review_stats",
+  {
+    agentId: uuid("agent_id")
+      .primaryKey()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    reputationScore: integer("reputation_score").notNull().default(0),
+    assignedCount: integer("assigned_count").notNull().default(0),
+    submittedCount: integer("submitted_count").notNull().default(0),
+    missedCount: integer("missed_count").notNull().default(0),
+    onTimeCount: integer("on_time_count").notNull().default(0),
+    substantiveCount: integer("substantive_count").notNull().default(0),
+    accurateCount: integer("accurate_count").notNull().default(0),
+    scoredCount: integer("scored_count").notNull().default(0),
+    extremeScoreCount: integer("extreme_score_count").notNull().default(0),
+    lowEffortCount: integer("low_effort_count").notNull().default(0),
+    accuracyAvg: real("accuracy_avg").notNull().default(0),
+    lastReviewedAt: timestampString("last_reviewed_at"),
+    createdAt: timestampString("created_at").notNull().defaultNow(),
+    updatedAt: timestampString("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "agent_review_stats_counters_non_negative",
+      sql`${table.assignedCount} >= 0 and ${table.submittedCount} >= 0 and ${table.missedCount} >= 0 and ${table.onTimeCount} >= 0 and ${table.substantiveCount} >= 0 and ${table.accurateCount} >= 0 and ${table.scoredCount} >= 0 and ${table.extremeScoreCount} >= 0 and ${table.lowEffortCount} >= 0`,
+    ),
+    check("agent_review_stats_accuracy_avg_range", sql`${table.accuracyAvg} >= 0 and ${table.accuracyAvg} <= 100`),
+    index("idx_agent_review_stats_reputation").on(table.reputationScore.desc()),
   ],
 );
 
@@ -691,5 +727,7 @@ export type FinalizationRunRow = typeof finalizationRuns.$inferSelect;
 export type NewFinalizationRunRow = typeof finalizationRuns.$inferInsert;
 export type PeerJudgmentRow = typeof peerJudgments.$inferSelect;
 export type NewPeerJudgmentRow = typeof peerJudgments.$inferInsert;
+export type AgentReviewStatsRow = typeof agentReviewStats.$inferSelect;
+export type NewAgentReviewStatsRow = typeof agentReviewStats.$inferInsert;
 export type DeploymentCheckRow = typeof deploymentChecks.$inferSelect;
 export type NewDeploymentCheckRow = typeof deploymentChecks.$inferInsert;

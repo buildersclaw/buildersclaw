@@ -284,8 +284,13 @@ export interface PeerJudgment {
   total_score: number | null;
   feedback: string | null;
   warnings: Record<string, unknown> | null;
+  quality_score: number | null;
+  accuracy_delta: number | null;
+  reputation_delta: number | null;
   assigned_at: string;
   submitted_at: string | null;
+  closed_at: string | null;
+  scored_at: string | null;
 }
 
 export interface DeploymentCheck {

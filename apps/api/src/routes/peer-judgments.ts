@@ -4,7 +4,7 @@ import { getDb, schema } from "@buildersclaw/shared/db";
 import { enqueueJob } from "@buildersclaw/shared/queue";
 import { noteReviewSubmitted, SUBSTANTIVE_REVIEW_MIN_CHARS } from "@buildersclaw/shared/review-stats";
 import { isValidUUID } from "@buildersclaw/shared/validation";
-import { ok, fail, unauthorized } from "../respond";
+import { ok, fail, notFound, unauthorized } from "../respond";
 import { authFastify } from "../auth";
 
 function reviewSubmissionReputationDelta(substantive: boolean) {
@@ -99,5 +99,143 @@ export async function peerJudgmentRoutes(fastify: FastifyInstance) {
     }
 
     return ok(reply, { message: "Peer review submitted successfully" });
+  });
+
+  // GET /api/v1/hackathons/:id/peer-judgments — public, anonymized
+  fastify.get("/api/v1/hackathons/:id/peer-judgments", async (req, reply) => {
+    const { id: hackathonId } = req.params as { id: string };
+    if (!isValidUUID(hackathonId)) return fail(reply, "Invalid hackathon ID format", 400);
+
+    const db = getDb();
+    const [hackathon] = await db
+      .select({
+        id: schema.hackathons.id,
+        title: schema.hackathons.title,
+        status: schema.hackathons.status,
+        judging_criteria: schema.hackathons.judgingCriteria,
+      })
+      .from(schema.hackathons)
+      .where(eq(schema.hackathons.id, hackathonId))
+      .limit(1);
+    if (!hackathon) return notFound(reply, "Hackathon");
+
+    let peerJudgingClosedAt: string | null = null;
+    try {
+      const raw = hackathon.judging_criteria;
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : (raw as Record<string, unknown> | null);
+      if (parsed && typeof parsed.peer_judging_closed_at === "string") {
+        peerJudgingClosedAt = parsed.peer_judging_closed_at;
+      }
+    } catch { /* ignore malformed meta */ }
+
+    const isClosed = !!peerJudgingClosedAt || hackathon.status === "completed" || hackathon.status === "finalized";
+
+    const baseHackathon = {
+      id: hackathon.id,
+      title: hackathon.title,
+      status: hackathon.status,
+      peer_judging_closed_at: peerJudgingClosedAt,
+    };
+
+    if (!isClosed) {
+      return ok(reply, {
+        hackathon: baseHackathon,
+        available: false,
+        message: "Peer reviews will be published after peer judging closes.",
+        summary: null,
+        by_submission: [],
+      });
+    }
+
+    const rows = await db
+      .select({
+        review_id: schema.peerJudgments.id,
+        status: schema.peerJudgments.status,
+        total_score: schema.peerJudgments.totalScore,
+        feedback: schema.peerJudgments.feedback,
+        submitted_at: schema.peerJudgments.submittedAt,
+        submission_id: schema.submissions.id,
+        team_id: schema.teams.id,
+        team_name: schema.teams.name,
+        repo_url: schema.submissions.previewUrl,
+      })
+      .from(schema.peerJudgments)
+      .innerJoin(schema.submissions, eq(schema.submissions.id, schema.peerJudgments.submissionId))
+      .innerJoin(schema.teams, eq(schema.teams.id, schema.submissions.teamId))
+      .where(
+        and(
+          eq(schema.submissions.hackathonId, hackathonId),
+          eq(schema.peerJudgments.status, "submitted"),
+        ),
+      )
+      .orderBy(schema.teams.name);
+
+    type Row = (typeof rows)[number];
+    const grouped = new Map<string, {
+      submission_id: string;
+      team_id: string;
+      team_name: string;
+      repo_url: string | null;
+      scores: number[];
+      reviews: Array<{ score: number | null; feedback: string | null; submitted_at: string | null }>;
+    }>();
+
+    for (const row of rows as Row[]) {
+      let bucket = grouped.get(row.submission_id);
+      if (!bucket) {
+        bucket = {
+          submission_id: row.submission_id,
+          team_id: row.team_id,
+          team_name: row.team_name,
+          repo_url: row.repo_url,
+          scores: [],
+          reviews: [],
+        };
+        grouped.set(row.submission_id, bucket);
+      }
+      if (typeof row.total_score === "number") bucket.scores.push(row.total_score);
+      bucket.reviews.push({
+        score: row.total_score,
+        feedback: row.feedback,
+        submitted_at: row.submitted_at,
+      });
+    }
+
+    const median = (nums: number[]) => {
+      if (nums.length === 0) return null;
+      const sorted = [...nums].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+    };
+
+    const bySubmission = Array.from(grouped.values()).map((bucket) => {
+      const avg = bucket.scores.length > 0
+        ? Math.round((bucket.scores.reduce((s, n) => s + n, 0) / bucket.scores.length) * 100) / 100
+        : null;
+      return {
+        submission_id: bucket.submission_id,
+        team_id: bucket.team_id,
+        team_name: bucket.team_name,
+        repo_url: bucket.repo_url,
+        peer_score: avg,
+        median_peer_score: median(bucket.scores),
+        review_count: bucket.reviews.length,
+        reviews: bucket.reviews.map((r) => ({
+          score: r.score,
+          feedback: r.feedback,
+          submitted_at: r.submitted_at,
+        })),
+      };
+    });
+
+    return ok(reply, {
+      hackathon: baseHackathon,
+      available: true,
+      summary: {
+        submitted: rows.length,
+        reviewed_teams: grouped.size,
+      },
+      by_submission: bySubmission,
+    });
   });
 }

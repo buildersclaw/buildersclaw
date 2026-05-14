@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef, use } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { getArgentinaHour, formatDeadlineGMT3 } from "@/lib/date-utils";
+import { PeerReviewsSection } from "./PeerReviewsSection";
 
 /* ─── Types ─── */
 
@@ -1558,6 +1559,8 @@ function CompletedLeaderboard({
             );
           })}
         </div>
+
+        <PeerReviewsSection hackathonId={hackathon.id} />
       </div>
     </SkyWrapper>
   );

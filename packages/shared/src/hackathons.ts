@@ -340,7 +340,7 @@ export async function calculatePrizePool(hackathonId: string): Promise<{
     let prizePool = 0;
     if (meta.contract_address) {
       try {
-        const balanceUnits = await getContractPrizePool(meta.contract_address);
+        const balanceUnits = await withTimeout(getContractPrizePool(meta.contract_address), 2500);
         prizePool = Number(formatUnits(balanceUnits, meta.token_decimals ?? Number(process.env.USDC_DECIMALS || 18)));
       } catch {
         // Fallback to DB prize_pool if chain is unreachable
@@ -373,6 +373,20 @@ export async function calculatePrizePool(hackathonId: string): Promise<{
     prize_pool: Math.max(0, prizePool),
     sponsored: false,
   };
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timeout = setTimeout(() => reject(new Error("Timed out waiting for chain RPC")), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 function extractNumericScore(value: unknown): number | null {

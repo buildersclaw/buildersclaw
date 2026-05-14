@@ -347,7 +347,7 @@ export async function continueGenLayerJudging(hackathonId: string) {
       meta.genlayer_status = "deploying";
       meta.genlayer_deploy_tx_hash = deployment.txHash;
       await updateHackathonJudgingMeta(hackathon.id, meta);
-      return true;
+      return false;
     }
 
     if (status === "deploying") {
@@ -361,7 +361,7 @@ export async function continueGenLayerJudging(hackathonId: string) {
       meta.genlayer_submit_tx_hash = submit.txHash;
       meta.genlayer_status = "submitting";
       await updateHackathonJudgingMeta(hackathon.id, meta);
-      return true;
+      return false;
     }
 
     if (status === "submitting") {
@@ -375,7 +375,7 @@ export async function continueGenLayerJudging(hackathonId: string) {
       meta.genlayer_finalize_tx_hash = finalize.txHash;
       meta.genlayer_status = "finalizing";
       await updateHackathonJudgingMeta(hackathon.id, meta);
-      return true;
+      return false;
     }
 
     if (status === "finalizing") {
@@ -386,7 +386,7 @@ export async function continueGenLayerJudging(hackathonId: string) {
 
       meta.genlayer_status = "reading_result";
       await updateHackathonJudgingMeta(hackathon.id, meta);
-      return true;
+      return false;
     }
 
     if (status === "reading_result") {

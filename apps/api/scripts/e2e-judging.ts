@@ -1,11 +1,11 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "@buildersclaw/shared/db";
 
 const BASE_URL = (process.env.BASE_URL || "http://127.0.0.1:3001").replace(/\/+$/, "");
 const ADMIN_API_KEY = requireEnv("ADMIN_API_KEY");
 const REPOS = [
-  process.env.E2E_REPO_1 || "https://github.com/fastify/fastify",
-  process.env.E2E_REPO_2 || "https://github.com/vercel/next.js",
+  process.env.E2E_REPO_1 || "https://github.com/octocat/Hello-World",
+  process.env.E2E_REPO_2 || "https://github.com/octocat/Spoon-Knife",
 ];
 
 function requireEnv(name: string) {
@@ -19,12 +19,14 @@ function unique(prefix: string) {
 }
 
 async function api(method: string, path: string, body?: unknown, token?: string) {
+  const headers: Record<string, string> = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+
   const response = await fetch(`${BASE_URL}/api/v1${path}`, {
     method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
@@ -99,7 +101,7 @@ async function getState(hackathonId: string) {
   const runs = await db.select().from(schema.judgingRuns).where(eq(schema.judgingRuns.hackathonId, hackathonId)).orderBy(desc(schema.judgingRuns.createdAt)).limit(3);
   const submissions = await db.select().from(schema.submissions).where(eq(schema.submissions.hackathonId, hackathonId));
   const evaluations = await db.select().from(schema.evaluations);
-  const jobs = await db.select().from(schema.jobs).orderBy(desc(schema.jobs.createdAt)).limit(20);
+  const jobs = await db.select().from(schema.jobs).where(sql`${schema.jobs.payload} @> ${JSON.stringify({ hackathon_id: hackathonId })}::jsonb`).orderBy(desc(schema.jobs.createdAt)).limit(20);
   const submissionIds = new Set(submissions.map((submission) => submission.id));
 
   return {
@@ -109,6 +111,42 @@ async function getState(hackathonId: string) {
     evaluations: evaluations.filter((evaluation) => submissionIds.has(evaluation.submissionId)),
     jobs,
   };
+}
+
+async function submitPeerReviews(hackathonId: string, agentKeys: Map<string, string>) {
+  const db = getDb();
+  const deadline = Date.now() + 5 * 60_000;
+
+  while (Date.now() < deadline) {
+    const assignments = await db
+      .select({
+        submission_id: schema.peerJudgments.submissionId,
+        reviewer_agent_id: schema.peerJudgments.reviewerAgentId,
+        status: schema.peerJudgments.status,
+      })
+      .from(schema.peerJudgments)
+      .innerJoin(schema.submissions, eq(schema.peerJudgments.submissionId, schema.submissions.id))
+      .where(eq(schema.submissions.hackathonId, hackathonId));
+
+    const assigned = assignments.filter((assignment) => assignment.status === "assigned");
+    if (assignments.length > 0) {
+      console.log(`Submitting ${assigned.length} peer review(s)...`);
+      for (const assignment of assigned) {
+        const reviewerKey = agentKeys.get(assignment.reviewer_agent_id);
+        if (!reviewerKey) throw new Error(`Missing API key for reviewer ${assignment.reviewer_agent_id}`);
+        await api("POST", `/hackathons/${hackathonId}/peer-judgments`, {
+          submission_id: assignment.submission_id,
+          total_score: assignment.reviewer_agent_id.endsWith("0") ? 76 : 82,
+          feedback: "Demo peer review: this submission was reviewed for correctness, clarity, implementation quality, documentation, and readiness. The score is intentionally deterministic for the off-chain product-flow demo.",
+        }, reviewerKey);
+      }
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+
+  throw new Error("Timed out waiting for peer review assignments");
 }
 
 async function pollUntilDone(hackathonId: string) {
@@ -158,6 +196,11 @@ async function main() {
   console.log("Queueing judging...");
   console.dir(await queueJudging(hackathonId), { depth: null });
 
+  await submitPeerReviews(hackathonId, new Map([
+    [alpha.id, alpha.apiKey],
+    [beta.id, beta.apiKey],
+  ]));
+
   console.log("Polling judging state...");
   await pollUntilDone(hackathonId);
 
@@ -166,7 +209,9 @@ async function main() {
   console.log(`Hackathon: ${BASE_URL}/api/v1/hackathons/${hackathonId}`);
 }
 
-main().catch((error) => {
+main().then(() => {
+  process.exit(0);
+}).catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });

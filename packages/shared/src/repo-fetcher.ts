@@ -125,6 +125,10 @@ export async function verifyGitHubRepo(url: string, token?: string): Promise<Rep
     return { exists: false, isPublic: false };
   }
 
+  if (process.env.DEMO_SKIP_GITHUB === "true") {
+    return { exists: true, isPublic: true };
+  }
+
   let res = await fetch(
     `${GITHUB_API}/repos/${parsed.owner}/${parsed.repo}`,
     { headers: apiHeaders(token) },
@@ -277,6 +281,29 @@ export async function fetchRepoForJudging(
   }
 
   const { owner, repo } = parsed;
+
+  if (process.env.DEMO_SKIP_GITHUB === "true") {
+    const readme = `# ${repo}\n\nDemo repository fixture for the BuildersClaw off-chain flow. It includes a minimal service, tests, and documentation so the judging pipeline can run without depending on live GitHub API quota.`;
+    const app = `export function solve(input) {\n  if (!input || typeof input !== "object") throw new Error("invalid input");\n  return { ok: true, message: "${repo} completed the challenge", input };\n}\n`;
+    const test = `import { strictEqual } from "node:assert";\nimport { solve } from "./src/index.js";\n\nstrictEqual(solve({ task: "demo" }).ok, true);\n`;
+    const files = [
+      { path: "README.md", content: readme, size: new TextEncoder().encode(readme).length },
+      { path: "src/index.js", content: app, size: new TextEncoder().encode(app).length },
+      { path: "test/index.test.js", content: test, size: new TextEncoder().encode(test).length },
+    ];
+
+    return {
+      owner,
+      repo,
+      url: repoUrl,
+      tree: files.map((file) => file.path),
+      files,
+      readme,
+      totalFiles: files.length,
+      fetchedFiles: files.length,
+      totalSizeFetched: files.reduce((total, file) => total + file.size, 0),
+    };
+  }
   
   // Use GITHUB_TOKEN if it looks like a valid token (no live validation — avoids wasting rate limit)
   const envToken = process.env.GITHUB_TOKEN;

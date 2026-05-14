@@ -233,6 +233,8 @@ That gives full end-to-end coverage without depending on live GenLayer finality.
 3. Run the full app flow locally.
 4. Only after that, test against live GenLayer if needed.
 
+For the current GenLayer-enabled end-to-end demo plan, use the runbook in `docs/OFFCHAIN-PEER-REVIEW-DEMO.md#genlayer-enabled-judging-test-plan`.
+
 ## Why Local GenLayer Is Best First
 
 - faster

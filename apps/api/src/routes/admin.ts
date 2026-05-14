@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import type { FastifyInstance } from "fastify";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { getDb, schema } from "@buildersclaw/shared/db";
 import { parseHackathonMeta, sanitizeString } from "@buildersclaw/shared/hackathons";
 import { normalizeAddress } from "@buildersclaw/shared/chain";
@@ -242,5 +243,226 @@ export async function adminRoutes(fastify: FastifyInstance) {
       const message = err instanceof Error ? err.message : "Failed to queue escrow finalization";
       return fail(reply, message, 500);
     }
+  });
+
+  // GET /api/v1/admin/hackathons/:id/peer-judgments
+  fastify.get("/api/v1/admin/hackathons/:id/peer-judgments", async (req, reply) => {
+    if (!adminAuthFastify(req)) {
+      return fail(reply, "Admin authentication required", 401, "Add 'Authorization: Bearer <ADMIN_API_KEY>' header.");
+    }
+
+    const { id: hackathonId } = req.params as { id: string };
+    if (!isValidUUID(hackathonId)) return fail(reply, "Invalid hackathon ID format", 400);
+
+    const query = (req.query ?? {}) as Record<string, string | undefined>;
+    const statusFilter = query.status;
+    const teamIdFilter = query.team_id;
+    const reviewerFilter = query.reviewer_agent_id;
+    const includeFeedback = query.include_feedback !== "false";
+
+    if (statusFilter && !["assigned", "submitted", "skipped"].includes(statusFilter)) {
+      return fail(reply, "Invalid status filter. Must be one of: assigned, submitted, skipped", 400);
+    }
+    if (teamIdFilter && !isValidUUID(teamIdFilter)) return fail(reply, "Invalid team_id format", 400);
+    if (reviewerFilter && !isValidUUID(reviewerFilter)) return fail(reply, "Invalid reviewer_agent_id format", 400);
+
+    const db = getDb();
+    const [hackathon] = await db
+      .select({
+        id: schema.hackathons.id,
+        title: schema.hackathons.title,
+        status: schema.hackathons.status,
+        judging_criteria: schema.hackathons.judgingCriteria,
+      })
+      .from(schema.hackathons)
+      .where(eq(schema.hackathons.id, hackathonId))
+      .limit(1);
+    if (!hackathon) return notFound(reply, "Hackathon");
+
+    const meta = parseHackathonMeta(hackathon.judging_criteria);
+    let peerJudgingClosedAt: string | null = null;
+    try {
+      const raw = hackathon.judging_criteria;
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : (raw as Record<string, unknown> | null);
+      if (parsed && typeof parsed.peer_judging_closed_at === "string") {
+        peerJudgingClosedAt = parsed.peer_judging_closed_at;
+      }
+    } catch { /* ignore malformed meta */ }
+
+    const reviewedTeam = alias(schema.teams, "reviewed_team");
+    const reviewerAgent = alias(schema.agents, "reviewer_agent");
+    const reviewedAgent = alias(schema.agents, "reviewed_agent");
+    const reviewerMember = alias(schema.teamMembers, "reviewer_member");
+    const reviewedMember = alias(schema.teamMembers, "reviewed_member");
+    const reviewerTeam = alias(schema.teams, "reviewer_team");
+
+    const conditions = [eq(schema.submissions.hackathonId, hackathonId)];
+    if (statusFilter) conditions.push(eq(schema.peerJudgments.status, statusFilter as schema.PeerJudgmentRow["status"]));
+    if (teamIdFilter) conditions.push(eq(schema.submissions.teamId, teamIdFilter));
+    if (reviewerFilter) conditions.push(eq(schema.peerJudgments.reviewerAgentId, reviewerFilter));
+
+    const rows = await db
+      .select({
+        id: schema.peerJudgments.id,
+        status: schema.peerJudgments.status,
+        total_score: schema.peerJudgments.totalScore,
+        feedback: schema.peerJudgments.feedback,
+        warnings: schema.peerJudgments.warnings,
+        quality_score: schema.peerJudgments.qualityScore,
+        reputation_delta: schema.peerJudgments.reputationDelta,
+        accuracy_delta: schema.peerJudgments.accuracyDelta,
+        assigned_at: schema.peerJudgments.assignedAt,
+        submitted_at: schema.peerJudgments.submittedAt,
+        closed_at: schema.peerJudgments.closedAt,
+        scored_at: schema.peerJudgments.scoredAt,
+        submission_id: schema.submissions.id,
+        repo_url: schema.submissions.previewUrl,
+        reviewed_team_id: reviewedTeam.id,
+        reviewed_team_name: reviewedTeam.name,
+        reviewed_agent_id: reviewedAgent.id,
+        reviewed_agent_name: reviewedAgent.displayName,
+        reviewed_agent_handle: reviewedAgent.name,
+        reviewer_agent_id: reviewerAgent.id,
+        reviewer_agent_name: reviewerAgent.displayName,
+        reviewer_agent_handle: reviewerAgent.name,
+        reviewer_team_id: reviewerTeam.id,
+        reviewer_team_name: reviewerTeam.name,
+      })
+      .from(schema.peerJudgments)
+      .innerJoin(schema.submissions, eq(schema.submissions.id, schema.peerJudgments.submissionId))
+      .innerJoin(reviewedTeam, eq(reviewedTeam.id, schema.submissions.teamId))
+      .innerJoin(reviewerAgent, eq(reviewerAgent.id, schema.peerJudgments.reviewerAgentId))
+      .leftJoin(
+        reviewedMember,
+        and(
+          eq(reviewedMember.teamId, reviewedTeam.id),
+          eq(reviewedMember.role, "leader"),
+          eq(reviewedMember.status, "active"),
+        ),
+      )
+      .leftJoin(reviewedAgent, eq(reviewedAgent.id, reviewedMember.agentId))
+      .leftJoin(
+        reviewerMember,
+        and(
+          eq(reviewerMember.agentId, reviewerAgent.id),
+          eq(reviewerMember.status, "active"),
+        ),
+      )
+      .leftJoin(
+        reviewerTeam,
+        and(eq(reviewerTeam.id, reviewerMember.teamId), eq(reviewerTeam.hackathonId, hackathonId)),
+      )
+      .where(and(...conditions))
+      .orderBy(reviewedTeam.name, sql`${reviewerTeam.name} nulls last`);
+
+    type ReviewRow = (typeof rows)[number];
+    const grouped = new Map<string, {
+      submission_id: string;
+      team_id: string;
+      team_name: string;
+      agent_id: string | null;
+      agent_name: string | null;
+      repo_url: string | null;
+      reviews: Array<Record<string, unknown>>;
+      scores: number[];
+    }>();
+
+    let assigned = 0;
+    let submitted = 0;
+    let skipped = 0;
+    const reviewerSet = new Set<string>();
+
+    for (const row of rows as ReviewRow[]) {
+      if (row.status === "assigned") assigned++;
+      else if (row.status === "submitted") submitted++;
+      else if (row.status === "skipped") skipped++;
+      reviewerSet.add(row.reviewer_agent_id);
+
+      let bucket = grouped.get(row.submission_id);
+      if (!bucket) {
+        bucket = {
+          submission_id: row.submission_id,
+          team_id: row.reviewed_team_id,
+          team_name: row.reviewed_team_name,
+          agent_id: row.reviewed_agent_id ?? null,
+          agent_name: row.reviewed_agent_name ?? row.reviewed_agent_handle ?? null,
+          repo_url: row.repo_url,
+          reviews: [],
+          scores: [],
+        };
+        grouped.set(row.submission_id, bucket);
+      }
+      if (row.status === "submitted" && typeof row.total_score === "number") {
+        bucket.scores.push(row.total_score);
+      }
+
+      bucket.reviews.push({
+        id: row.id,
+        status: row.status,
+        reviewer_agent_id: row.reviewer_agent_id,
+        reviewer_agent_name: row.reviewer_agent_name ?? row.reviewer_agent_handle,
+        reviewer_team_id: row.reviewer_team_id,
+        reviewer_team_name: row.reviewer_team_name,
+        total_score: row.total_score,
+        feedback: includeFeedback ? row.feedback : undefined,
+        warnings: row.warnings ?? null,
+        quality_score: row.quality_score,
+        reputation_delta: row.reputation_delta,
+        accuracy_delta: row.accuracy_delta,
+        assigned_at: row.assigned_at,
+        submitted_at: row.submitted_at,
+        closed_at: row.closed_at,
+        scored_at: row.scored_at,
+      });
+    }
+
+    const median = (nums: number[]) => {
+      if (nums.length === 0) return null;
+      const sorted = [...nums].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+    };
+
+    const expectedReviews = meta?.scores ? null : null; // placeholder; per-submission expected counts handled below
+    void expectedReviews;
+
+    const bySubmission = Array.from(grouped.values()).map((bucket) => {
+      const submittedReviews = bucket.reviews.filter((r) => r.status === "submitted").length;
+      const totalAssignments = bucket.reviews.length;
+      const avg = bucket.scores.length > 0
+        ? Math.round((bucket.scores.reduce((s, n) => s + n, 0) / bucket.scores.length) * 100) / 100
+        : null;
+      return {
+        submission_id: bucket.submission_id,
+        team_id: bucket.team_id,
+        team_name: bucket.team_name,
+        agent_id: bucket.agent_id,
+        agent_name: bucket.agent_name,
+        repo_url: bucket.repo_url,
+        peer_score: avg,
+        median_peer_score: median(bucket.scores),
+        review_count: submittedReviews,
+        missing_reviews: Math.max(0, totalAssignments - submittedReviews),
+        reviews: bucket.reviews,
+      };
+    });
+
+    return ok(reply, {
+      hackathon: {
+        id: hackathon.id,
+        title: hackathon.title,
+        status: hackathon.status,
+        peer_judging_closed_at: peerJudgingClosedAt,
+      },
+      summary: {
+        total: rows.length,
+        assigned,
+        submitted,
+        skipped,
+        reviewed_teams: grouped.size,
+        reviewer_agents: reviewerSet.size,
+      },
+      by_submission: bySubmission,
+    });
   });
 }

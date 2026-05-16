@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 import path from "node:path";
 
+const apiUrl = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001").replace(
+  /\/$/,
+  "",
+);
+
 const nextConfig: NextConfig = {
   serverExternalPackages: ["better-sqlite3"],
   turbopack: {
@@ -11,7 +16,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://127.0.0.1:3001/api/:path*",
+        destination: `${apiUrl}/api/:path*`,
       },
     ];
   },

@@ -9,6 +9,9 @@
   "scripts": {
     "dev": "pnpm --parallel dev",
     "build": "pnpm --recursive build",
+    "build:api": "pnpm --filter @buildersclaw/api lint",
+    "build:web": "pnpm --filter web build",
+    "build:worker": "pnpm --filter @buildersclaw/worker lint",
     "lint": "pnpm --recursive lint",
     "test": "pnpm --recursive test",
     "api": "pnpm --filter @buildersclaw/api dev",
